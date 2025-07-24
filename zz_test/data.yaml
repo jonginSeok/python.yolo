@@ -1,0 +1,8 @@
+path: C:/Users/602-17/YOLO/bottle/cls4/data
+
+train: train/images
+val: val/images
+test: test/images
+
+nc: 4
+names: ['bad-broken_large', 'bad-broken_small', 'bad-contamination', 'bottle-good']
