@@ -8,7 +8,7 @@ if __name__ == "__main__":
     project_dir = root
     run_name = "runs/bottle/cls"
 
-    model = YOLO("yolo11s.pt").to("cuda")
+    model = YOLO("yolo11n.pt").to("cuda")
     model.train(
         data=str(data_yaml),
         epochs=30,
