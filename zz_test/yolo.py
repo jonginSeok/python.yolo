@@ -11,9 +11,9 @@ if __name__ == "__main__":
     model = YOLO("yolo11n.pt").to("cuda")
     model.train(
         data=str(data_yaml),
-        epochs=50,
+        epochs=200,
         imgsz=640,
-        batch=16,
+        batch=4,
         project=str(project_dir),
         name=run_name,
         pretrained=True,
