@@ -6,7 +6,7 @@ import cv2
 root = Path(__file__).parent.resolve()
 
 # 1. 경로 설정
-model_path = root / 'runs/bottle/cls2/weights/best.pt'
+model_path = root / 'runs/bottle/cls/weights/best.pt'
 image_path = root / 'data/test/images/010_png.rf.7d2c4b35c86ae8f2ac61eb7d7f20423b_v_aug.jpg'
 
 # 2. 모델 로드

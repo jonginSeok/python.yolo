@@ -5,7 +5,7 @@ import numpy as np
 root = Path(__file__).parent.resolve()
 
 # 모델 경로 및 이미지 폴더 경로
-model_path = root / 'runs/bottle/cls2/weights/best.pt'
+model_path = root / 'runs/bottle/cls/weights/best.pt'
 images_folder = root / 'data/test/images'
 
 # 모델 로드
