@@ -11,12 +11,12 @@ if __name__ == "__main__":
     model = YOLO("yolo11n.pt").to("cuda")
     model.train(
         data=str(data_yaml),
-        epochs=30,
+        epochs=50,
         imgsz=640,
         batch=16,
         project=str(project_dir),
         name=run_name,
         pretrained=True,
-        patience = 10,
-        verbose=True
+        # patience = 10,
+        # verbose=True
     )

@@ -1,7 +1,6 @@
 from ultralytics import YOLO
 from pathlib import Path
 import cv2
-import os
 
 # 모델 경로
 root = Path(__file__).parent.resolve()
