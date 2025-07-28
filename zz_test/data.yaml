@@ -1,8 +1,0 @@
-path: C:/Users/ngins/Git/python.yolo/zz_test/data
-
-train: train/images
-val: val/images
-test: test/images
-
-nc: 4
-names: ['bad-broken_large', 'bad-broken_small', 'bad-contamination', 'bottle-good']
