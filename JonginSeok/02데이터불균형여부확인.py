@@ -3,8 +3,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+# train_valid = 'train'
+train_valid = 'valid'
+
 # 📂 라벨 파일 경로 지정
-label_dir = '/Users/ngins/Git/python.yolo/dataset/origin/train/labels'
+label_dir = '/Users/ngins/Git/python.yolo/dataset/origin/'+train_valid+'/labels'
 label_files = [f for f in os.listdir(label_dir) if f.endswith('.txt')]
 
 # 📊 시각화 설정 한글 방법1
@@ -73,15 +76,18 @@ min_count = class_counts.min()
 imbalance_ratio = round(max_count / (min_count + 1e-5), 2)
 print(f"\n📊 최대/최소 클래스 비율: {imbalance_ratio}")
 
-
 if imbalance_ratio > 1.5:
     print("❗ 데이터 불균형이 존재할 가능성이 있습니다.")
 else:
     print("✅ 데이터가 비교적 균형 잡혀 있습니다.")
 
+
+
+
+
 ''' # 데이터 분석 결과 요약
 
-validation 데이터 분석 결과:
+valid 데이터 분석 결과:
 - 총 63개의 라벨이 수집되었습니다.
 
 🔢 클래스별 샘플 수:
@@ -92,7 +98,7 @@ validation 데이터 분석 결과:
 
 
 
-good 데이터 분석 결과:
+train 데이터 분석 결과:
 - 총 209개의 라벨이 수집되었습니다.
 
 🔢 클래스별 샘플 수:
