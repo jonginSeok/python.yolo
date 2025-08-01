@@ -6,7 +6,7 @@ print('사용 가능한 GPU 수:', torch.cuda.device_count())  # 사용 가능�
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f" \n device ::: {device} \n", )
 
-# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
 
 if __name__ == '__main__':
     from ultralytics import YOLO
