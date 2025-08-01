@@ -1,0 +1,203 @@
+from ultralytics import YOLO
+from torchvision import transforms
+import os
+from PIL import Image
+
+# 1. bottle-good 클래스에 대한 데이터 증강
+augment = transforms.Compose([
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomRotation(15),
+    transforms.ColorJitter(brightness=0.2, contrast=0.2),
+    transforms.RandomResizedCrop(size=(640, 640), scale=(0.8, 1.0))
+])
+
+
+# from torchvision import transforms
+# 
+# bottle_good_aug = transforms.Compose([
+#     transforms.RandomRotation(degrees=180),
+#     transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.1),
+#     transforms.CenterCrop(size=(400, 400)),
+#     transforms.Resize(size=(640, 640)),
+#     transforms.GaussianBlur(kernel_size=(3, 3), sigma=(0.1, 2.0)),
+#     transforms.RandomErasing(p=0.3, scale=(0.02, 0.2), ratio=(0.3, 3.3))
+# ])
+
+
+input_dir = 'dataset/images/bottle-good'
+output_dir = 'dataset/images/bottle-good-augmented'
+os.makedirs(output_dir, exist_ok=True)
+
+for img_name in os.listdir(input_dir):
+    img_path = os.path.join(input_dir, img_name)
+    img = Image.open(img_path)
+    for i in range(5):  # 5배 증강
+        aug_img = augment(img)
+        aug_img.save(os.path.join(output_dir, f"{img_name.split('.')[0]}_aug{i}.jpg"))
+
+# 2. 모델 학습 시 클래스 가중치 적용
+# 클래스 순서: ['bad-broken_large', 'bad-broken_small', 'bad-contamination', 'bottle-good']
+# bottle-good에 더 높은 가중치 부여
+class_weights = [1.0, 1.0, 1.0, 2.0]
+
+model = YOLO('yolov8n.yaml')  # 또는 yolov8s.yaml 등
+model.train(data='dataset.yaml', epochs=100, imgsz=640, weights='yolov8n.pt',
+            batch=16, lr0=0.01, cls_weights=class_weights)
+
+
+# ===================================== #
+# 1단계: 증강 이미지 생성 스크립트
+# ===================================== #
+import os
+from PIL import Image
+from torchvision import transforms
+from tqdm import tqdm
+
+# 증강 파이프라인 정의
+bottle_good_aug = transforms.Compose([
+    transforms.RandomRotation(degrees=180),
+    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.1),
+    transforms.CenterCrop(size=(400, 400)),
+    transforms.Resize(size=(640, 640)),
+    transforms.GaussianBlur(kernel_size=(3, 3), sigma=(0.1, 2.0)),
+    transforms.RandomErasing(p=0.3, scale=(0.02, 0.2), ratio=(0.3, 3.3))
+])
+
+# 경로 설정
+input_dir = 'dataset/images/bottle-good'
+output_dir = 'dataset/images/bottle-good-augmented'
+os.makedirs(output_dir, exist_ok=True)
+
+# 증강 이미지 생성
+for img_name in tqdm(os.listdir(input_dir)):
+    img_path = os.path.join(input_dir, img_name)
+    img = Image.open(img_path).convert("RGB")
+    for i in range(5):  # 5배 증강
+        aug_img = bottle_good_aug(img)
+        aug_img.save(os.path.join(output_dir, f"{img_name.split('.')[0]}_aug{i}.jpg"))
+
+# 주의: YOLO는 이미지와 동일한 이름의 .txt 라벨 파일이 필요합니다. 증강된 이미지에 맞춰 라벨도 복사해야 합니다.
+
+# ===================================== #
+# 2단계: 라벨 파일 복사
+# ===================================== #
+
+label_input_dir = 'dataset/labels/bottle-good'
+label_output_dir = 'dataset/labels/bottle-good-augmented'
+os.makedirs(label_output_dir, exist_ok=True)
+
+for img_name in os.listdir(input_dir):
+    label_name = img_name.replace('.jpg', '.txt')
+    label_path = os.path.join(label_input_dir, label_name)
+    for i in range(5):
+        new_label_name = f"{img_name.split('.')[0]}_aug{i}.txt"
+        new_label_path = os.path.join(label_output_dir, new_label_name)
+        with open(label_path, 'r') as f:
+            label_data = f.read()
+        with open(new_label_path, 'w') as f:
+            f.write(label_data)
+
+# ===================================== #
+# 3단계: YOLOv8n 학습용 데이터셋 구성
+# ===================================== #
+
+# YOLOv8은 dataset.yaml 파일을 통해 학습 데이터를 지정합니다. 예시:
+
+train: dataset/images/train
+val: dataset/images/val
+
+nc: 4
+names: ['bad-broken_large', 'bad-broken_small', 'bad-contamination', 'bottle-good']
+
+# - train 폴더에 증강된 bottle-good 이미지와 라벨을 포함시켜주세요.
+# - val은 원본 이미지만 사용하는 것이 일반적입니다.
+
+# ===================================== #
+# 4단계: YOLOv8n 학습 실행
+# ===================================== #
+
+from ultralytics import YOLO
+
+model = YOLO('yolov8n.pt')  # 또는 yolov8s.pt 등
+
+model.train(
+    data='dataset.yaml',
+    epochs=100,
+    imgsz=640,
+    batch=16,
+    lr0=0.01,
+    cache=True
+)
+
+# ✅ 추가 팁
+# - cls_weights를 사용해 bottle-good 클래스에 가중치를 더 줄 수 있어요.
+# - early_stopping, patience, cos_lr 같은 옵션도 성능 향상에 도움이 됩니다.
+
+# 필요하시면 dataset.yaml 자동 생성 스크립트도 만들어드릴 수 있어요. 
+# 혹시 전체 데이터셋 구조를 알려주실 수 있나요? (예: 클래스별 폴더 구성)
+
+# ===================================== #
+# 자동생성 스크립트 v8n
+# ===================================== #
+
+import os
+import yaml
+
+# 클래스 이름 정의 (순서 중요!)
+class_names = ['bad-broken_large', 'bad-broken_small', 'bad-contamination', 'bottle-good']
+
+# 경로 설정
+yaml_dict = {
+    'train': 'dataset/train/images',
+    'val': 'dataset/valid/images',
+    'test': 'dataset/test/images',
+    'nc': len(class_names),
+    'names': class_names
+}
+
+# 저장
+with open('dataset.yaml', 'w') as f:
+    yaml.dump(yaml_dict, f, default_flow_style=False)
+
+print("✅ dataset.yaml 파일이 생성되었습니다.")
+
+
+# ===================================== #
+# YOLOv8n 학습 실행 예시
+# ===================================== #
+
+from ultralytics import YOLO
+
+model = YOLO('yolov8n.pt')  # 또는 yolov8s.pt 등
+
+model.train(
+    data='dataset.yaml',
+    epochs=100,
+    imgsz=640,
+    batch=16,
+    lr0=0.01,
+    cache=True
+)
+
+# ===================================== #
+# YOLOv11 학습 스크립트
+# ===================================== #
+
+from ultralytics import YOLO
+
+# YOLOv11n 모델 로드 (가정: 'yolov11n.pt'가 존재함)
+model = YOLO('yolov11n.pt')
+
+# 학습 실행
+model.train(
+    data='dataset.yaml',       # 데이터셋 구성 파일
+    epochs=100,                # 학습 에폭 수
+    imgsz=640,                 # 이미지 크기
+    batch=16,                  # 배치 사이즈
+    lr0=0.01,                  # 초기 학습률
+    cache=True,                # 캐싱 활성화
+    cls_weights=[1.0, 1.0, 1.0, 2.0],  # 클래스별 가중치 (bottle-good 강조)
+    patience=20,               # early stopping
+    cos_lr=True                # cosine learning rate scheduler
+)
+

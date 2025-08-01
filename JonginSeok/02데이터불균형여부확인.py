@@ -1,7 +1,7 @@
 import os
-import pandas as pd             # pip install pandas
-import matplotlib.pyplot as plt # pip install matplotlib
-import seaborn as sns           # pip install seaborn (update)
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # train_valid = 'train'
 '''
