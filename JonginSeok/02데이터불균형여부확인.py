@@ -1,9 +1,4 @@
-import os
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 
-# train_valid = 'train'
 '''
 train 데이터 분석 결과:
 - 총 209개의 라벨이 수집되었습니다.
@@ -13,9 +8,7 @@ train 데이터 분석 결과:
 - bad-broken_small: 0개
 - bad-contamination: 0개
 - bottle-good: 209개
-'''
-train_valid = 'valid'
-'''
+
 valid 데이터 분석 결과:
 - 총 63개의 라벨이 수집되었습니다.
 
@@ -26,24 +19,12 @@ valid 데이터 분석 결과:
 - bottle-good: 0개
 '''
 
-# 📂 라벨 파일 경로 지정
-# label_dir = '/Users/ngins/Git/python.yolo/dataset/origin/'+train_valid+'/labels'
-label_dir = '/Users/ngins/Git/python.yolo/JonginSeok/ngins7512/labels/'
-label_files = [f for f in os.listdir(label_dir) if f.endswith('.txt')]
+import os
+import matplotlib.pyplot as plt
+from collections import Counter
+import seaborn as sns
 
-# 📊 시각화 설정 한글 방법1
-plt.rcParams['font.family'] ='Malgun Gothic'
-plt.rcParams['axes.unicode_minus'] =False #출처: https://giveme-happyending.tistory.com/168 [소연의_개발일지:티스토리]
-
-# # 📊 시각화 설정 한글 방법2
-# # 나눔글꼴 경로 설정
-# font_path = 'C:/Windows/Fonts/NanumGothic.ttf'
-# # 폰트 이름 가져오기
-# font_name = fm.FontProperties(fname=font_path).get_name()
-# # 폰트 설정
-# plt.rc('font', family=font_name) #출처: https://giveme-happyending.tistory.com/168 [소연의_개발일지:티스토리]
-
-# 라벨 맵 정의
+# 클래스 이름과 인덱스 매핑
 label_map = {
     'bad-broken_large': 0,
     'bad-broken_small': 1,
@@ -51,52 +32,65 @@ label_map = {
     'bottle-good': 3,
 }
 
-reverse_map = {v: k for k, v in label_map.items()}
-class_names = list(label_map.keys())
+# 인덱스 → 클래스 이름 역매핑
+index_to_name = {v: k for k, v in label_map.items()}
 
-# 라벨 수집
-labels = []
+def collect_label_indices(label_dir):
+    class_indices = []
+    for filename in os.listdir(label_dir):
+        if filename.endswith('.txt'):
+            filepath = os.path.join(label_dir, filename)
+            with open(filepath, 'r') as f:
+                for line in f:
+                    parts = line.strip().split()
+                    if parts:
+                        class_indices.append(int(parts[0]))  # index 0: class label
+    return class_indices
 
-for file in label_files:
-    file_path = os.path.join(label_dir, file)
-    try:
-        with open(file_path, 'r') as f:
-            for line in f:
-                tokens = line.strip().split()  # 공백 기준 분리
-                if len(tokens) >= 1 and tokens[0].isdigit():
-                    labels.append(int(tokens[0]))
-                    print(f"[✅] '{file}'에서 라벨 '{tokens[0]}' 수집 완료")
-                else:
-                    print(f"[⚠️] '{file}'에서 비정상 라벨 구조 발견: {line}")
-    except Exception as e:
-        print(f"[🚫] '{file}' 읽기 실패: {e}")
+def analyze_class_distribution(base_path):
+    train_labels = os.path.join(base_path, 'train', 'labels')
+    valid_labels = os.path.join(base_path, 'valid', 'labels')
 
-print(f"총 {len(labels)}개의 라벨이 수집되었습니다.")
+    train_classes = collect_label_indices(train_labels)
+    valid_classes = collect_label_indices(valid_labels)
 
-# 분석 및 시각화
-label_series = pd.Series(labels)
-label_named = label_series.map(reverse_map)
-class_counts = label_named.value_counts().reindex(class_names, fill_value=0)
+    total_classes = train_classes + valid_classes
+    class_counts = Counter(total_classes)
 
-print("🔢 클래스별 샘플 수:")
-for class_name, count in class_counts.items():
-    print(f"- {class_name}: {count}개")
+    # 클래스 이름으로 변환
+    named_counts = {index_to_name[idx]: count for idx, count in class_counts.items() if idx in index_to_name}
+    return named_counts
 
-sns.barplot(x=class_counts.index, y=class_counts.values, hue=class_counts.index, palette="muted", legend=False)
-plt.title('클래스별 샘플 수 분포')
-plt.xlabel('클래스명')
-plt.ylabel('샘플 수')
-plt.xticks(rotation=45)
-plt.tight_layout()
-plt.show()
+def visualize_distribution(named_counts):
+    classes = list(named_counts.keys())
+    counts = list(named_counts.values())
 
-# 불균형 판단(?)
-max_count = class_counts.max()
-min_count = class_counts.min()
-imbalance_ratio = round(max_count / (min_count + 1e-5), 2)
-print(f"📊 최대/최소 클래스 비율: {imbalance_ratio}")
+    plt.figure(figsize=(10, 6))
+    sns.barplot(x=classes, y=counts, palette='mako', hue=classes, legend=False)
+    plt.title('Class Distribution by Name')
+    plt.xlabel('Class Name')
+    plt.ylabel('Number of Instances')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
 
-if imbalance_ratio > 1.5:
-    print("❗ 데이터 불균형이 존재할 가능성이 있습니다.")
-else:
-    print("✅ 데이터가 비교적 균형 잡혀 있습니다.")
+def check_imbalance(named_counts, threshold=0.1):
+    total = sum(named_counts.values())
+    proportions = {cls: count / total for cls, count in named_counts.items()}
+    max_p = max(proportions.values())
+    min_p = min(proportions.values())
+
+    print("\n📊 Class Proportions:")
+    for cls, p in proportions.items():
+        print(f"{cls}: {p:.2%}")
+
+    if max_p - min_p > threshold:
+        print("\n⚠️ 데이터 불균형이 존재합니다.")
+    else:
+        print("\n✅ 데이터는 비교적 균형 잡혀 있습니다.")
+
+# 실행
+base_path = 'dataset/origin'
+named_counts = analyze_class_distribution(base_path)
+visualize_distribution(named_counts)
+check_imbalance(named_counts)

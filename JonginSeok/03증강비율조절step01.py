@@ -20,12 +20,12 @@ train - bottle-good      : 209 개
 
 '''
 
-rotate_angle = 0    # 회전 비율 rotation_angle
-rotate_add = 40     # 360/10 = 36도씩 // 10번, 360면 원본
+rotate_angle = 0 # 회전 비율 rotation_angle
+rotate_add = 40
 
 # valid 파일 처리
 for i in range(0, 8):
-    ratio = f'ratio{rotate_angle}'  # 파일명에 추가할 회전 비율
+    ratio = f'ratio{rotate_angle}' # 파일명에 추가할 회전 비율
     print(f"🗂️  회전 비율: {rotate_angle}도, 파일명에 회전비율: {ratio}")
 
     # 🗂️ 설정: 원본 이미지 폴더 및 저장 위치
@@ -126,7 +126,7 @@ for i in range(0, 8):
         except Exception as e:
             print(f"⚠️ Error with {new_label_file}: {e}")
     
-    rotate_angle += rotate_add  # 36도씩 증가
+    rotate_angle += rotate_add
 
 # train 파일 처리
 # 경로 설정
@@ -140,12 +140,14 @@ output_labels_folder = 'JonginSeok/dataset/labels/'
 os.makedirs(output_image_folder, exist_ok=True)
 os.makedirs(output_labels_folder, exist_ok=True)
 
+count = 0
 # 이미지 파일 복사
 for file_name in os.listdir(input_image_folder):
     src = os.path.join(input_image_folder, file_name)
     dst = os.path.join(output_image_folder, file_name)
     if os.path.isfile(src):
         shutil.copy2(src, dst)
+        count += 1
 
 # 라벨 파일 복사
 for file_name in os.listdir(input_labels_folder):
@@ -153,5 +155,6 @@ for file_name in os.listdir(input_labels_folder):
     dst = os.path.join(output_labels_folder, file_name)
     if os.path.isfile(src):
         shutil.copy2(src, dst)
-
+    
+print(f"📝 총 {count}개의 이미지 파일을 찾았습니다.")
 print("✅ 이미지와 라벨 파일 복사가 완료되었습니다.")

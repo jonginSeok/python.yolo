@@ -4,13 +4,13 @@ import random
 
 # 결과물 출력 구조(data_path 하위구조)
 # dataset/
-# ├── test/ [5%]
+# ├── test/ [6%]
 # │   ├── images/
 # │   └── labels/
-# ├── train/ [80%]
+# ├── train/ [78%]
 # │   ├── images/
 # │   └── labels/
-# ├── valid/ [15%]
+# ├── valid/ [16%]
 # │   ├── images/
 # │   └── labels/
 # └── data.yaml
@@ -19,7 +19,7 @@ import random
 image_dir = "JonginSeok/dataset/images"
 label_dir = "JonginSeok/dataset/labels"
 data_path = "JonginSeok/dataset"
-rate_img = [80, 15, 5]
+rate_img = [78, 16, 6]
 
 # 라벨 맵 정의
 label_map = {
@@ -54,6 +54,9 @@ random.shuffle(paired_files)
 total = len(paired_files)
 train_end = int(total * rate_img[0] / 100)
 valid_end = train_end + int(total * rate_img[1] / 100)
+test_end = total - train_end - int(total * rate_img[1] / 100)
+
+print(f'⚠️ total:{total}  train:{train_end} valid:{int(total * rate_img[1] / 100)} test:{test_end}')
 
 splits_data = {
     'train': paired_files[:train_end],

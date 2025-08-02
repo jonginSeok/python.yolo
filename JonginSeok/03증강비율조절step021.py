@@ -4,10 +4,7 @@ import random
 
 # 결과물 출력 구조(data_path 하위구조)
 # dataset/
-# ├── test/ [5%]
-# │   ├── images/
-# │   └── labels/
-# ├── train/ [80%]
+# ├── test/ [6%]
 # │   ├── bad-broken_large/
 # │   │   ├── images/
 # │   │   └── labels/
@@ -20,7 +17,24 @@ import random
 # │   └── bottle-good/
 # │       ├── images/
 # │       └── labels/
-# ├── valid/ [15%]
+
+# │   ├── images/
+# │   └── labels/
+
+# ├── train/ [78%]
+# │   ├── bad-broken_large/
+# │   │   ├── images/
+# │   │   └── labels/
+# │   ├── bad-broken_small/
+# │   │   ├── images/
+# │   │   └── labels/
+# │   ├── bad-contamination/
+# │   │   ├── images/
+# │   │   └── labels/
+# │   └── bottle-good/
+# │       ├── images/
+# │       └── labels/
+# ├── valid/ [16%]
 # │   ├── bad-broken_large/
 # │   │   ├── images/
 # │   │   └── labels/
@@ -39,7 +53,7 @@ import random
 image_dir = 'JonginSeok/dataset/images'
 label_dir = 'JonginSeok/dataset/labels'
 output_base = 'JonginSeok/dataset/cnn'
-rate_img = [80, 15, 5]  # train, valid, test 비율
+rate_img = [78, 16, 6]  # train, valid, test 비율
 
 # 클래스 매핑
 label_map = {
@@ -54,16 +68,20 @@ valid_classes = set(label_map.values())
 # 출력 폴더 생성
 splits = ['train', 'valid', 'test']
 for split in splits:
-    if split == 'test':
-        os.makedirs(os.path.join(output_base, split, 'images'), exist_ok=True)
-        os.makedirs(os.path.join(output_base, split, 'labels'), exist_ok=True)
-    else:
-        for class_name in label_map.keys():
-            os.makedirs(os.path.join(output_base, split, class_name, 'images'), exist_ok=True)
-            os.makedirs(os.path.join(output_base, split, class_name, 'labels'), exist_ok=True)
+    # if split == 'test':
+    #     os.makedirs(os.path.join(output_base, split, 'images'), exist_ok=True)
+    #     os.makedirs(os.path.join(output_base, split, 'labels'), exist_ok=True)
+    # else:
+    #     for class_name in label_map.keys():
+    #         os.makedirs(os.path.join(output_base, split, class_name, 'images'), exist_ok=True)
+    #         os.makedirs(os.path.join(output_base, split, class_name, 'labels'), exist_ok=True)
+
+    for class_name in label_map.keys():
+        os.makedirs(os.path.join(output_base, split, class_name, 'images'), exist_ok=True)
+        os.makedirs(os.path.join(output_base, split, class_name, 'labels'), exist_ok=True)
 
 # 이미지 파일 목록 수집
-image_files = [f for f in os.listdir(image_dir) if f.lower().endswith(('.jpg', '.png', '.jpeg'))]
+image_files = [f for f in os.listdir() if f.lower().endswith(('.jpg', '.png', '.jpeg'))]
 random.shuffle(image_files)
 
 # 유효한 이미지만 필터링
@@ -93,6 +111,8 @@ train_count = int(total * rate_img[0] / 100)
 valid_count = int(total * rate_img[1] / 100)
 test_count = total - train_count - valid_count
 
+print(f'⚠️ total:{total}  train_count:{train_count} valid_count:{valid_count} test_count:{test_count}')
+
 split_counts = {
     'train': train_count,
     'valid': valid_count,
@@ -114,12 +134,15 @@ for split in splits:
             class_name = id_to_class[class_id]
 
         # 경로 설정
-        if split == 'test':
-            dst_img = os.path.join(output_base, split, 'images', img_file)
-            dst_label = os.path.join(output_base, split, 'labels', label_file)
-        else:
-            dst_img = os.path.join(output_base, split, class_name, 'images', img_file)
-            dst_label = os.path.join(output_base, split, class_name, 'labels', label_file)
+        # if split == 'test':
+        #     dst_img = os.path.join(output_base, split, 'images', img_file)
+        #     dst_label = os.path.join(output_base, split, 'labels', label_file)
+        # else:
+        #     dst_img = os.path.join(output_base, split, class_name, 'images', img_file)
+        #     dst_label = os.path.join(output_base, split, class_name, 'labels', label_file)
+
+        dst_img = os.path.join(output_base, split, class_name, 'images', img_file)
+        dst_label = os.path.join(output_base, split, class_name, 'labels', label_file)
 
         # 복사
         shutil.copy2(os.path.join(image_dir, img_file), dst_img)
