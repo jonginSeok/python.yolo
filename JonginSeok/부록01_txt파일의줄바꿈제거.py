@@ -11,7 +11,7 @@ def clean_txt_files(root_dir):
                     cleaned_content = content.replace('/n', '')  # '/n' 제거
                     with open(file_path, 'w', encoding='utf-8') as file:
                         file.write(cleaned_content)
-                    print(f"✅ Cleaned: {filename} content : [{content}] cleaned_content : [{cleaned_content}]") # {file_path} 
+                    print(f"✅ Cleaned. content:[{content}] cleaned_content:[{cleaned_content}]") # {file_path} {filename}
                 except Exception as e:
                     print(f"❌ Error processing {file_path}: {e}")
 

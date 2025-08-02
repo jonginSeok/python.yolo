@@ -1,8 +1,8 @@
 task: detect
 mode: train
 model: yolo11n.pt
-data: JonginSeok/dataset/data.yaml
-epochs: 100
+data: /Users/ngins/Git/python.yolo/JonginSeok/dataset/data.yaml
+epochs: 300
 time: null
 patience: 100
 batch: 16
@@ -10,7 +10,7 @@ imgsz: 640
 save: true
 save_period: -1
 cache: false
-device: cpu
+device: null
 workers: 8
 project: JonginSeok/dataset/result
 name: yolo11n_bottle_4class9
