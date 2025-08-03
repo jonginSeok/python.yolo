@@ -80,8 +80,8 @@ for split in splits:
     #         os.makedirs(os.path.join(output_base, split, class_name, 'labels'), exist_ok=True)
 
     for class_name in label_map.keys():
-        os.makedirs(os.path.join(output_base, split, class_name, 'images'), exist_ok=True)
-        os.makedirs(os.path.join(output_base, split, class_name, 'labels'), exist_ok=True)
+        os.makedirs(os.path.join(output_base, split, class_name, ''), exist_ok=True)
+        os.makedirs(os.path.join(output_base, split, class_name, ''), exist_ok=True)
 
 # 이미지 파일 목록 수집
 image_files = [f for f in os.listdir(image_dir) if f.lower().endswith(('.jpg', '.png', '.jpeg'))]
@@ -144,8 +144,8 @@ for split in splits:
         #     dst_img = os.path.join(output_base, split, class_name, 'images', img_file)
         #     dst_label = os.path.join(output_base, split, class_name, 'labels', label_file)
 
-        dst_img = os.path.join(output_base, split, class_name, 'images', img_file)
-        dst_label = os.path.join(output_base, split, class_name, 'labels', label_file)
+        dst_img = os.path.join(output_base, split, class_name, '', img_file)
+        dst_label = os.path.join(output_base, split, class_name, '', label_file)
 
         # 복사
         shutil.copy2(os.path.join(image_dir, img_file), dst_img)

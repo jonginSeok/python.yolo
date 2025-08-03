@@ -341,3 +341,22 @@ SyntaxError: 'hyp' is not a valid YOLO argument.
     Community: https://community.ultralytics.com
     GitHub: https://github.com/ultralytics/ultralytics
 
+
+
+
+
+
+
+
+C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\cuda\Loss.cu:242: block: [0,0,0], thread: [0,0,0] Assertion `t >= 0 && t < n_classes` failed.
+C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\cuda\Loss.cu:242: block: [0,0,0], thread: [1,0,0] Assertion `t >= 0 && t < n_classes` failed.
+C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\cuda\Loss.cu:242: block: [0,0,0], thread: [2,0,0] Assertion `t >= 0 && t < n_classes` failed.
+Traceback (most recent call last):
+  File "c:\Users\ngins\Git\python.yolo\JonginSeok\부록04_BottleCNN_v01.py", line 112, in <module>
+    loss_total += loss.item()
+                  ~~~~~~~~~^^
+RuntimeError: CUDA error: device-side assert triggered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+

@@ -12,7 +12,6 @@ valid - bad-broken_large : 20 개
       - bad-contamination: 21 개
 train - bottle-good      : 209 개
 
-
 - bad-broken_large : 180 개
 - bad-broken_small : 198 개
 - bad-contamination: 189 개
