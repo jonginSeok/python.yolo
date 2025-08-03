@@ -74,7 +74,7 @@ for label_file in os.listdir(labels_folder):
         # 📄 라벨 복사
         dst_label = os.path.join(label_subdir, label_file)
         shutil.copy(label_path, dst_label)
-        # print(f"📝 라벨 복사됨 → {label_name}/labels/{label_file}")
+
         print(f"📝 라벨 복사됨 → {label_name}/{label_file}")
 
 print("모든 이미지가 처리되었습니다.")

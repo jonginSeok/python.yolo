@@ -16,6 +16,6 @@ def clean_txt_files(root_dir):
                     print(f"❌ Error processing {file_path}: {e}")
 
 # 사용 예시
-target_directory = r"/Users/ngins/Git/python.yolo/JonginSeok/dataset"
+target_directory = r"JonginSeok/dataset"
 clean_txt_files(target_directory)
 print("✅ 모든 라벨정보 텍스트 파일에서 /n 삭제 완료!")

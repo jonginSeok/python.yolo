@@ -56,7 +56,7 @@ train_end = int(total * rate_img[0] / 100)
 valid_end = train_end + int(total * rate_img[1] / 100)
 test_end = total - train_end - int(total * rate_img[1] / 100)
 
-print(f'⚠️ total:{total}  train:{train_end} valid:{int(total * rate_img[1] / 100)} test:{test_end}')
+print(f'⚠️  total:{total}  train:{train_end} valid:{int(total * rate_img[1] / 100)} test:{test_end}')
 
 splits_data = {
     'train': paired_files[:train_end],

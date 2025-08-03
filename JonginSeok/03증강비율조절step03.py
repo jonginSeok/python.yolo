@@ -18,6 +18,7 @@ import random
 # │       ├── images/
 # │       └── labels/
 
+# 주석
 # │   ├── images/
 # │   └── labels/
 
@@ -53,6 +54,7 @@ import random
 image_dir = 'JonginSeok/dataset/images'
 label_dir = 'JonginSeok/dataset/labels'
 output_base = 'JonginSeok/dataset/cnn'
+
 rate_img = [78, 16, 6]  # train, valid, test 비율
 
 # 클래스 매핑
@@ -68,6 +70,7 @@ valid_classes = set(label_map.values())
 # 출력 폴더 생성
 splits = ['train', 'valid', 'test']
 for split in splits:
+    
     # if split == 'test':
     #     os.makedirs(os.path.join(output_base, split, 'images'), exist_ok=True)
     #     os.makedirs(os.path.join(output_base, split, 'labels'), exist_ok=True)
@@ -81,7 +84,7 @@ for split in splits:
         os.makedirs(os.path.join(output_base, split, class_name, 'labels'), exist_ok=True)
 
 # 이미지 파일 목록 수집
-image_files = [f for f in os.listdir() if f.lower().endswith(('.jpg', '.png', '.jpeg'))]
+image_files = [f for f in os.listdir(image_dir) if f.lower().endswith(('.jpg', '.png', '.jpeg'))]
 random.shuffle(image_files)
 
 # 유효한 이미지만 필터링
