@@ -345,9 +345,6 @@ SyntaxError: 'hyp' is not a valid YOLO argument.
 
 
 
-
-
-
 C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\cuda\Loss.cu:242: block: [0,0,0], thread: [0,0,0] Assertion `t >= 0 && t < n_classes` failed.
 C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\cuda\Loss.cu:242: block: [0,0,0], thread: [1,0,0] Assertion `t >= 0 && t < n_classes` failed.
 C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\cuda\Loss.cu:242: block: [0,0,0], thread: [2,0,0] Assertion `t >= 0 && t < n_classes` failed.
@@ -360,3 +357,20 @@ CUDA kernel errors might be asynchronously reported at some other API call, so t
 For debugging consider passing CUDA_LAUNCH_BLOCKING=1
 Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
 
+
+
+
+Epoch(cuda) 99 | Loss: 189.8419 | Train Acc: 0.3040 | Valid Acc: 0.3421
+Epoch(cuda) 100 | Loss: 189.8521 | Train Acc: 0.3040 | Valid Acc: 0.3421
+Traceback (most recent call last):
+  File "c:\Users\ngins\Git\python.yolo\JonginSeok\부록04_BottleCNN_v02.py", line 200, in <module>
+    predict_image(data_path+'/test/bad-contamination/012_png.rf.649902ef1adcb13616394303e1fd0bdd_ratio80.jpg')  # 실제 파일 경로 지정
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\ngins\Git\python.yolo\JonginSeok\부록04_BottleCNN_v02.py", line 192, in predict_image
+    output = model(image_tensor)
+  File "C:\ProgramData\anaconda3\envs\torch_venv\Lib\site-packages\torch\nn\modules\module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\anaconda3\envs\torch_venv\Lib\site-packages\torch\nn\modules\module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+TypeError: BottleCNNWithSize.forward() missing 1 required positional argument: 'size_feats'
