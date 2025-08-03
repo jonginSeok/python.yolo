@@ -374,3 +374,20 @@ Traceback (most recent call last):
   File "C:\ProgramData\anaconda3\envs\torch_venv\Lib\site-packages\torch\nn\modules\module.py", line 1762, in _call_impl
     return forward_call(*args, **kwargs)
 TypeError: BottleCNNWithSize.forward() missing 1 required positional argument: 'size_feats'
+
+
+Validating JonginSeok\dataset\result\yolo11n_bottle_4class13\weights\best.pt...
+Ultralytics 8.3.173  Python-3.13.5 torch-2.7.1+cu128 CUDA:0 (NVIDIA GeForce RTX 2070 Super with Max-Q Design, 8192MiB)
+YOLO11n summary (fused): 100 layers, 2,582,932 parameters, 0 gradients, 6.3 GFLOPs
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100%|██████████| 4/4 [00:01<00:00,  2.51it/s]
+                   all        114        114      0.949      0.994      0.995      0.994
+      bad-broken_large         23         23          1      0.976      0.995      0.989
+      bad-broken_small         32         32      0.862          1      0.995      0.995
+     bad-contamination         30         30      0.942          1      0.995      0.995
+           bottle-good         29         29      0.991          1      0.995      0.995
+Speed: 0.3ms preprocess, 3.3ms inference, 0.0ms loss, 2.7ms postprocess per image
+Results saved to JonginSeok\dataset\result\yolo11n_bottle_4class13
+
+
+- 간단한 CRUD 웹 프로젝트:
+→ MySQL 또는 PostgreSQL (특히 Django 사용 시 PostgreSQL이 더 적합)

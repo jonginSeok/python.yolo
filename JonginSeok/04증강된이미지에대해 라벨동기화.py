@@ -3,17 +3,17 @@ import shutil
 
 # 라벨 매핑 딕셔너리
 label_map = {
-    'bad-broken_large': '0',
-    'bad-broken_small': '1',
-    'bad-contamination': '2',
-    'bottle-good': '3',
+    "bad-broken_large": "0",
+    "bad-broken_small": "1",
+    "bad-contamination": "2",
+    "bottle-good": "3",
 }
 reverse_map = {v: k for k, v in label_map.items()}
 
 # 경로 설정
-labels_folder = '/Users/ngins/Git/python.yolo/JonginSeok/dataset/labels/'
-image_folder = '/Users/ngins/Git/python.yolo/JonginSeok/dataset/images/'
-output_root = '/Users/ngins/Git/python.yolo/JonginSeok/dataset/'
+labels_folder = "/Users/ngins/Git/python.yolo/JonginSeok/dataset/labels/"
+image_folder = "/Users/ngins/Git/python.yolo/JonginSeok/dataset/images/"
+output_root = "/Users/ngins/Git/python.yolo/JonginSeok/dataset/"
 
 # train_void_test = 'train' # valid, test
 # labels_folder = f'/Users/ngins/Git/python.yolo/JonginSeok/dataset/{train_void_test}/labels/'
@@ -31,12 +31,12 @@ for fname in os.listdir(image_folder):
 
 # 라벨 파일 처리
 for label_file in os.listdir(labels_folder):
-    if not label_file.endswith('.txt'):
+    if not label_file.endswith(".txt"):
         continue
-    
+
     label_path = os.path.join(labels_folder, label_file)
 
-    with open(label_path, 'r') as f:
+    with open(label_path, "r") as f:
         line = f.readline().strip()
         parts = line.split()
         if len(parts) < 2:
@@ -48,10 +48,10 @@ for label_file in os.listdir(labels_folder):
             continue
 
         label_name = reverse_map[image_key]
-        
+
         class_folder = os.path.join(output_root, label_name)
-        image_subdir = os.path.join(class_folder, 'images')
-        label_subdir = os.path.join(class_folder, 'labels')
+        image_subdir = os.path.join(class_folder, "images")
+        label_subdir = os.path.join(class_folder, "labels")
         os.makedirs(image_subdir, exist_ok=True)
         os.makedirs(label_subdir, exist_ok=True)
 
@@ -59,17 +59,19 @@ for label_file in os.listdir(labels_folder):
         basename, extension = os.path.splitext(label_file)
 
         # 🖼 이미지 복사
-        img_ext = 'jpg'
+        img_ext = "jpg"
         img_nm = f"{basename}.{img_ext}"
-        
+
         if basename in image_dict:
             src_img = os.path.join(image_folder, image_dict[basename])
             dst_img = os.path.join(image_subdir, image_dict[basename])
             shutil.copy(src_img, dst_img)
             # print(f"✅ 이미지 복사됨 → {label_name}/images/{image_dict[basename]}")
             print(f"✅ 이미지 복사됨 → {label_name}/{image_dict[basename]}")
-        else:     
-            print(f"⚠️ 이미지 없음: {img_nm} basename:{basename} → {label_name}/images/{image_dict[basename]} src_img:{src_img} dst_img:{dst_img}  .... label_name: {label_name}")
+        else:
+            print(
+                f"⚠️ 이미지 없음: {img_nm} basename:{basename} → {label_name}/images/{image_dict[basename]} src_img:{src_img} dst_img:{dst_img}  .... label_name: {label_name}"
+            )
 
         # 📄 라벨 복사
         dst_label = os.path.join(label_subdir, label_file)
