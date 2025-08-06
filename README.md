@@ -40,9 +40,9 @@ python manage.py runserver
 ### 7. 개발 환경
 ```bash
 git url : https://github.com/jonginSeok/python.yolo.git
-database : PostgreSQL 17
+database : PostgreSQL 17.5 (AWS)
 tool : VS Code, SQLGate for PostgreSQL , EditPlus, UltraEdit, OneNote(sticky notes)
-
+site : copilot, lovable.dev, supabase.com 
 
 브라우저에서 `http://127.0.0.1:8000`으로 접속하면 대시보드를 확인할 수 있습니다.
 
