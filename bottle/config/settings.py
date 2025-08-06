@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 
+# from decouple import config  # 2025.08.06 ngins7512 추가/대시보드 관련
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -24,8 +26,11 @@ SECRET_KEY = "django-insecure-4b-f#wizd(_q(o-mfxpvnt*5o1t2#@lk7q(yf_wgm@=ru*p9an
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+# 2025.08.06 ngins7512 추가/대시보드 관련
+# DEBUG = config("DEBUG", default=True, cast=bool)
 
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]
 
 
 # Application definition
@@ -38,7 +43,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "accounts",
-    "app",  # ← 이게 빠져 있으면 Django가 templatetags를 못 찾음!
+    "app",  # ← 이게 빠져 있으면 Django가 templatetags를 못 찾음! 로그인 관련
+    # "corsheaders",  # 2025.08.06 ngins7512 대시보드 관련
+    "training",  # 2025.08.06 ngins7512 대시보드 관련
 ]
 
 MIDDLEWARE = [
@@ -52,17 +59,18 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "config.urls"
+# ROOT_URLCONF = 'yolo_dashboard.urls'  # 2025.08.06 ngins7512 추가/대시보드 관련은 이렇게
 
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         # "DIRS": [],
-        "DIRS": [
-            BASE_DIR / "app" / "templates"
-        ],  # 새 템플릿 경로 # ngins7512 / 2025.08.06
+        # 새 템플릿 경로 # ngins7512 / 2025.08.06
+        "DIRS": [BASE_DIR / "app" / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
+                "django.template.context_processors.debug",  # 2025.08.06 ngins7512 추가/대시보드 관련
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
@@ -72,6 +80,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
+# WSGI_APPLICATION = 'yolo_dashboard.wsgi.application' # 2025.08.06 ngins7512 추가/대시보드 관련은 이렇게
 
 
 # Database
@@ -124,9 +133,11 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
+# LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "ko-kr"  # 2025.08.06 ngins7512 추가/대시보드 관련
 
-TIME_ZONE = "UTC"
+# TIME_ZONE = "UTC"
+TIME_ZONE = "Asia/Seoul"  # 2025.08.06 ngins7512 추가/대시보드 관련
 
 USE_I18N = True
 
@@ -138,7 +149,15 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# 2025.08.06 ngins7512 추가/대시보드 관련소스에서 추가
+# STATICFILES_DIRS = [BASE_DIR / "static"] # 2025.08.06 ngins7512 추가/대시보드 관련
+# STATIC_ROOT = BASE_DIR / "staticfiles" # 2025.08.06 ngins7512 추가/대시보드 관련
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+CORS_ALLOW_ALL_ORIGINS = True

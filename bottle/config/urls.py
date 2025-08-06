@@ -18,7 +18,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth.views import LogoutView
-
+from django.conf import settings  # 2025.08.06 ngins7512 추가/대시보드 관련
+from django.conf.urls.static import static  # 2025.08.06 ngins7512 추가/대시보드 관련
 
 urlpatterns = [
     # ngins7512 / 2025.08.06
@@ -28,4 +29,5 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("accounts.urls")),
     path("accounts/", include("django.contrib.auth.urls")),  # 로그인/로그아웃 뷰
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# 2025.08.06 ngins7512 추가/대시보드 관련 + static 부터
