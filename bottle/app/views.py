@@ -1,15 +1,13 @@
-# from django.shortcuts import render, redirect
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-
-# from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login
 
 from django.contrib.auth.views import LoginView
 
 
 class CustomLoginView(LoginView):
     # template_name = "registration/login.html"
-    template_name = "login.html"
+    template_name = "login.html"  # ngins7512 / 2025.08.06
 
 
 login_view = CustomLoginView.as_view()

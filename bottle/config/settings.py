@@ -29,7 +29,7 @@ ALLOWED_HOSTS = []
 
 
 # Application definition
-
+# form_tags / ngins7512 / 2025.08.06
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "accounts",
+    "app",  # ← 이게 빠져 있으면 Django가 templatetags를 못 찾음!
 ]
 
 MIDDLEWARE = [
@@ -56,7 +57,9 @@ TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         # "DIRS": [],
-        "DIRS": [BASE_DIR / "app" / "templates"],  # 새 템플릿 경로
+        "DIRS": [
+            BASE_DIR / "app" / "templates"
+        ],  # 새 템플릿 경로 # ngins7512 / 2025.08.06
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -81,6 +84,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 #     }
 # }
 
+# ngins7512 / 2025.08.05
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",

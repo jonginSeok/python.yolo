@@ -5,8 +5,8 @@ from django.contrib.auth.views import LoginView
 
 
 class CustomLoginView(LoginView):
-    # template_name = "registration/login.html"
-    template_name = "login.html"
+    template_name = "registration/login.html"  # accounts/login
+    # template_name = "login.html" # app/login
 
 
 login_view = CustomLoginView.as_view()

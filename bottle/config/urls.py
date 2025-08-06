@@ -20,7 +20,7 @@ from django.urls import path, include
 
 
 urlpatterns = [
-    path("", include("app.urls")),  # 앱 URL을 포함시킴
+    path("", include("app.urls")),  # 앱 URL을 포함시킴 # ngins7512 / 2025.08.06
     path("admin/", admin.site.urls),
     path("accounts/", include("accounts.urls")),
     path("accounts/", include("django.contrib.auth.urls")),  # 로그인/로그아웃 뷰
