@@ -55,7 +55,8 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        # "DIRS": [],
+        "DIRS": [BASE_DIR / "app" / "templates"],  # 새 템플릿 경로
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -90,6 +91,9 @@ DATABASES = {
         "PORT": "5432",  # PostgreSQL 기본 포트
     }
 }
+
+LOGIN_URL = "/login/"
+LOGIN_REDIRECT_URL = "/"
 
 
 # Password validation
