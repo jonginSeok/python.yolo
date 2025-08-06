@@ -94,13 +94,24 @@ WSGI_APPLICATION = "config.wsgi.application"
 # }
 
 # ngins7512 / 2025.08.05
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.postgresql",
+#         "NAME": "postgres",  # DB 이름
+#         "USER": "postgres",  # 사용자 이름
+#         "PASSWORD": "yolo11ai",  # 비밀번호
+#         "HOST": "localhost",  # 또는 실제 DB 서버 주소
+#         "PORT": "5432",  # PostgreSQL 기본 포트
+#     }
+# }
+# ngins7512 / 2025.08.05
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "postgres",  # DB 이름
         "USER": "postgres",  # 사용자 이름
         "PASSWORD": "yolo11ai",  # 비밀번호
-        "HOST": "localhost",  # 또는 실제 DB 서버 주소
+        "HOST": "postgres.cxg2cwseemwh.ap-northeast-2.rds.amazonaws.com",  # 또는 실제 DB 서버 주소
         "PORT": "5432",  # PostgreSQL 기본 포트
     }
 }

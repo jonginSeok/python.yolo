@@ -24,8 +24,11 @@ from django.conf.urls.static import static  # 2025.08.06 ngins7512 추가/대시
 urlpatterns = [
     # ngins7512 / 2025.08.06
     path("", include("app.urls")),  # 앱 URL을 포함시킴
+    
     # ngins7512 / 2025.08.06 / 명시적으로 등록
-    path("/", LogoutView.as_view(template_name="logout.html"), name="logout"),
+    # path("/", LogoutView.as_view(template_name="logout.html"), name="logout"),
+    # ngins7512 / 2025.08.06.001 /
+
     path("admin/", admin.site.urls),
     path("accounts/", include("accounts.urls")),
     path("accounts/", include("django.contrib.auth.urls")),  # 로그인/로그아웃 뷰
