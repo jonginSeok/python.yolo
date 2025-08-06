@@ -118,8 +118,8 @@ DATABASES = {
 
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
-# LOGIN_REDIRECT_URL = None
 LOGOUT_REDIRECT_URL = "/login/"
+# LOGIN_REDIRECT_URL = None
 
 
 # Password validation
