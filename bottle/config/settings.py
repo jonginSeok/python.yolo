@@ -44,8 +44,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "accounts",
     "app",  # ← 이게 빠져 있으면 Django가 templatetags를 못 찾음! 로그인 관련
-    # "corsheaders",  # 2025.08.06 ngins7512 대시보드 관련
-    "training",  # 2025.08.06 ngins7512 대시보드 관련
+    "corsheaders",  # 2025.08.06 ngins7512 대시보드 관련
+    "training",     # 2025.08.06 ngins7512 대시보드 관련
 ]
 
 MIDDLEWARE = [
@@ -126,18 +126,10 @@ LOGOUT_REDIRECT_URL = "/login/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",},
 ]
 
 
@@ -158,7 +150,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 
 
 # Default primary key field type
