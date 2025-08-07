@@ -43,12 +43,14 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "accounts",
+    "api",
     "app",  # ← 이게 빠져 있으면 Django가 templatetags를 못 찾음! 로그인 관련
-    # "corsheaders",  # 2025.08.06 ngins7512 대시보드 관련
+    "corsheaders",  # 2025.08.06 ngins7512 대시보드 관련
     "training",  # 2025.08.06 ngins7512 대시보드 관련
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",  # 2025.08.06 ngins7512 추가/대시보드 관련
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -66,7 +68,13 @@ TEMPLATES = [
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         # "DIRS": [],
         # 새 템플릿 경로 # ngins7512 / 2025.08.06
-        "DIRS": [BASE_DIR / "app" / "templates"],
+        "DIRS": [
+            BASE_DIR / 'accounts' / 'templates',
+            BASE_DIR / 'api' / 'templates',
+            BASE_DIR / "app" / "templates",
+            # BASE_DIR / "config" / "templates",
+            BASE_DIR / "training" / "templates",
+        ],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -126,18 +134,10 @@ LOGOUT_REDIRECT_URL = "/login/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",},
 ]
 
 
@@ -159,16 +159,17 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
-
+# STATICFILES_DIRS = [BASE_DIR / "static"] # 2025.08.06 ngins7512 추가/대시보드 관련
+# STATIC_ROOT = BASE_DIR / "staticfiles" # 2025.08.06 ngins7512 추가/대시보드 관련
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # 2025.08.06 ngins7512 추가/대시보드 관련소스에서 추가
-# STATICFILES_DIRS = [BASE_DIR / "static"] # 2025.08.06 ngins7512 추가/대시보드 관련
-# STATIC_ROOT = BASE_DIR / "staticfiles" # 2025.08.06 ngins7512 추가/대시보드 관련
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
 CORS_ALLOW_ALL_ORIGINS = True
