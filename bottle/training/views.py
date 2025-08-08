@@ -12,6 +12,9 @@ from .models import TrainingSession, TrainingMetric, ClassMetric
 def training_list(request):
     return render(request, "training/training_list.html")
 
+def training_input(request):
+    return render(request, "training/training_input.html")
+
 
 def training_output(request):
     """메인 대시보드 뷰"""
