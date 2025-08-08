@@ -9,6 +9,10 @@ import plotly.utils
 
 from .models import TrainingSession, TrainingMetric, ClassMetric
 
+def training_list(request):
+    return render(request, "training/training_list.html")
+
+
 def training_output(request):
     """메인 대시보드 뷰"""
     # 최신 훈련 세션 가져오기
