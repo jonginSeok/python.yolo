@@ -9,13 +9,16 @@ import plotly.utils
 
 from .models import TrainingSession, TrainingMetric, ClassMetric
 
+
+# 학습 세션 목록(다건 조회)
 def training_list(request):
     return render(request, "training/training_list.html")
 
+# 학습 세션 입력
 def training_input(request):
-    return render(request, "training/training_input.html")
+    return render(request, 'training/training_input.html')
 
-
+# 학습 세션 출력(단건 조회)
 def training_output(request):
     """메인 대시보드 뷰"""
     # 최신 훈련 세션 가져오기
