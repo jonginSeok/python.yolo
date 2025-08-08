@@ -46,7 +46,11 @@ INSTALLED_APPS = [
     "api",
     "app",  # ← 이게 빠져 있으면 Django가 templatetags를 못 찾음! 로그인 관련
     "corsheaders",  # 2025.08.06 ngins7512 대시보드 관련
+<<<<<<< HEAD
     "training",  # 2025.08.06 ngins7512 대시보드 관련
+=======
+    "training",     # 2025.08.06 ngins7512 대시보드 관련
+>>>>>>> 31845a978bdd3dd13f2445b96528633cab90c6e1
 ]
 
 MIDDLEWARE = [
@@ -158,9 +162,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "static/"
-# STATICFILES_DIRS = [BASE_DIR / "static"] # 2025.08.06 ngins7512 추가/대시보드 관련
-# STATIC_ROOT = BASE_DIR / "staticfiles" # 2025.08.06 ngins7512 추가/대시보드 관련
+STATIC_URL = "/static/"
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

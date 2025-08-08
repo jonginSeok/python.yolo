@@ -24,17 +24,17 @@ from django.conf.urls.static import static  # 2025.08.06 ngins7512 추가/대시
 
 urlpatterns = [
     # ngins7512 / 2025.08.06
-    path("", include("app.urls")),  # 앱 URL을 포함시킴|
-    path("admin/", admin.site.urls),
-    
-    path("api/", include("api.urls")),  # API 관련 URL 포함
-    path("training/", include("training.urls")),  # 훈련 관련 URL 포함
-    
-    path("accounts/", include("accounts.urls")),
-    path("accounts/", include("django.contrib.auth.urls")),  # 로그인/로그아웃 뷰
+    # path("", include("app.urls")),  # 앱 URL을 포함시킴
     
     # ngins7512 / 2025.08.06 / 명시적으로 등록
     # path("/", LogoutView.as_view(template_name="logout.html"), name="logout"),
     # ngins7512 / 2025.08.06.001 /
-] # + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+    path("admin/", admin.site.urls),
+    path("", include("app.urls")),  # 앱 URL을 포함시킴
+    path("training/", include("training.urls")),  # 2025.08.06 ngins7512 추가/대시보드 관련
+    
+    path("accounts/", include("accounts.urls")),
+    path("accounts/", include("django.contrib.auth.urls")),  # 로그인/로그아웃 뷰
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 # 2025.08.06 ngins7512 추가/대시보드 관련 + static 부터
