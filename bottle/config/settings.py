@@ -43,14 +43,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "accounts",
-    "api",
     "app",  # ← 이게 빠져 있으면 Django가 templatetags를 못 찾음! 로그인 관련
     "corsheaders",  # 2025.08.06 ngins7512 대시보드 관련
-<<<<<<< HEAD
-    "training",  # 2025.08.06 ngins7512 대시보드 관련
-=======
     "training",     # 2025.08.06 ngins7512 대시보드 관련
->>>>>>> 31845a978bdd3dd13f2445b96528633cab90c6e1
 ]
 
 MIDDLEWARE = [
