@@ -9,7 +9,7 @@ import plotly.utils
 
 from .models import TrainingSession, TrainingMetric, ClassMetric
 
-def train_result(request):
+def training_output(request):
     """메인 대시보드 뷰"""
     # 최신 훈련 세션 가져오기
     try:
@@ -56,7 +56,7 @@ def train_result(request):
         'loss_change': round(loss_change, 1),
     }
     
-    return render(request, 'training/train_result.html', context)
+    return render(request, 'training/training_output.html', context)
 
 def training_data_api(request, session_id):
     """훈련 데이터 API"""
