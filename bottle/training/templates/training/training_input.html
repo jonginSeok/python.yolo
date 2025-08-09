@@ -1,9 +1,10 @@
-{% load form_tags %}
+{% load static %}
 <!DOCTYPE html>
 
 <html lang="ko-kr" dir="ltr">
   <head>
     <title>training session 추가 | Django 사이트 관리</title>
+    <link rel="icon" href="{% static 'favicon.ico' %}">
     <link rel="stylesheet" href="/static/admin/css/base.css" />
 
     <link rel="stylesheet" href="/static/admin/css/dark_mode.css" />
@@ -78,122 +79,31 @@
       <nav aria-label="사용자 위치">
         <div class="breadcrumbs">
           <a href="/admin/">홈</a>
-          &rsaquo; <a href="/admin/training/">Training</a> &rsaquo; <a href="/admin/training/trainingsession/">Training sessions</a>
-          &rsaquo; training session 추가
+          &rsaquo; <a href="/training/">Training</a> &rsaquo; training session 추가
         </div>
       </nav>
 
       <div class="main" id="main">
-        <button class="sticky toggle-nav-sidebar" id="toggle-nav-sidebar" aria-label="토글 메뉴"></button>
-        <nav class="sticky" id="nav-sidebar" aria-label="사이드바">
-          <input type="search" id="nav-filter" placeholder="필터에 타이핑 시작..." aria-label="탐색 항목 필터링" />
-
-          <div class="app-training module current-app">
-            <table>
-              <caption>
-                <a href="/admin/training/" class="section" title="Training 애플리케이션의 모델">Training</a>
-              </caption>
-              <thead class="visually-hidden">
-                <tr>
-                  <th scope="col">Model name</th>
-                  <th scope="col">Add link</th>
-                  <th scope="col">Change or view list link</th>
-                </tr>
-              </thead>
-
-              <tr class="model-classmetric">
-                <th scope="row" id="training-classmetric">
-                  <a href="/admin/training/classmetric/">Class metrics</a>
-                </th>
-
-                <td><a href="/admin/training/classmetric/add/" class="addlink" aria-describedby="training-classmetric">추가</a></td>
-              </tr>
-
-              <tr class="model-trainingmetric">
-                <th scope="row" id="training-trainingmetric">
-                  <a href="/admin/training/trainingmetric/">Training metrics</a>
-                </th>
-
-                <td><a href="/admin/training/trainingmetric/add/" class="addlink" aria-describedby="training-trainingmetric">추가</a></td>
-              </tr>
-
-              <tr class="model-trainingsession current-model">
-                <th scope="row" id="training-trainingsession">
-                  <a href="/admin/training/trainingsession/" aria-current="page">Training sessions</a>
-                </th>
-
-                <td><a href="/admin/training/trainingsession/add/" class="addlink" aria-describedby="training-trainingsession">추가</a></td>
-              </tr>
-            </table>
-          </div>
-
-          <div class="app-auth module">
-            <table>
-              <caption>
-                <a href="/admin/auth/" class="section" title="인증 및 권한 애플리케이션의 모델">인증 및 권한</a>
-              </caption>
-              <thead class="visually-hidden">
-                <tr>
-                  <th scope="col">Model name</th>
-                  <th scope="col">Add link</th>
-                  <th scope="col">Change or view list link</th>
-                </tr>
-              </thead>
-
-              <tr class="model-group">
-                <th scope="row" id="auth-group">
-                  <a href="/admin/auth/group/">그룹</a>
-                </th>
-
-                <td><a href="/admin/auth/group/add/" class="addlink" aria-describedby="auth-group">추가</a></td>
-              </tr>
-
-              <tr class="model-user">
-                <th scope="row" id="auth-user">
-                  <a href="/admin/auth/user/">사용자(들)</a>
-                </th>
-
-                <td><a href="/admin/auth/user/add/" class="addlink" aria-describedby="auth-user">추가</a></td>
-              </tr>
-            </table>
-          </div>
-        </nav>
-
         <main id="content-start" class="content" tabindex="-1">
           <!-- Content -->
           <div id="content" class="colM">
             <h1>training session 추가</h1>
 
-
-
             <div id="content-main">
-                {# training/templates/training/training_form.html #}
-                <form enctype="multipart/form-data" method="post" id="trainingsession_form" >
+              {# training/templates/training/training_form.html #}
+              <form enctype="multipart/form-data" method="post" action="" id="trainingsession_form">
                 {% csrf_token %} {{ form.as_p }}
                 <div>
                   <fieldset class="module aligned">
-                    
-
-
-
-
                     <div class="form-row field-model_name">
                       <div>
                         <div class="flex-container">
                           <label class="required" for="model_zip_file">데이터 압축파일:</label>
-                          <!-- <input type="file" name="model_zip_file" class="vFileField" maxlength="100" required id="model_zip_file" /> -->
-
-                          
-                          {{form.image|add_class:'form-control-file' }} 
-                          
+                          <input type="file" name="model_zip_file" class="vFileField" maxlength="100" required id="model_zip_file" />
                         </div>
                       </div>
                     </div>
 
-
-
-                    
-                    
                     <div class="form-row field-model_name">
                       <div>
                         <div class="flex-container">
