@@ -71,7 +71,6 @@ TEMPLATES = [
         # 새 템플릿 경로 # ngins7512 / 2025.08.06
         "DIRS": [
             BASE_DIR / 'accounts' / 'templates',
-            BASE_DIR / 'api' / 'templates',
             BASE_DIR / "app" / "templates",
             BASE_DIR / "training" / "templates",
         ],
@@ -158,7 +157,12 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "/static/"
+STATIC_URL = "static/"
+# STATIC_ROOT = BASE_DIR / "staticfiles" # 2025.08.10 ngins7512
+
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
 
 
 # Default primary key field type

@@ -17,8 +17,8 @@ def training_list(request):
     return render(request, 'training/training_list.html')
 
 # 학습 세션 입력
-def training_form(request):
-    return render(request, 'training/training_form.html')
+def training_input(request):
+    return render(request, 'training/training_input.html')
 
 
 
