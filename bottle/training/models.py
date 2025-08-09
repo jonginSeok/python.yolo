@@ -22,6 +22,15 @@ class TrainingSession(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    # 단일 파일 첨부 필드
+    attachment = models.FileField(
+        upload_to='trainings/%Y/%m/%d/',
+        null=True,
+        blank=True,
+        help_text='관련 파일을 첨부하세요.'
+    )
+
+    
     def __str__(self):
         return f"{self.model_name} v{self.version}"
     

@@ -1,4 +1,4 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.db.models import Q, Avg, Max, Min
 from django.utils import timezone
@@ -8,15 +8,47 @@ import plotly.graph_objs as go
 import plotly.utils
 
 from .models import TrainingSession, TrainingMetric, ClassMetric
+from .forms import TrainingSessionForm
+
 
 
 # 학습 세션 목록(다건 조회)
 def training_list(request):
-    return render(request, "training/training_list.html")
+    return render(request, 'training/training_list.html')
 
 # 학습 세션 입력
-def training_input(request):
-    return render(request, 'training/training_input.html')
+def training_form(request):
+    return render(request, 'training/training_form.html')
+
+
+
+
+
+# training/views.py
+def training_create(request):
+    if request.method == 'POST':
+        form = TrainingSessionForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('trainings:list')
+    else:
+        form = TrainingSessionForm()
+    return render(request, 'training/training_form.html', {'form': form})
+
+def training_update(request, pk):
+    session = get_object_or_404(TrainingSession, pk=pk)
+    if request.method == 'POST':
+        form = TrainingSessionForm(request.POST, request.FILES, instance=session)
+        if form.is_valid():
+            form.save()
+            return redirect('trainings:detail', pk=pk)
+    else:
+        form = TrainingSessionForm(instance=session)
+    return render(request, 'training/training_form.html', {'form': form})
+
+
+
+
 
 # 학습 세션 출력(단건 조회)
 def training_output(request):
