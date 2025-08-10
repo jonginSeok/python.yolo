@@ -1,14 +1,23 @@
-{% extends 'base.html' %} {% block content %} {% load custom_filters %}
+{% extends 'base.html' %}
+
+{% load static %}
+{% load custom_filters %}
+
+{% block content %}
 <div class="min-h-screen bg-background p-6">
     <div class="max-w-7xl mx-auto space-y-6">
+        
         <!-- Header -->
         <div class="space-y-2">
             <h1 class="text-3xl font-bold text-foreground">YOLO Training Dashboard</h1>
-            <p class="text-muted-foreground">객체 탐지 모델 훈련 진행 상황과 성능 메트릭을 모니터링하세요</p>
+            <p class="text-muted-foreground">
+                객체 탐지 모델 훈련 진행 상황과 성능 메트릭을 모니터링하세요
+            </p>
         </div>
 
         <!-- Key Metrics -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            
             <!-- Current mAP@0.5 -->
             <div class="bg-card border border-border rounded-lg p-4">
                 <div class="flex items-center justify-between mb-2">
@@ -74,6 +83,7 @@
 
         <!-- Model Information and Class Metrics -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
             <!-- Model Info -->
             <div class="bg-card border border-border rounded-lg">
                 <div class="p-4 border-b border-border">
@@ -89,7 +99,7 @@
                     </div>
                     <p class="text-sm text-muted-foreground">Version {{ session.version }}</p>
                 </div>
-
+                
                 <div class="p-4 space-y-4">
                     {% if session.status == 'training' %}
                     <div class="space-y-2">
@@ -102,7 +112,7 @@
                         </div>
                     </div>
                     {% endif %}
-
+                    
                     <div class="grid grid-cols-2 gap-4 text-sm">
                         <div class="flex items-center space-x-2">
                             <i data-lucide="clock" class="w-4 h-4 text-muted-foreground"></i>
@@ -111,7 +121,7 @@
                                 <p class="text-foreground font-medium">{{ session.training_duration }}</p>
                             </div>
                         </div>
-
+                        
                         <div class="flex items-center space-x-2">
                             <i data-lucide="cpu" class="w-4 h-4 text-muted-foreground"></i>
                             <div>
@@ -119,7 +129,7 @@
                                 <p class="text-foreground font-medium">{{ session.gpu_info }}</p>
                             </div>
                         </div>
-
+                        
                         <div class="flex items-center space-x-2">
                             <i data-lucide="memory-stick" class="w-4 h-4 text-muted-foreground"></i>
                             <div>
@@ -127,7 +137,7 @@
                                 <p class="text-foreground font-medium">{{ session.memory_info }}</p>
                             </div>
                         </div>
-
+                        
                         <div class="flex items-center space-x-2">
                             <i data-lucide="hard-drive" class="w-4 h-4 text-muted-foreground"></i>
                             <div>
@@ -152,7 +162,7 @@
                                 <span class="text-sm font-medium text-foreground">{{ metric.class_name }}</span>
                                 <span class="text-xs text-muted-foreground">{{ metric.instances }} instances</span>
                             </div>
-
+                            
                             <div class="grid grid-cols-3 gap-2 text-xs">
                                 <div>
                                     <div class="flex justify-between mb-1">
@@ -163,7 +173,7 @@
                                         <div class="bg-primary h-1 rounded-full" style="width: {{ metric.precision|mul:100 }}%"></div>
                                     </div>
                                 </div>
-
+                                
                                 <div>
                                     <div class="flex justify-between mb-1">
                                         <span class="text-muted-foreground">Recall</span>
@@ -173,7 +183,7 @@
                                         <div class="bg-primary h-1 rounded-full" style="width: {{ metric.recall|mul:100 }}%"></div>
                                     </div>
                                 </div>
-
+                                
                                 <div>
                                     <div class="flex justify-between mb-1">
                                         <span class="text-muted-foreground">F1-Score</span>
@@ -193,13 +203,14 @@
 
         <!-- Training Charts -->
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            
             <!-- Loss Chart -->
             <div class="bg-card border border-border rounded-lg">
                 <div class="p-4 border-b border-border">
                     <h2 class="text-lg font-semibold text-foreground">Training & Validation Loss</h2>
                 </div>
                 <div class="p-4">
-                    <div id="loss-chart" style="height: 350px"></div>
+                    <div id="loss-chart" style="height: 350px;"></div>
                 </div>
             </div>
 
@@ -209,7 +220,7 @@
                     <h2 class="text-lg font-semibold text-foreground">Mean Average Precision (mAP)</h2>
                 </div>
                 <div class="p-4">
-                    <div id="map-chart" style="height: 350px"></div>
+                    <div id="map-chart" style="height: 350px;"></div>
                 </div>
             </div>
         </div>
@@ -220,27 +231,28 @@
     // Render Loss Chart
     var lossChartDiv = document.getElementById('loss-chart');
     var lossData = {{ loss_chart|safe }};
-
+    
     // Update layout for dark theme
     lossData.layout.plot_bgcolor = 'rgba(0,0,0,0)';
     lossData.layout.paper_bgcolor = 'rgba(0,0,0,0)';
     lossData.layout.font = {color: 'hsl(0, 0%, 98%)'};
     lossData.layout.xaxis.gridcolor = 'hsl(240, 3.7%, 15.9%)';
     lossData.layout.yaxis.gridcolor = 'hsl(240, 3.7%, 15.9%)';
-
+    
     Plotly.newPlot(lossChartDiv, lossData.data, lossData.layout, {responsive: true});
 
     // Render mAP Chart
     var mapChartDiv = document.getElementById('map-chart');
     var mapData = {{ map_chart|safe }};
-
+    
     // Update layout for dark theme
     mapData.layout.plot_bgcolor = 'rgba(0,0,0,0)';
     mapData.layout.paper_bgcolor = 'rgba(0,0,0,0)';
     mapData.layout.font = {color: 'hsl(0, 0%, 98%)'};
     mapData.layout.xaxis.gridcolor = 'hsl(240, 3.7%, 15.9%)';
     mapData.layout.yaxis.gridcolor = 'hsl(240, 3.7%, 15.9%)';
-
+    
     Plotly.newPlot(mapChartDiv, mapData.data, mapData.layout, {responsive: true});
 </script>
+
 {% endblock %}

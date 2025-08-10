@@ -2,298 +2,362 @@
 <!DOCTYPE html>
 
 <html lang="ko-kr" dir="ltr">
-  <head>
-    <title>training session 추가 | Django 사이트 관리</title>
-    <link rel="icon" href="{% static 'favicon.ico' %}">
-    <link rel="stylesheet" href="/static/admin/css/base.css" />
+    <head>
+        <title>training session 추가 | Django 사이트 관리</title>
+        <link rel="icon" href="{% static 'favicon.ico' %}" />
+        <link rel="stylesheet" href="/static/admin/css/base.css" />
 
-    <link rel="stylesheet" href="/static/admin/css/dark_mode.css" />
-    <script src="/static/admin/js/theme.js"></script>
+        <link rel="stylesheet" href="/static/admin/css/dark_mode.css" />
+        <script src="/static/admin/js/theme.js"></script>
 
-    <link rel="stylesheet" href="/static/admin/css/nav_sidebar.css" />
-    <script src="/static/admin/js/nav_sidebar.js" defer></script>
+        <link rel="stylesheet" href="/static/admin/css/nav_sidebar.css" />
+        <script src="/static/admin/js/nav_sidebar.js" defer></script>
 
-    <link rel="stylesheet" href="/static/admin/css/forms.css" />
+        <link rel="stylesheet" href="/static/admin/css/forms.css" />
 
-    <script src="/admin/jsi18n/"></script>
-    <script src="/static/admin/js/vendor/jquery/jquery.js"></script>
-    <script src="/static/admin/js/calendar.js"></script>
-    <script src="/static/admin/js/jquery.init.js"></script>
-    <script src="/static/admin/js/admin/DateTimeShortcuts.js"></script>
-    <script src="/static/admin/js/core.js"></script>
-    <script src="/static/admin/js/admin/RelatedObjectLookups.js"></script>
-    <script src="/static/admin/js/actions.js"></script>
-    <script src="/static/admin/js/urlify.js"></script>
-    <script src="/static/admin/js/prepopulate.js"></script>
-    <script src="/static/admin/js/vendor/xregexp/xregexp.js"></script>
+        <script src="/admin/jsi18n/"></script>
+        <script src="/static/admin/js/vendor/jquery/jquery.js"></script>
+        <script src="/static/admin/js/calendar.js"></script>
+        <script src="/static/admin/js/jquery.init.js"></script>
+        <script src="/static/admin/js/admin/DateTimeShortcuts.js"></script>
+        <script src="/static/admin/js/core.js"></script>
+        <script src="/static/admin/js/admin/RelatedObjectLookups.js"></script>
+        <script src="/static/admin/js/actions.js"></script>
+        <script src="/static/admin/js/urlify.js"></script>
+        <script src="/static/admin/js/prepopulate.js"></script>
+        <script src="/static/admin/js/vendor/xregexp/xregexp.js"></script>
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="/static/admin/css/responsive.css" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="/static/admin/css/responsive.css" />
 
-    <meta name="robots" content="NONE,NOARCHIVE" />
-  </head>
+        <meta name="robots" content="NONE,NOARCHIVE" />
+    </head>
 
-  <body class="app-training model-trainingsession change-form" data-admin-utc-offset="32400">
-    <a href="#content-start" class="skip-to-content-link">메인 콘텐츠로 이동</a>
-    <!-- Container -->
-    <div id="container">
-      <!-- Header -->
+    <body class="app-training model-trainingsession change-form" data-admin-utc-offset="32400">
+        <a href="#content-start" class="skip-to-content-link">메인 콘텐츠로 이동</a>
+        <!-- Container -->
+        <div id="container">
+            <!-- Header -->
 
-      <header id="header">
-        <div id="branding">
-          <div id="site-name"><a href="/admin/">Django 관리</a></div>
-        </div>
-
-        <div id="user-tools">
-          환영합니다,
-          <strong>종인</strong>.
-
-          <a href="/">사이트 보기</a> /
-
-          <a href="/admin/password_change/">비밀번호 변경</a> /
-
-          <form id="logout-form" method="post" action="/admin/logout/">
-            {% csrf_token %} {{ form.as_p }}
-            <button type="submit">로그아웃</button>
-          </form>
-
-          <button class="theme-toggle">
-            <span class="visually-hidden theme-label-when-auto">테마 토글 (현재 테마:자동)</span>
-            <span class="visually-hidden theme-label-when-light">테마 토글 (현재 테마: 밝음)</span>
-            <span class="visually-hidden theme-label-when-dark">테마 토글 (현재 테마: 어두움)</span>
-            <svg aria-hidden="true" class="theme-icon-when-auto">
-              <use xlink:href="#icon-auto" />
-            </svg>
-            <svg aria-hidden="true" class="theme-icon-when-dark">
-              <use xlink:href="#icon-moon" />
-            </svg>
-            <svg aria-hidden="true" class="theme-icon-when-light">
-              <use xlink:href="#icon-sun" />
-            </svg>
-          </button>
-        </div>
-      </header>
-
-      <!-- END Header -->
-
-      <nav aria-label="사용자 위치">
-        <div class="breadcrumbs">
-          <a href="/admin/">홈</a>
-          &rsaquo; <a href="/training/">Training</a> &rsaquo; training session 추가
-        </div>
-      </nav>
-
-      <div class="main" id="main">
-        <main id="content-start" class="content" tabindex="-1">
-          <!-- Content -->
-          <div id="content" class="colM">
-            <h1>training session 추가</h1>
-
-            <div id="content-main">
-              {# training/templates/training/training_form.html #}
-              <form enctype="multipart/form-data" method="post" action="" id="trainingsession_form">
-                {% csrf_token %} {{ form.as_p }}
-                <div>
-                  <fieldset class="module aligned">
-                    <div class="form-row field-model_name">
-                      <div>
-                        <div class="flex-container">
-                          <label class="required" for="model_zip_file">데이터 압축파일:</label>
-                          <input type="file" name="model_zip_file" class="vFileField" maxlength="100" required id="model_zip_file" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row field-model_name">
-                      <div>
-                        <div class="flex-container">
-                          <label class="required" for="id_model_name">모델명:</label>
-
-                          <input type="text" name="model_name" class="vTextField" maxlength="100" required id="id_model_name" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row field-version">
-                      <div>
-                        <div class="flex-container">
-                          <label class="required" for="id_version">버전:</label>
-
-                          <input type="text" name="version" class="vTextField" maxlength="20" required id="id_version" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row field-status">
-                      <div>
-                        <div class="flex-container">
-                          <label class="required" for="id_status">상태:</label>
-
-                          <select name="status" id="id_status">
-                            <option value="training" selected>훈련 중</option>
-
-                            <option value="completed">완료</option>
-
-                            <option value="failed">실패</option>
-
-                            <option value="paused">일시정지</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row field-dataset_name">
-                      <div>
-                        <div class="flex-container">
-                          <label class="required" for="id_dataset_name">데이터셋:</label>
-
-                          <input type="text" name="dataset_name" class="vTextField" maxlength="100" required id="id_dataset_name" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row field-gpu_info">
-                      <div>
-                        <div class="flex-container">
-                          <label class="required" for="id_gpu_info">GPU 정보:</label>
-
-                          <input type="text" name="gpu_info" class="vTextField" maxlength="100" required id="id_gpu_info" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row field-memory_info">
-                      <div>
-                        <div class="flex-container">
-                          <label class="required" for="id_memory_info">메모리 정보:</label>
-
-                          <input type="text" name="memory_info" class="vTextField" maxlength="50" required id="id_memory_info" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row field-total_epochs">
-                      <div>
-                        <div class="flex-container">
-                          <label class="required" for="id_total_epochs">총 에포크:</label>
-
-                          <input type="number" name="total_epochs" value="100" class="vIntegerField" required id="id_total_epochs" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row field-current_epoch">
-                      <div>
-                        <div class="flex-container">
-                          <label class="required" for="id_current_epoch">현재 에포크:</label>
-
-                          <input type="number" name="current_epoch" value="0" class="vIntegerField" required id="id_current_epoch" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row field-start_time">
-                      <div>
-                        <div class="flex-container">
-                          <label class="required">시작 시간:</label>
-
-                          <p class="datetime">
-                            날짜:
-                            <input type="text" name="start_time_0" value="2025-08-08" class="vDateField" size="10" required id="id_start_time_0" />
-
-                            <br />
-                            시각: <input type="text" name="start_time_1" value="16:37:29" class="vTimeField" size="8" required id="id_start_time_1" />
-                          </p>
-                          <input type="hidden" name="initial-start_time_0" value="2025-08-08" id="initial-id_start_time_0" /><input
-                            type="hidden"
-                            name="initial-start_time_1"
-                            value="16:37:29"
-                            id="initial-id_start_time_1"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row field-end_time">
-                      <div>
-                        <div class="flex-container">
-                          <label>종료 시간:</label>
-
-                          <p class="datetime">
-                            날짜: <input type="text" name="end_time_0" class="vDateField" size="10" id="id_end_time_0" />
-
-                            <br />
-                            시각: <input type="text" name="end_time_1" class="vTimeField" size="8" id="id_end_time_1" />
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row field-progress_percentage">
-                      <div>
-                        <div class="flex-container">
-                          <label>Progress percentage:</label>
-
-                          <div class="readonly">0.0</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row field-training_duration">
-                      <div>
-                        <div class="flex-container">
-                          <label>Training duration:</label>
-
-                          <div class="readonly">0h 0m</div>
-                        </div>
-                      </div>
-                    </div>
-                  </fieldset>
-
-                  <div class="submit-row">
-                    <input type="submit" value="저장" class="default" name="_save" />
-
-                    <input type="submit" value="저장 및 다른 이름으로 추가" name="_addanother" />
-                    <input type="submit" value="저장 및 편집 계속" name="_continue" />
-                  </div>
-
-                  <script
-                    id="django-admin-prepopulated-fields-constants"
-                    src="/static/admin/js/prepopulate_init.js"
-                    data-prepopulated-fields="[]"
-                  ></script>
+            <header id="header">
+                <div id="branding">
+                    <div id="site-name"><a href="/admin/">Django 관리</a></div>
                 </div>
-              </form>
+
+                <div id="user-tools">
+                    환영합니다,
+                    <strong>종인</strong>.
+
+                    <a href="/">사이트 보기</a> /
+
+                    <a href="/admin/password_change/">비밀번호 변경</a> /
+
+                    <form id="logout-form" method="post" action="/admin/logout/">
+                        {% csrf_token %} {{ form.as_p }}
+                        <button type="submit">로그아웃</button>
+                    </form>
+
+                    <button class="theme-toggle">
+                        <span class="visually-hidden theme-label-when-auto">테마 토글 (현재 테마:자동)</span>
+                        <span class="visually-hidden theme-label-when-light">테마 토글 (현재 테마: 밝음)</span>
+                        <span class="visually-hidden theme-label-when-dark">테마 토글 (현재 테마: 어두움)</span>
+                        <svg aria-hidden="true" class="theme-icon-when-auto">
+                            <use xlink:href="#icon-auto" />
+                        </svg>
+                        <svg aria-hidden="true" class="theme-icon-when-dark">
+                            <use xlink:href="#icon-moon" />
+                        </svg>
+                        <svg aria-hidden="true" class="theme-icon-when-light">
+                            <use xlink:href="#icon-sun" />
+                        </svg>
+                    </button>
+                </div>
+            </header>
+
+            <!-- END Header -->
+
+            <nav aria-label="사용자 위치">
+                <div class="breadcrumbs">
+                    <a href="/admin/">홈</a>
+                    &rsaquo; <a href="/training/">Training</a> &rsaquo; training session 추가
+                </div>
+            </nav>
+
+            <div class="main" id="main">
+                <main id="content-start" class="content" tabindex="-1">
+                    <!-- Content -->
+                    <div id="content" class="colM">
+                        <h1>training session 추가</h1>
+
+                        <div id="content-main">
+                            {# training/templates/training/training_form.html #}
+                            <form enctype="multipart/form-data" method="post" action="" id="trainingsession_form">
+                                {% csrf_token %} {{ form.as_p }}
+                                <div>
+                                    <fieldset class="module aligned">
+                                        <div class="form-row field-model_name">
+                                            <div>
+                                                <div class="flex-container">
+                                                    <label class="required" for="model_zip_file">데이터 압축파일:</label>
+                                                    <input
+                                                        type="file"
+                                                        name="model_zip_file"
+                                                        class="vFileField"
+                                                        maxlength="100"
+                                                        required
+                                                        id="model_zip_file"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-row field-model_name">
+                                            <div>
+                                                <div class="flex-container">
+                                                    <label class="required" for="id_model_name">모델명:</label>
+
+                                                    <input
+                                                        type="text"
+                                                        name="model_name"
+                                                        class="vTextField"
+                                                        maxlength="100"
+                                                        required
+                                                        id="id_model_name"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-row field-version">
+                                            <div>
+                                                <div class="flex-container">
+                                                    <label class="required" for="id_version">버전:</label>
+
+                                                    <input type="text" name="version" class="vTextField" maxlength="20" required id="id_version" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-row field-status">
+                                            <div>
+                                                <div class="flex-container">
+                                                    <label class="required" for="id_status">상태:</label>
+
+                                                    <select name="status" id="id_status">
+                                                        <option value="training" selected>훈련 중</option>
+
+                                                        <option value="completed">완료</option>
+
+                                                        <option value="failed">실패</option>
+
+                                                        <option value="paused">일시정지</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-row field-dataset_name">
+                                            <div>
+                                                <div class="flex-container">
+                                                    <label class="required" for="id_dataset_name">데이터셋:</label>
+
+                                                    <input
+                                                        type="text"
+                                                        name="dataset_name"
+                                                        class="vTextField"
+                                                        maxlength="100"
+                                                        required
+                                                        id="id_dataset_name"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-row field-gpu_info">
+                                            <div>
+                                                <div class="flex-container">
+                                                    <label class="required" for="id_gpu_info">GPU 정보:</label>
+
+                                                    <input type="text" name="gpu_info" class="vTextField" maxlength="100" required id="id_gpu_info" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-row field-memory_info">
+                                            <div>
+                                                <div class="flex-container">
+                                                    <label class="required" for="id_memory_info">메모리 정보:</label>
+
+                                                    <input
+                                                        type="text"
+                                                        name="memory_info"
+                                                        class="vTextField"
+                                                        maxlength="50"
+                                                        required
+                                                        id="id_memory_info"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-row field-total_epochs">
+                                            <div>
+                                                <div class="flex-container">
+                                                    <label class="required" for="id_total_epochs">총 에포크:</label>
+
+                                                    <input
+                                                        type="number"
+                                                        name="total_epochs"
+                                                        value="100"
+                                                        class="vIntegerField"
+                                                        required
+                                                        id="id_total_epochs"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-row field-current_epoch">
+                                            <div>
+                                                <div class="flex-container">
+                                                    <label class="required" for="id_current_epoch">현재 에포크:</label>
+
+                                                    <input
+                                                        type="number"
+                                                        name="current_epoch"
+                                                        value="0"
+                                                        class="vIntegerField"
+                                                        required
+                                                        id="id_current_epoch"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-row field-start_time">
+                                            <div>
+                                                <div class="flex-container">
+                                                    <label class="required">시작 시간:</label>
+
+                                                    <p class="datetime">
+                                                        날짜:
+                                                        <input
+                                                            type="text"
+                                                            name="start_time_0"
+                                                            value="2025-08-08"
+                                                            class="vDateField"
+                                                            size="10"
+                                                            required
+                                                            id="id_start_time_0"
+                                                        />
+
+                                                        <br />
+                                                        시각:
+                                                        <input
+                                                            type="text"
+                                                            name="start_time_1"
+                                                            value="16:37:29"
+                                                            class="vTimeField"
+                                                            size="8"
+                                                            required
+                                                            id="id_start_time_1"
+                                                        />
+                                                    </p>
+                                                    <input
+                                                        type="hidden"
+                                                        name="initial-start_time_0"
+                                                        value="2025-08-08"
+                                                        id="initial-id_start_time_0"
+                                                    /><input
+                                                        type="hidden"
+                                                        name="initial-start_time_1"
+                                                        value="16:37:29"
+                                                        id="initial-id_start_time_1"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-row field-end_time">
+                                            <div>
+                                                <div class="flex-container">
+                                                    <label>종료 시간:</label>
+
+                                                    <p class="datetime">
+                                                        날짜: <input type="text" name="end_time_0" class="vDateField" size="10" id="id_end_time_0" />
+
+                                                        <br />
+                                                        시각: <input type="text" name="end_time_1" class="vTimeField" size="8" id="id_end_time_1" />
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-row field-progress_percentage">
+                                            <div>
+                                                <div class="flex-container">
+                                                    <label>Progress percentage:</label>
+
+                                                    <div class="readonly">0.0</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-row field-training_duration">
+                                            <div>
+                                                <div class="flex-container">
+                                                    <label>Training duration:</label>
+
+                                                    <div class="readonly">0h 0m</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </fieldset>
+
+                                    <div class="submit-row">
+                                        <input type="submit" value="저장" class="default" name="_save" />
+
+                                        <input type="submit" value="저장 및 다른 이름으로 추가" name="_addanother" />
+                                        <input type="submit" value="저장 및 편집 계속" name="_continue" />
+                                    </div>
+
+                                    <script
+                                        id="django-admin-prepopulated-fields-constants"
+                                        src="/static/admin/js/prepopulate_init.js"
+                                        data-prepopulated-fields="[]"
+                                    ></script>
+                                </div>
+                            </form>
+                        </div>
+
+                        <br class="clear" />
+                    </div>
+                    <!-- END Content -->
+                </main>
             </div>
+            <footer id="footer"></footer>
+        </div>
+        <!-- END Container -->
 
-            <br class="clear" />
-          </div>
-          <!-- END Content -->
-        </main>
-      </div>
-      <footer id="footer"></footer>
-    </div>
-    <!-- END Container -->
-
-    <!-- SVGs -->
-    <svg xmlns="http://www.w3.org/2000/svg" class="base-svgs">
-      <symbol viewBox="0 0 24 24" width="1.5rem" height="1.5rem" id="icon-auto">
-        <path d="M0 0h24v24H0z" fill="currentColor" />
-        <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-2V4a8 8 0 1 0 0 16z" />
-      </symbol>
-      <symbol viewBox="0 0 24 24" width="1.5rem" height="1.5rem" id="icon-moon">
-        <path d="M0 0h24v24H0z" fill="currentColor" />
-        <path
-          d="M10 7a7 7 0 0 0 12 4.9v.1c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2h.1A6.979 6.979 0 0 0 10 7zm-6 5a8 8 0 0 0 15.062 3.762A9 9 0 0 1 8.238 4.938 7.999 7.999 0 0 0 4 12z"
-        />
-      </symbol>
-      <symbol viewBox="0 0 24 24" width="1.5rem" height="1.5rem" id="icon-sun">
-        <path d="M0 0h24v24H0z" fill="currentColor" />
-        <path
-          d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.515 4.929l1.414-1.414L7.05 5.636 5.636 7.05 3.515 4.93zM16.95 18.364l1.414-1.414 2.121 2.121-1.414 1.414-2.121-2.121zm2.121-14.85l1.414 1.415-2.121 2.121-1.414-1.414 2.121-2.121zM5.636 16.95l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121zM23 11v2h-3v-2h3zM4 11v2H1v-2h3z"
-        />
-      </symbol>
-    </svg>
-    <!-- END SVGs -->
-  </body>
+        <!-- SVGs -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="base-svgs">
+            <symbol viewBox="0 0 24 24" width="1.5rem" height="1.5rem" id="icon-auto">
+                <path d="M0 0h24v24H0z" fill="currentColor" />
+                <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-2V4a8 8 0 1 0 0 16z" />
+            </symbol>
+            <symbol viewBox="0 0 24 24" width="1.5rem" height="1.5rem" id="icon-moon">
+                <path d="M0 0h24v24H0z" fill="currentColor" />
+                <path
+                    d="M10 7a7 7 0 0 0 12 4.9v.1c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2h.1A6.979 6.979 0 0 0 10 7zm-6 5a8 8 0 0 0 15.062 3.762A9 9 0 0 1 8.238 4.938 7.999 7.999 0 0 0 4 12z"
+                />
+            </symbol>
+            <symbol viewBox="0 0 24 24" width="1.5rem" height="1.5rem" id="icon-sun">
+                <path d="M0 0h24v24H0z" fill="currentColor" />
+                <path
+                    d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.515 4.929l1.414-1.414L7.05 5.636 5.636 7.05 3.515 4.93zM16.95 18.364l1.414-1.414 2.121 2.121-1.414 1.414-2.121-2.121zm2.121-14.85l1.414 1.415-2.121 2.121-1.414-1.414 2.121-2.121zM5.636 16.95l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121zM23 11v2h-3v-2h3zM4 11v2H1v-2h3z"
+                />
+            </symbol>
+        </svg>
+        <!-- END SVGs -->
+    </body>
 </html>
