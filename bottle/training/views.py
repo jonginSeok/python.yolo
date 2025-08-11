@@ -1,57 +1,47 @@
+import os
+import zipfile
+import json
+import plotly.utils
+import plotly.graph_objs as go
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
+from django.contrib import messages
 from django.db.models import Q, Avg, Max, Min
 from django.utils import timezone
+
 from datetime import timedelta
-import json
-import plotly.graph_objs as go
-import plotly.utils
 
 from .models import TrainingSession, TrainingMetric, ClassMetric
-from .forms import TrainingSessionForm
+from .forms import DataUploadForm
+
 
 
 # training/view.py 2025.08.10 ngins7512
+# import json
+# import plotly.graph_objs as go
+# import plotly.utils
 # from django.shortcuts import render, get_object_or_404, redirect
 # from django.http import JsonResponse
 # from django.db.models import Q, Avg, Max, Min
 # from django.utils import timezone
-from django.contrib import messages
-
 # from datetime import timedelta
-# import json
-# import plotly.graph_objs as go
-# import plotly.utils
-import os
-import zipfile
 
+# from .forms import TrainingSessionForm
 # from .models import TrainingSession, TrainingMetric, ClassMetric
-from .forms import DataUploadForm
 
 
-# training/views.py
-def training_create(request):
-    if request.method == "POST":
-        form = TrainingSessionForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
-            return redirect("trainings:list")
-    else:
-        form = TrainingSessionForm()
-    return render(request, "training/training_form.html", {"form": form})
 
 
-def training_update(request, pk):
-    session = get_object_or_404(TrainingSession, pk=pk)
-    if request.method == "POST":
-        form = TrainingSessionForm(request.POST, request.FILES, instance=session)
-        if form.is_valid():
-            form.save()
-            return redirect("trainings:detail", pk=pk)
-    else:
-        form = TrainingSessionForm(instance=session)
-    return render(request, "training/training_form.html", {"form": form})
+# training/view.py 2025.08.10 ngins7512
+# 학습 세션 목록(다건 조회)
+def training_list(request):
+    return render(request, "training/training_list.html")
 
+
+# 학습 세션 입력
+def training_input(request):
+    return render(request, "training/training_input.html")
 
 # 학습 세션 출력(단건 조회)
 def training_output(request):
@@ -386,22 +376,15 @@ def dashboard(request):
     return render(request, "training/dashboard.html", context)
 
 
-# training/view.py 2025.08.10 ngins7512
-# 학습 세션 목록(다건 조회)
-def training_list(request):
-    return render(request, "training/training_list.html")
 
-
-# 학습 세션 입력
-def training_input(request):
-    return render(request, "training/training_input.html")
-
-
+# 학습 세션 입력 데이터 전송
 def upload_dataset(request):
     """데이터셋 업로드 페이지"""
-    print('---- upload_dataset -----')
+    print(f'[trining/views.py] upload_dataset -----request.method:{request.method}')
+    
     if request.method == "POST":
         form = DataUploadForm(request.POST, request.FILES)
+        print(f'[trining/views.py] upload_dataset -----form.is_valid:{form.is_valid()}')
         if form.is_valid():
             # 파일 저장 및 처리
             zip_file = form.cleaned_data["zip_file"]
@@ -449,7 +432,9 @@ def upload_dataset(request):
                 model_name=form.cleaned_data["model_name"],
                 dataset_name=form.cleaned_data["dataset_name"],
                 status="pending",
-                total_epochs=form.cleaned_data["epochs"],
+                # total_epochs=form.cleaned_data["epochs"],
+                total_epochs=form.cleaned_data["total_epochs"],
+                current_epoch=form.cleaned_data["current_epoch"],
                 batch_size=form.cleaned_data["batch_size"],
                 learning_rate=form.cleaned_data["learning_rate"],
                 image_size=form.cleaned_data["image_size"],
@@ -460,7 +445,7 @@ def upload_dataset(request):
                 description=form.cleaned_data["description"],
                 dataset_path=extract_dir,
                 config={
-                    "epochs": form.cleaned_data["epochs"],
+                    "epochs": form.cleaned_data["current_epoch"],
                     "batch_size": form.cleaned_data["batch_size"],
                     "learning_rate": form.cleaned_data["learning_rate"],
                     "image_size": form.cleaned_data["image_size"],
@@ -476,11 +461,16 @@ def upload_dataset(request):
             messages.success(request, f"데이터셋이 성공적으로 업로드되었습니다. 훈련 세션 ID: {session.id}",)
 
             # 여기서 실제 YOLO 훈련을 시작할 수 있습니다
+            print("[trining/views.py] 여기서 실제 YOLO 훈련을 시작할 수 있습니다")
             # start_training_async(session.id)  # 백그라운드 작업으로 훈련 시작
+            print(f"start_training_async({session.id})  # 백그라운드 작업으로 훈련 시작")
 
-            return redirect("training:dashboard")
+            # return redirect("training:dashboard") # training_output
+            return redirect("training:training_output")
     else:
+        # print('Before:',form.errors)
         form = DataUploadForm()
+        print('After:',form.errors)
 
     return render(request, "training/upload.html", {"form": form})
 
@@ -488,7 +478,30 @@ def upload_dataset(request):
 def training_sessions_list(request):
     """훈련 세션 목록"""
     sessions = TrainingSession.objects.all().order_by("-created_at")
-
     context = {"sessions": sessions}
-
     return render(request, "training/sessions.html", context)
+
+
+# training/views.py
+# def training_create(request):
+#     if request.method == "POST":
+#         form = TrainingSessionForm(request.POST, request.FILES)
+#         if form.is_valid():
+#             form.save()
+#             return redirect("trainings:list")
+#     else:
+#         form = TrainingSessionForm()
+#     return render(request, "training/training_form.html", {"form": form})
+
+
+# def training_update(request, pk):
+#     session = get_object_or_404(TrainingSession, pk=pk)
+#     if request.method == "POST":
+#         form = TrainingSessionForm(request.POST, request.FILES, instance=session)
+#         if form.is_valid():
+#             form.save()
+#             return redirect("trainings:detail", pk=pk)
+#     else:
+#         form = TrainingSessionForm(instance=session)
+#     return render(request, "training/training_form.html", {"form": form})
+

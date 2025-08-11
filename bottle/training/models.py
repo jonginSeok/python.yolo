@@ -15,22 +15,28 @@ class TrainingSession(models.Model):
     dataset_name = models.CharField(max_length=100, verbose_name="데이터셋")
     gpu_info = models.CharField(max_length=100, verbose_name="GPU 정보")
     memory_info = models.CharField(max_length=50, verbose_name="메모리 정보")
+    
+    # zip_file = models.FileField(upload_to='trainings/%Y/%m/%d/',verbose_name="데이터셋 ZIP 파일")
+    
     total_epochs = models.IntegerField(default=100, verbose_name="총 에포크")
-    current_epoch = models.IntegerField(default=0, verbose_name="현재 에포크")
+    current_epoch = models.IntegerField(default=0, verbose_name="현재 에포크")    
+    batch_size = models.IntegerField(default=1, verbose_name="배치 크기")
+    learning_rate = models.FloatField(default=0.01, verbose_name="학습률")    
+    image_size = models.IntegerField(default=640, verbose_name="이미지 크기")    
+    optimizer = models.CharField(default="Adam", verbose_name="옵티마이저")
+    augmentation = models.BooleanField(default=True, verbose_name="데이터 증강")
+    early_stopping = models.BooleanField(default=True, verbose_name="조기 종료 사용")
+    patience = models.IntegerField(default=10, verbose_name="조기 종료 patience")
+    description = models.CharField(max_length=16000, verbose_name="설명")
+    
+    dataset_path = models.CharField(max_length=6000, verbose_name="데이터셋 경로")
+    config = models.CharField(max_length=16000, verbose_name="설정정보 ")
+    
     start_time = models.DateTimeField(default=timezone.now, verbose_name="시작 시간")
     end_time = models.DateTimeField(null=True, blank=True, verbose_name="종료 시간")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
-    # 단일 파일 첨부 필드
-    attachment = models.FileField(
-        upload_to='trainings/%Y/%m/%d/',
-        null=True,
-        blank=True,
-        help_text='관련 파일을 첨부하세요.'
-    )
-
-    
+        
     def __str__(self):
         return f"{self.model_name} v{self.version}"
     

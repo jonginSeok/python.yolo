@@ -4,28 +4,31 @@ from django.core.validators import FileExtensionValidator
 from django.core.exceptions import ValidationError
 from .models import TrainingSession
 
+from datetime import datetime
 
-class TrainingSessionForm(forms.ModelForm):
-    attachment = forms.FileField(
-        label="세션 자료 첨부 (선택)",
-        required=False,
-        help_text="ZIP 혹은 7Z만 업로드 가능 (최대 100MB)",
-        error_messages={
-            "invalid": "유효하지 않은 파일입니다.",
-            "required": "파일을 첨부해주세요.",
-        },
-        validators=[
-            FileExtensionValidator(
-                ["zip", "7z"], message="ZIP 혹은 7Z 파일만 첨부할 수 있습니다."
-            )
-        ],
-        widget=forms.ClearableFileInput(attrs={"class": "form-control-file"}),
-    )
 
-    class Meta:
-        model = TrainingSession
-        # fields = ['title', 'description', 'attachment']
-        fields = ["attachment"]
+
+# class TrainingSessionForm(forms.ModelForm):
+#     attachment = forms.FileField(
+#         label="세션 자료 첨부 (선택)",
+#         required=False,
+#         help_text="ZIP 혹은 7Z만 업로드 가능 (최대 100MB)",
+#         error_messages={
+#             "invalid": "유효하지 않은 파일입니다.",
+#             "required": "파일을 첨부해주세요.",
+#         },
+#         validators=[
+#             FileExtensionValidator(
+#                 ["zip", "7z"], message="ZIP 혹은 7Z 파일만 첨부할 수 있습니다."
+#             )
+#         ],
+#         widget=forms.ClearableFileInput(attrs={"class": "form-control-file"}),
+#     )
+
+#     class Meta:
+#         model = TrainingSession
+#         # fields = ['title', 'description', 'attachment']
+#         fields = ["attachment"]
 
 
 
@@ -33,49 +36,113 @@ class TrainingSessionForm(forms.ModelForm):
 # training/forms.py 2025.08.10 ngins7512
 class DataUploadForm(forms.Form):
     """YOLO 훈련 데이터 업로드 폼"""
+    print('[trining/forms.py] DataUploadForm -----')
 
     # 기본 정보
     model_name = forms.CharField(
+        required=True,
         max_length=100,
         label="모델명",
         widget=forms.TextInput(
             attrs={"class": "form-control", "placeholder": "YOLOv8n"}
         ),
     )
-
+    
+    version = forms.CharField(
+        required=True,
+        max_length=20,
+        label="버전",
+        widget=forms.TextInput(
+            attrs={"class": "form-control",
+                #    "placeholder": "0.0.1"
+            }
+        ),
+    )
+    
+    status = forms.ChoiceField(    
+        required=True,
+        label="상태",
+        initial="training",
+        choices=[
+            ('training', '훈련 중'),
+            ('completed', '완료'),
+            ('failed', '실패'),
+            ('paused', '일시정지'),
+        ],
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+    
     dataset_name = forms.CharField(
+        required=True,
         max_length=100,
         label="데이터셋명",
         widget=forms.TextInput(
-            attrs={"class": "form-control", "placeholder": "Custom Dataset"}
+            attrs={"class": "form-control", 
+                #    "placeholder": "Custom Dataset"
+                }
+        ),
+    )
+    
+    gpu_info = forms.CharField(
+        required=True,
+        max_length=100,
+        label="GPU 정보",
+        widget=forms.TextInput(
+            attrs={"class": "form-control", 
+                #    "placeholder": "NVIDIA RTX 3080"
+            }
+        ),
+    )
+    memory_info = forms.CharField(
+        required=True,
+        max_length=50,
+        label="메모리 정보",
+        widget=forms.TextInput(
+            attrs={"class": "form-control", 
+                #    "placeholder": "64GB"
+                }
         ),
     )
 
     # 파일 업로드
     zip_file = forms.FileField(
+        required=True,
         label="데이터셋 ZIP 파일",
         help_text="이미지와 라벨 파일이 포함된 ZIP 파일을 업로드하세요",
         widget=forms.FileInput(attrs={"class": "form-control", "accept": ".zip"}),
     )
-
-    # 훈련 설정
-    epochs = forms.IntegerField(
-        label="에포크 수",
+    
+    total_epochs = forms.IntegerField(
+        required=True,
+        label="총 에포크",
         initial=100,
         min_value=1,
         max_value=1000,
         widget=forms.NumberInput(attrs={"class": "form-control"}),
     )
 
+    # 훈련 설정
+    # current_epoch
+    current_epoch = forms.IntegerField(
+        required=True,
+        label="현재 에포크",
+        initial=20,
+        min_value=1,
+        max_value=1000,
+        widget=forms.NumberInput(attrs={"class": "form-control"}),
+    )
+
     batch_size = forms.IntegerField(
+        required=True,
         label="배치 크기",
-        initial=16,
+        initial=4,
         min_value=1,
         max_value=64,
         widget=forms.NumberInput(attrs={"class": "form-control"}),
     )
 
     learning_rate = forms.FloatField(
+        required=True,
         label="학습률",
         initial=0.01,
         min_value=0.0001,
@@ -85,10 +152,12 @@ class DataUploadForm(forms.Form):
 
     # image_size = forms.IntegerField(
     image_size = forms.ChoiceField(    
+        required=True,
         label="이미지 크기",
-        initial=640,
+        initial=128,
         choices=[
-            (416, "416"),
+            (128, "128"),
+            (256, "256"),
             (512, "512"),
             (640, "640"),
             (800, "800"),
@@ -99,6 +168,7 @@ class DataUploadForm(forms.Form):
 
     # 고급 설정
     optimizer = forms.ChoiceField(
+        required=True,
         label="옵티마이저",
         choices=[
             ("SGD", "SGD"),
@@ -106,8 +176,17 @@ class DataUploadForm(forms.Form):
             ("AdamW", "AdamW"),
             ("RMSprop", "RMSprop"),
         ],
-        initial="SGD",
+        initial="Adam",
         widget=forms.Select(attrs={"class": "form-control"}),
+    )
+
+    patience = forms.IntegerField(
+        required=True,
+        label="조기 종료 patience",
+        initial=10,
+        min_value=1,
+        max_value=100,
+        widget=forms.NumberInput(attrs={"class": "form-control"}),
     )
 
     augmentation = forms.BooleanField(
@@ -123,15 +202,24 @@ class DataUploadForm(forms.Form):
         initial=True,
         widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
     )
-
-    patience = forms.IntegerField(
-        label="조기 종료 patience",
-        initial=10,
-        min_value=1,
-        max_value=100,
-        widget=forms.NumberInput(attrs={"class": "form-control"}),
+    
+    start_time = forms.DateTimeField(
+        label="시작 시간",
+        initial=datetime.now,
+        widget=forms.DateTimeInput(
+            attrs={"class": "form-control", "type": "datetime-local"}
+        ),
+    )
+        
+    end_time = forms.DateTimeField(
+        label="종료 시간",
+        required=False,
+        widget=forms.DateTimeInput(
+            attrs={"class": "form-control", "type": "datetime-local"}
+        ),
     )
 
+    # 설명 (선택사항)
     description = forms.CharField(
         label="설명",
         required=False,
@@ -143,13 +231,20 @@ class DataUploadForm(forms.Form):
             }
         ),
     )
-
+    
+    
     def clean_zip_file(self):
         """ZIP 파일 검증"""
+        
         zip_file = self.cleaned_data.get("zip_file")
+        print('[trining/forms.py] DataUploadForm ----- clean_zip_file zip_file:', zip_file)
+        
         if zip_file:
             if not zip_file.name.endswith(".zip"):
+                print('[trining/forms.py] DataUploadForm ----- zip_file.name.endswith:', zip_file.name.endswith(".zip"))
                 raise forms.ValidationError("ZIP 파일만 업로드 가능합니다.")
             if zip_file.size > 500 * 1024 * 1024:  # 500MB 제한
+                print('[trining/forms.py] DataUploadForm ----- zip_file.size:', (zip_file.size))
                 raise forms.ValidationError("파일 크기는 500MB를 초과할 수 없습니다.")
+            print('[trining/forms.py] DataUploadForm ----- return zip_file:', zip_file)
         return zip_file
