@@ -1,23 +1,207 @@
 
-{% extends 'base.html' %} 
 {% load static %} 
 
 {% block title %}YOLO 훈련 데이터 업로드{% endblock %}
 
+
+{% block extra_css %}
+<style type="text/css">
+    body {
+        background-color: black;
+        font-family: 'Inter', sans-serif;
+        color: black;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .upload-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        color: black;
+        background-color: black;
+    }
+    
+    .upload-card {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 15px;
+        padding: 30px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+    
+    .form-section {
+        margin-bottom: 30px;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .section-title {
+        color: #3b82f6;
+        font-size: 1.2em;
+        font-weight: 600;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .section-title i {
+        margin-right: 8px;
+    }
+    
+    .form-control {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        color: white;
+        padding: 10px 15px;
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    
+    .form-control:focus {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: #3b82f6;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+    }
+    
+    .form-control::placeholder {
+        color: rgba(255, 255, 255, 0.6);
+    }
+    
+    .form-label {
+        color: #e5e7eb;
+        font-weight: 500;
+        margin-bottom: 5px;
+        display: block;
+    }
+    
+    .form-check {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .form-check-input {
+        margin-right: 8px;
+        accent-color: #3b82f6;
+    }
+    
+    .form-check-label {
+        color: #e5e7eb;
+    }
+    
+    .btn-upload {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: 100%;
+        font-size: 16px;
+    }
+    
+    .btn-upload:hover {
+        background: linear-gradient(135deg, #1d4ed8, #1e3a8a);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+    }
+    
+    .btn-secondary {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 10px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        display: inline-block;
+        margin-right: 10px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.2);
+        text-decoration: none;
+        color: white;
+    }
+    
+    .file-upload-area {
+        border: 2px dashed rgba(255, 255, 255, 0.3);
+        border-radius: 10px;
+        padding: 30px;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .file-upload-area:hover {
+        border-color: #3b82f6;
+        background: rgba(59, 130, 246, 0.1);
+    }
+    
+    .file-upload-area.dragover {
+        border-color: #3b82f6;
+        background: rgba(59, 130, 246, 0.2);
+    }
+    
+    .upload-icon {
+        font-size: 3em;
+        color: #3b82f6;
+        margin-bottom: 15px;
+    }
+    
+    .help-text {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.9em;
+        margin-top: 5px;
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+    
+    @media (max-width: 768px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .upload-container {
+            padding: 10px;
+        }
+        
+        .upload-card {
+            padding: 20px;
+        }
+    }
+    
+    .error {
+        color: #ef4444;
+        font-size: 0.9em;
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}
+
+
 {% block content %}
 <!-- <div class="upload-container"> -->
-<div class="min-h-screen bg-background p-6">
+<div class="upload-container">
     <!-- <div class="upload-card"> -->
-    <div class="max-w-7xl mx-auto space-y-6">
+    <div class="upload-card">
 
-        <!-- <h1 style="color: white; text-align: center; margin-bottom: 30px; font-size: 2em">
+        <h1 style="color: white; text-align: center; margin-bottom: 30px; font-size: 2em">
             <i class="fas fa-cloud-upload-alt" style="color: #3b82f6; margin-right: 10px"></i>
             YOLO 훈련 데이터 업로드
-        </h1> -->
-        <div class="space-y-2">
-            <h1 class="text-3xl font-bold text-foreground">YOLO 훈련 데이터 업로드</h1>
-            <!-- <p class="text-muted-foreground">객체 탐지 모델 훈련 진행 상황과 성능 메트릭을 모니터링하세요</p> -->
-        </div>
+        </h1>
 
         <form method="post" enctype="multipart/form-data" id="uploadForm">
             {% csrf_token %}
@@ -147,7 +331,8 @@
 
             <!-- 버튼 섹션 -->
             <div style="text-align: center; margin-top: 30px">
-                <a href="{% url 'training:dashboard' %}" class="btn-secondary"> <i class="fas fa-arrow-left"></i> 대시보드로 돌아가기 </a>
+                <!-- <a href="{% url 'training:training_output' %}" class="btn-secondary"> <i class="fas fa-arrow-left"></i> 대시보드로 돌아가기 </a> -->
+                 <a href="{% url 'training:training_output' %}" class="btn-secondary"> <i class="fas fa-arrow-left"></i> 대시보드로 돌아가기 </a>
                 <button type="submit" class="btn-upload"><i class="fas fa-rocket"></i> 훈련 시작하기</button>
             </div>
         </form>
