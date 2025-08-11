@@ -1,9 +1,12 @@
-{% extends 'base.html' %} {% block content %} {% load custom_filters %}
+{% extends 'base.html' %} 
+{% load custom_filters %}
+
+{% block content %}
 <div class="min-h-screen bg-background p-6">
     <div class="max-w-7xl mx-auto space-y-6">
         <!-- Header -->
         <div class="space-y-2">
-            <h1 class="text-3xl font-bold text-foreground">YOLO Training Dashboard</h1>
+            <h1 class="text-3xl font-bold text-foreground">YOLO 훈련 결과</h1>
             <p class="text-muted-foreground">객체 탐지 모델 훈련 진행 상황과 성능 메트릭을 모니터링하세요</p>
         </div>
 

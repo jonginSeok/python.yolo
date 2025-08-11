@@ -1,221 +1,49 @@
-{% extends 'base.html' %}
 
-{% load static %}
+{% extends 'base.html' %} 
+{% load static %} 
 
 {% block title %}YOLO 훈련 데이터 업로드{% endblock %}
 
-{% block extra_css %}
-<style type="text/css">
-    .upload-container {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 20px;
-    }
-    
-    .upload-card {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 15px;
-        padding: 30px;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    }
-    
-    .form-section {
-        margin-bottom: 30px;
-        padding: 20px;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    .section-title {
-        color: #3b82f6;
-        font-size: 1.2em;
-        font-weight: 600;
-        margin-bottom: 15px;
-        display: flex;
-        align-items: center;
-    }
-    
-    .section-title i {
-        margin-right: 8px;
-    }
-    
-    .form-control {
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 8px;
-        color: white;
-        padding: 10px 15px;
-        width: 100%;
-        margin-bottom: 10px;
-    }
-    
-    .form-control:focus {
-        background: rgba(255, 255, 255, 0.15);
-        border-color: #3b82f6;
-        outline: none;
-        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
-    }
-    
-    .form-control::placeholder {
-        color: rgba(255, 255, 255, 0.6);
-    }
-    
-    .form-label {
-        color: #e5e7eb;
-        font-weight: 500;
-        margin-bottom: 5px;
-        display: block;
-    }
-    
-    .form-check {
-        display: flex;
-        align-items: center;
-        margin-bottom: 10px;
-    }
-    
-    .form-check-input {
-        margin-right: 8px;
-        accent-color: #3b82f6;
-    }
-    
-    .form-check-label {
-        color: #e5e7eb;
-    }
-    
-    .btn-upload {
-        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-        color: white;
-        border: none;
-        padding: 12px 30px;
-        border-radius: 8px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        width: 100%;
-        font-size: 16px;
-    }
-    
-    .btn-upload:hover {
-        background: linear-gradient(135deg, #1d4ed8, #1e3a8a);
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
-    }
-    
-    .btn-secondary {
-        background: rgba(255, 255, 255, 0.1);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        padding: 10px 20px;
-        border-radius: 8px;
-        text-decoration: none;
-        display: inline-block;
-        margin-right: 10px;
-        transition: all 0.3s ease;
-    }
-    
-    .btn-secondary:hover {
-        background: rgba(255, 255, 255, 0.2);
-        text-decoration: none;
-        color: white;
-    }
-    
-    .file-upload-area {
-        border: 2px dashed rgba(255, 255, 255, 0.3);
-        border-radius: 10px;
-        padding: 30px;
-        text-align: center;
-        transition: all 0.3s ease;
-        cursor: pointer;
-    }
-    
-    .file-upload-area:hover {
-        border-color: #3b82f6;
-        background: rgba(59, 130, 246, 0.1);
-    }
-    
-    .file-upload-area.dragover {
-        border-color: #3b82f6;
-        background: rgba(59, 130, 246, 0.2);
-    }
-    
-    .upload-icon {
-        font-size: 3em;
-        color: #3b82f6;
-        margin-bottom: 15px;
-    }
-    
-    .help-text {
-        color: rgba(255, 255, 255, 0.7);
-        font-size: 0.9em;
-        margin-top: 5px;
-    }
-    
-    .form-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-    }
-    
-    @media (max-width: 768px) {
-        .form-row {
-            grid-template-columns: 1fr;
-        }
-        
-        .upload-container {
-            padding: 10px;
-        }
-        
-        .upload-card {
-            padding: 20px;
-        }
-    }
-    
-    .error {
-        color: #ef4444;
-        font-size: 0.9em;
-        margin-top: 5px;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="upload-container">
-    <div class="upload-card">
-        <h1 style="color: white; text-align: center; margin-bottom: 30px; font-size: 2em;">
-            <i class="fas fa-cloud-upload-alt" style="color: #3b82f6; margin-right: 10px;"></i>
+<!-- <div class="upload-container"> -->
+<div class="min-h-screen bg-background p-6">
+    <!-- <div class="upload-card"> -->
+    <div class="max-w-7xl mx-auto space-y-6">
+
+        <!-- <h1 style="color: white; text-align: center; margin-bottom: 30px; font-size: 2em">
+            <i class="fas fa-cloud-upload-alt" style="color: #3b82f6; margin-right: 10px"></i>
             YOLO 훈련 데이터 업로드
-        </h1>
-        
+        </h1> -->
+        <div class="space-y-2">
+            <h1 class="text-3xl font-bold text-foreground">YOLO 훈련 데이터 업로드</h1>
+            <!-- <p class="text-muted-foreground">객체 탐지 모델 훈련 진행 상황과 성능 메트릭을 모니터링하세요</p> -->
+        </div>
+
         <form method="post" enctype="multipart/form-data" id="uploadForm">
             {% csrf_token %}
-            
+
             <!-- 기본 정보 섹션 -->
-            <div class="form-section">
-                <div class="section-title">
+            <div class="rid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-card border border-border rounded-lg p-4">
                     <i class="fas fa-info-circle"></i>
                     기본 정보
                 </div>
                 <div class="form-row">
                     <div>
                         <label class="form-label">{{ form.model_name.label_tag }}</label>
-                        {{ form.model_name }}
-                        {% if form.model_name.errors %}
-                            <div class="error">{{ form.model_name.errors.0 }}</div>
+                        {{ form.model_name }} {% if form.model_name.errors %}
+                        <div class="error">{{ form.model_name.errors.0 }}</div>
                         {% endif %}
                     </div>
                     <div>
                         <label class="form-label">{{ form.dataset_name.label_tag }}</label>
-                        {{ form.dataset_name }}
-                        {% if form.dataset_name.errors %}
-                            <div class="error">{{ form.dataset_name.errors.0 }}</div>
+                        {{ form.dataset_name }} {% if form.dataset_name.errors %}
+                        <div class="error">{{ form.dataset_name.errors.0 }}</div>
                         {% endif %}
                     </div>
                 </div>
             </div>
-            
+
             <!-- 파일 업로드 섹션 -->
             <div class="form-section">
                 <div class="section-title">
@@ -226,16 +54,16 @@
                     <div class="upload-icon">
                         <i class="fas fa-cloud-upload-alt"></i>
                     </div>
-                    <h3 style="color: white; margin-bottom: 10px;">ZIP 파일을 드래그하거나 클릭하여 업로드</h3>
-                    <p style="color: rgba(255,255,255,0.7);">이미지와 라벨 파일이 포함된 ZIP 파일 (최대 500MB)</p>
+                    <h3 style="color: white; margin-bottom: 10px">ZIP 파일을 드래그하거나 클릭하여 업로드</h3>
+                    <p style="color: rgba(255, 255, 255, 0.7)">이미지와 라벨 파일이 포함된 ZIP 파일 (최대 500MB)</p>
                     {{ form.zip_file }}
                     <div class="help-text">{{ form.zip_file.help_text }}</div>
                     {% if form.zip_file.errors %}
-                        <div class="error">{{ form.zip_file.errors.0 }}</div>
+                    <div class="error">{{ form.zip_file.errors.0 }}</div>
                     {% endif %}
                 </div>
             </div>
-            
+
             <!-- 훈련 설정 섹션 -->
             <div class="form-section">
                 <div class="section-title">
@@ -245,37 +73,33 @@
                 <div class="form-row">
                     <div>
                         <label class="form-label">{{ form.epochs.label_tag }}</label>
-                        {{ form.epochs }}
-                        {% if form.epochs.errors %}
-                            <div class="error">{{ form.epochs.errors.0 }}</div>
+                        {{ form.epochs }} {% if form.epochs.errors %}
+                        <div class="error">{{ form.epochs.errors.0 }}</div>
                         {% endif %}
                     </div>
                     <div>
                         <label class="form-label">{{ form.batch_size.label_tag }}</label>
-                        {{ form.batch_size }}
-                        {% if form.batch_size.errors %}
-                            <div class="error">{{ form.batch_size.errors.0 }}</div>
+                        {{ form.batch_size }} {% if form.batch_size.errors %}
+                        <div class="error">{{ form.batch_size.errors.0 }}</div>
                         {% endif %}
                     </div>
                 </div>
                 <div class="form-row">
                     <div>
                         <label class="form-label">{{ form.learning_rate.label_tag }}</label>
-                        {{ form.learning_rate }}
-                        {% if form.learning_rate.errors %}
-                            <div class="error">{{ form.learning_rate.errors.0 }}</div>
+                        {{ form.learning_rate }} {% if form.learning_rate.errors %}
+                        <div class="error">{{ form.learning_rate.errors.0 }}</div>
                         {% endif %}
                     </div>
                     <div>
                         <label class="form-label">{{ form.image_size.label_tag }}</label>
-                        {{ form.image_size }}
-                        {% if form.image_size.errors %}
-                            <div class="error">{{ form.image_size.errors.0 }}</div>
+                        {{ form.image_size }} {% if form.image_size.errors %}
+                        <div class="error">{{ form.image_size.errors.0 }}</div>
                         {% endif %}
                     </div>
                 </div>
             </div>
-            
+
             <!-- 고급 설정 섹션 -->
             <div class="form-section">
                 <div class="section-title">
@@ -285,21 +109,19 @@
                 <div class="form-row">
                     <div>
                         <label class="form-label">{{ form.optimizer.label_tag }}</label>
-                        {{ form.optimizer }}
-                        {% if form.optimizer.errors %}
-                            <div class="error">{{ form.optimizer.errors.0 }}</div>
+                        {{ form.optimizer }} {% if form.optimizer.errors %}
+                        <div class="error">{{ form.optimizer.errors.0 }}</div>
                         {% endif %}
                     </div>
                     <div>
                         <label class="form-label">{{ form.patience.label_tag }}</label>
-                        {{ form.patience }}
-                        {% if form.patience.errors %}
-                            <div class="error">{{ form.patience.errors.0 }}</div>
+                        {{ form.patience }} {% if form.patience.errors %}
+                        <div class="error">{{ form.patience.errors.0 }}</div>
                         {% endif %}
                     </div>
                 </div>
-                
-                <div style="margin-top: 15px;">
+
+                <div style="margin-top: 15px">
                     <div class="form-check">
                         {{ form.augmentation }}
                         <label class="form-check-label">{{ form.augmentation.label }}</label>
@@ -310,7 +132,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- 설명 섹션 -->
             <div class="form-section">
                 <div class="section-title">
@@ -318,36 +140,31 @@
                     설명 (선택사항)
                 </div>
                 <label class="form-label">{{ form.description.label_tag }}</label>
-                {{ form.description }}
-                {% if form.description.errors %}
-                    <div class="error">{{ form.description.errors.0 }}</div>
+                {{ form.description }} {% if form.description.errors %}
+                <div class="error">{{ form.description.errors.0 }}</div>
                 {% endif %}
             </div>
-            
+
             <!-- 버튼 섹션 -->
-            <div style="text-align: center; margin-top: 30px;">
-                <a href="{% url 'training:dashboard' %}" class="btn-secondary">
-                    <i class="fas fa-arrow-left"></i> 대시보드로 돌아가기
-                </a>
-                <button type="submit" class="btn-upload">
-                    <i class="fas fa-rocket"></i> 훈련 시작하기
-                </button>
+            <div style="text-align: center; margin-top: 30px">
+                <a href="{% url 'training:dashboard' %}" class="btn-secondary"> <i class="fas fa-arrow-left"></i> 대시보드로 돌아가기 </a>
+                <button type="submit" class="btn-upload"><i class="fas fa-rocket"></i> 훈련 시작하기</button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const fileInput = document.getElementById('id_zip_file');
-    const uploadArea = document.querySelector('.file-upload-area');
-    
-    // 파일 선택 시 표시 업데이트
-    fileInput.addEventListener('change', function() {
-        if (this.files.length > 0) {
-            const fileName = this.files[0].name;
-            const fileSize = (this.files[0].size / (1024 * 1024)).toFixed(2);
-            uploadArea.innerHTML = `
+    document.addEventListener("DOMContentLoaded", function () {
+        const fileInput = document.getElementById("id_zip_file");
+        const uploadArea = document.querySelector(".file-upload-area");
+
+        // 파일 선택 시 표시 업데이트
+        fileInput.addEventListener("change", function () {
+            if (this.files.length > 0) {
+                const fileName = this.files[0].name;
+                const fileSize = (this.files[0].size / (1024 * 1024)).toFixed(2);
+                uploadArea.innerHTML = `
                 <div class="upload-icon">
                     <i class="fas fa-file-archive" style="color: #10b981;"></i>
                 </div>
@@ -356,36 +173,36 @@ document.addEventListener('DOMContentLoaded', function() {
                 <p style="color: rgba(255,255,255,0.7);">크기: ${fileSize} MB</p>
                 <p style="color: rgba(255,255,255,0.5); font-size: 0.9em;">다른 파일을 선택하려면 클릭하세요</p>
             `;
-        }
+            }
+        });
+
+        // 드래그 앤 드롭 기능
+        uploadArea.addEventListener("dragover", function (e) {
+            e.preventDefault();
+            this.classList.add("dragover");
+        });
+
+        uploadArea.addEventListener("dragleave", function () {
+            this.classList.remove("dragover");
+        });
+
+        uploadArea.addEventListener("drop", function (e) {
+            e.preventDefault();
+            this.classList.remove("dragover");
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                fileInput.dispatchEvent(new Event("change"));
+            }
+        });
+
+        // 폼 제출 시 로딩 표시
+        document.getElementById("uploadForm").addEventListener("submit", function () {
+            const submitBtn = this.querySelector(".btn-upload");
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 업로드 중...';
+            submitBtn.disabled = true;
+        });
     });
-    
-    // 드래그 앤 드롭 기능
-    uploadArea.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        this.classList.add('dragover');
-    });
-    
-    uploadArea.addEventListener('dragleave', function() {
-        this.classList.remove('dragover');
-    });
-    
-    uploadArea.addEventListener('drop', function(e) {
-        e.preventDefault();
-        this.classList.remove('dragover');
-        
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            fileInput.files = files;
-            fileInput.dispatchEvent(new Event('change'));
-        }
-    });
-    
-    // 폼 제출 시 로딩 표시
-    document.getElementById('uploadForm').addEventListener('submit', function() {
-        const submitBtn = this.querySelector('.btn-upload');
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 업로드 중...';
-        submitBtn.disabled = true;
-    });
-});
 </script>
 {% endblock %}
