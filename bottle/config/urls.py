@@ -32,5 +32,6 @@ urlpatterns = [
     path("accounts/", include("django.contrib.auth.urls")),  # 로그인/로그아웃 뷰
     
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-# + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-# 2025.08.06 ngins7512 추가/대시보드 관련 + static 부터
+
+if settings.DEBUG:    # 2025.08.06 ngins7512 추가/대시보드 관련 + static 부터
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
