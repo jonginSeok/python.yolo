@@ -6,7 +6,7 @@ app_name = "training"
 urlpatterns = [
     # path("", views.training_list, name="training_list"),
     path("input/", views.training_input, name="training_input"),
-    path("get/<int:session_id>/", views.training_output, name="training_output"),
+    path("training_output/", views.training_output, name="training_output"),
     
     path('', views.training_list, name='training_list'),
     path('upload/', views.upload_dataset, name='upload_dataset'),
