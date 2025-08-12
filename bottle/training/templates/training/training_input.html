@@ -169,175 +169,38 @@
             <div id="content-main">
                 {# training/templates/training/training_form.html #}
                 <form enctype="multipart/form-data" method="post" id="trainingsession_form" >
-                {% csrf_token %} {{ form.as_p }}
+                {% csrf_token %}
                 <div>
                   <fieldset class="module aligned">
                     
-
-
-
-
-                    <div class="form-row field-model_name">
+                    <!-- Django 폼 필드들을 사용 -->
+                    {% for field in form %}
+                    <div class="form-row field-{{ field.name }}">
                       <div>
                         <div class="flex-container">
-                          <label class="required" for="model_zip_file">데이터 압축파일:</label>
-                          <!-- <input type="file" name="model_zip_file" class="vFileField" maxlength="100" required id="model_zip_file" /> -->
-
-                          
-                          {{form.image|add_class:'form-control-file' }} 
-                          
+                          <label class="required" for="{{ field.id_for_label }}">{{ field.label }}:</label>
+                          {{ field|add_class:'form-control' }}
+                          {% if field.help_text %}
+                          <div class="help">{{ field.help_text }}</div>
+                          {% endif %}
+                          {% if field.errors %}
+                          <div class="errors">
+                            {% for error in field.errors %}
+                            <p class="errornote">{{ error }}</p>
+                            {% endfor %}
+                          </div>
+                          {% endif %}
                         </div>
                       </div>
                     </div>
-
-
-
-                    
-                    
-                    <div class="form-row field-model_name">
-                      <div>
-                        <div class="flex-container">
-                          <label class="required" for="id_model_name">모델명:</label>
-
-                          <input type="text" name="model_name" class="vTextField" maxlength="100" required id="id_model_name" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row field-version">
-                      <div>
-                        <div class="flex-container">
-                          <label class="required" for="id_version">버전:</label>
-
-                          <input type="text" name="version" class="vTextField" maxlength="20" required id="id_version" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row field-status">
-                      <div>
-                        <div class="flex-container">
-                          <label class="required" for="id_status">상태:</label>
-
-                          <select name="status" id="id_status">
-                            <option value="training" selected>훈련 중</option>
-
-                            <option value="completed">완료</option>
-
-                            <option value="failed">실패</option>
-
-                            <option value="paused">일시정지</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row field-dataset_name">
-                      <div>
-                        <div class="flex-container">
-                          <label class="required" for="id_dataset_name">데이터셋:</label>
-
-                          <input type="text" name="dataset_name" class="vTextField" maxlength="100" required id="id_dataset_name" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row field-gpu_info">
-                      <div>
-                        <div class="flex-container">
-                          <label class="required" for="id_gpu_info">GPU 정보:</label>
-
-                          <input type="text" name="gpu_info" class="vTextField" maxlength="100" required id="id_gpu_info" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row field-memory_info">
-                      <div>
-                        <div class="flex-container">
-                          <label class="required" for="id_memory_info">메모리 정보:</label>
-
-                          <input type="text" name="memory_info" class="vTextField" maxlength="50" required id="id_memory_info" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row field-total_epochs">
-                      <div>
-                        <div class="flex-container">
-                          <label class="required" for="id_total_epochs">총 에포크:</label>
+                    {% endfor %}
 
                           <input type="number" name="total_epochs" value="100" class="vIntegerField" required id="id_total_epochs" />
                         </div>
                       </div>
                     </div>
 
-                    <div class="form-row field-current_epoch">
-                      <div>
-                        <div class="flex-container">
-                          <label class="required" for="id_current_epoch">현재 에포크:</label>
 
-                          <input type="number" name="current_epoch" value="0" class="vIntegerField" required id="id_current_epoch" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row field-start_time">
-                      <div>
-                        <div class="flex-container">
-                          <label class="required">시작 시간:</label>
-
-                          <p class="datetime">
-                            날짜:
-                            <input type="text" name="start_time_0" value="2025-08-08" class="vDateField" size="10" required id="id_start_time_0" />
-
-                            <br />
-                            시각: <input type="text" name="start_time_1" value="16:37:29" class="vTimeField" size="8" required id="id_start_time_1" />
-                          </p>
-                          <input type="hidden" name="initial-start_time_0" value="2025-08-08" id="initial-id_start_time_0" /><input
-                            type="hidden"
-                            name="initial-start_time_1"
-                            value="16:37:29"
-                            id="initial-id_start_time_1"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row field-end_time">
-                      <div>
-                        <div class="flex-container">
-                          <label>종료 시간:</label>
-
-                          <p class="datetime">
-                            날짜: <input type="text" name="end_time_0" class="vDateField" size="10" id="id_end_time_0" />
-
-                            <br />
-                            시각: <input type="text" name="end_time_1" class="vTimeField" size="8" id="id_end_time_1" />
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row field-progress_percentage">
-                      <div>
-                        <div class="flex-container">
-                          <label>Progress percentage:</label>
-
-                          <div class="readonly">0.0</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="form-row field-training_duration">
-                      <div>
-                        <div class="flex-container">
-                          <label>Training duration:</label>
-
-                          <div class="readonly">0h 0m</div>
-                        </div>
-                      </div>
-                    </div>
                   </fieldset>
 
                   <div class="submit-row">

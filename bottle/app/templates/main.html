@@ -39,6 +39,26 @@
         .dark ::-webkit-scrollbar-thumb:hover {
             background: #777;
         }
+        
+        /* 고정 레이아웃을 위한 추가 스타일 */
+        @media (max-width: 768px) {
+            .md\:ml-64 {
+                margin-left: 0;
+            }
+            .md\:left-64 {
+                left: 0;
+            }
+        }
+        
+        /* 사이드바 오버레이 스타일 */
+        #sidebar-overlay {
+            transition: opacity 0.3s ease;
+        }
+        
+        /* 페이지 전환 애니메이션 */
+        .page-transition {
+            transition: opacity 0.3s ease;
+        }
     </style>
     <script>
         // Tailwind CSS 다크 모드 설정
@@ -47,52 +67,52 @@
         }
     </script>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+<body class="bg-gray-900 text-gray-200 dark">
 
     <div class="flex h-screen">
-        <!-- Sidebar -->
-        <aside id="sidebar" class="bg-white dark:bg-gray-800 text-gray-900 dark:text-white flex flex-col transition-all duration-300 ease-in-out w-64 fixed md:relative h-full z-20 -translate-x-full md:translate-x-0">
-            <div class="flex items-center justify-between h-16 border-b dark:border-gray-700 px-4">
-                <span id="sidebar-logo" class="text-xl font-bold text-blue-600 dark:text-blue-400">YOLO</span>
-                <button id="sidebar-close-btn" class="md:hidden p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700">
+        <!-- Sidebar - 고정 위치 -->
+        <aside id="sidebar" class="bg-gray-800 text-white flex flex-col transition-all duration-300 ease-in-out w-64 fixed left-0 top-0 h-full z-20 -translate-x-full md:translate-x-0">
+            <div class="flex items-center justify-between h-16 border-b border-gray-700 px-4">
+                <span id="sidebar-logo" class="text-xl font-bold text-blue-400">YOLO</span>
+                <button id="sidebar-close-btn" class="md:hidden p-2 rounded-md hover:bg-gray-700">
                     <i data-lucide="x"></i>
                 </button>
             </div>
             <nav id="sidebar-nav" class="flex-1 overflow-y-auto overflow-x-hidden py-4">
                 <!-- Menu items will be injected by JS -->
             </nav>
-            <div class="border-t dark:border-gray-700 p-4">
-                <button id="sidebar-toggle-btn" class="w-full flex items-center p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
+            <div class="border-t border-gray-700 p-4">
+                <button id="sidebar-toggle-btn" class="w-full flex items-center p-2 rounded-md hover:bg-gray-700">
                     <i data-lucide="chevron-left"></i>
                     <span id="sidebar-collapse-text" class="ml-4">메뉴 접기</span>
                 </button>
             </div>
         </aside>
 
-        <!-- Main Content -->
-        <div class="flex-1 flex flex-col overflow-hidden">
-            <header class="flex justify-between items-center h-16 bg-white dark:bg-gray-800 border-b dark:border-gray-700 px-6 shadow-sm">
+        <!-- Main Content - 사이드바 공간만큼 여백 추가 -->
+        <div class="flex-1 flex flex-col overflow-hidden md:ml-64">
+            <!-- Header - 고정 위치 -->
+            <header class="flex justify-between items-center h-16 bg-gray-800 border-b border-gray-700 px-6 shadow-sm fixed top-0 right-0 left-0 md:left-64 z-10">
                 <div class="flex items-center">
-                    <button id="sidebar-open-btn" class="md:hidden mr-4 p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700">
+                    <button id="sidebar-open-btn" class="md:hidden mr-4 p-2 rounded-md hover:bg-gray-700">
                         <i data-lucide="menu"></i>
                     </button>
-                    <h1 id="page-title" class="text-xl font-semibold">대시보드</h1>
+                    <h1 id="page-title" class="text-xl font-semibold text-white">대시보드</h1>
                 </div>
                 <div class="flex items-center gap-6">
-                    <button id="login-btn" class="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
+                    <button id="login-btn" class="flex items-center gap-2 text-sm font-medium text-gray-300 hover:text-blue-400 transition-colors">
                         <i data-lucide="log-in" class="w-4 h-4"></i>
                         <span id="login-text">로그인</span>
                     </button>
-                    <select id="language-switcher" class="border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <select id="language-switcher" class="border border-gray-600 rounded-lg bg-gray-700 p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-white">
                         <option value="ko">🇰🇷 한국어</option>
                         <option value="en">🇺🇸 English</option>
                     </select>
-                    <button id="theme-switcher" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
-                        <i data-lucide="moon"></i>
-                    </button>
+
                 </div>
             </header>
-            <main id="main-content" class="flex-1 overflow-x-hidden overflow-y-auto p-6">
+            <!-- Main Content Area - 헤더 높이만큼 여백 추가 -->
+            <main id="main-content" class="flex-1 overflow-x-hidden overflow-y-auto p-6 mt-16">
                 <!-- Page content will be injected by JS -->
             </main>
         </div>
@@ -103,7 +123,7 @@
             // --- STATE MANAGEMENT ---
             let isSidebarOpen = window.innerWidth >= 768;
             let currentLanguage = 'ko';
-            let currentTheme = 'light';
+
             let activePage = 'dashboard';
             let charts = {}; // To hold chart instances
 
@@ -117,14 +137,12 @@
             const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
             const mainContent = document.getElementById('main-content');
             const pageTitle = document.getElementById('page-title');
-            const themeSwitcher = document.getElementById('theme-switcher');
+
             const languageSwitcher = document.getElementById('language-switcher');
             
             // --- TRANSLATIONS ---
             const translations = {
                 en: {
-                    userManagement: "User Management",
-                    groupSettings: "Group Settings",
                     learningList: "Learning List",
                     startLearning: "Start Learning",
                     dashboard: "Dashboard",
@@ -152,8 +170,6 @@
                     underConstruction: "This page is under construction.",
                 },
                 ko: {
-                    userManagement: "사용자 관리",
-                    groupSettings: "그룹 설정",
                     learningList: "학습 목록",
                     startLearning: "학습 하기",
                     dashboard: "대시보드",
@@ -206,8 +222,6 @@
             const menuItems = [
                 { id: 'dashboard', label: 'dashboard', icon: 'bar-chart-2' },
                 { type: 'divider' },
-                { id: 'userManagement', label: 'userManagement', icon: 'users' },
-                { id: 'groupSettings', label: 'groupSettings', icon: 'settings' },
                 { id: 'learningList', label: 'learningList', icon: 'list' },
                 { id: 'startLearning', label: 'startLearning', icon: 'play-circle' },
             ];
@@ -242,6 +256,26 @@
                         `;
                         a.onclick = (e) => {
                             e.preventDefault();
+                            
+
+
+
+
+                            // # 문성준 수정 시작 
+                            // # 메뉴 url 이동 처리 - SPA 방식으로 변경
+                            
+                            if (item.id === 'learningList') {
+                                // 학습목록 버튼 클릭 시 아무런 반응 없음
+                                return;
+                            } else if (item.id === 'startLearning') {
+                                loadPage('/training/upload/', '학습 하기');
+                                return;
+                            }
+                            // #문성준 수정완료
+
+
+
+                            // 기존 페이지 전환 로직
                             activePage = item.id;
                             renderContent();
                             renderSidebar();
@@ -417,9 +451,8 @@
 
 
                 // --- Chart.js Initialization ---
-                const isDark = currentTheme === 'dark';
-                const textColor = isDark ? '#e5e7eb' : '#374151';
-                const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+                const textColor = '#e5e7eb'; 
+                const gridColor = 'rgba(255, 255, 255, 0.1)'; 
                 
                 // Format labels for multi-line display
                 const formattedClassLabels = classLabels.map(label => label.split('_'));
@@ -536,13 +569,7 @@
                 lucide.createIcons();
             };
 
-            const toggleTheme = () => {
-                currentTheme = currentTheme === 'light' ? 'dark' : 'light';
-                document.documentElement.classList.toggle('dark', currentTheme === 'dark');
-                themeSwitcher.innerHTML = `<i data-lucide="${currentTheme === 'dark' ? 'sun' : 'moon'}"></i>`;
-                lucide.createIcons();
-                renderContent();
-            };
+
 
             // --- EVENT LISTENERS ---
             sidebarToggleBtn.addEventListener('click', () => {
@@ -550,18 +577,126 @@
                 updateSidebarState();
             });
 
-            sidebarOpenBtn.addEventListener('click', () => sidebar.classList.remove('-translate-x-full'));
-            sidebarCloseBtn.addEventListener('click', () => sidebar.classList.add('-translate-x-full'));
-            themeSwitcher.addEventListener('click', toggleTheme);
+            sidebarOpenBtn.addEventListener('click', () => {
+                sidebar.classList.remove('-translate-x-full');
+                // 모바일에서 사이드바가 열릴 때 배경 오버레이 추가
+                if (window.innerWidth < 768) {
+                    const overlay = document.createElement('div');
+                    overlay.id = 'sidebar-overlay';
+                    overlay.className = 'fixed inset-0 bg-black bg-opacity-50 z-10 md:hidden';
+                    overlay.addEventListener('click', () => {
+                        sidebar.classList.add('-translate-x-full');
+                        overlay.remove();
+                    });
+                    document.body.appendChild(overlay);
+                }
+            });
+            
+            sidebarCloseBtn.addEventListener('click', () => {
+                sidebar.classList.add('-translate-x-full');
+                const overlay = document.getElementById('sidebar-overlay');
+                if (overlay) overlay.remove();
+            });
+
             languageSwitcher.addEventListener('change', (e) => {
                 currentLanguage = e.target.value;
                 updateHeaderText();
                 renderSidebar();
                 renderContent();
             });
+            
+            // 로그인 버튼 클릭 이벤트
+            const loginBtn = document.getElementById('login-btn');
+            loginBtn.addEventListener('click', () => {
+                loadPage('/login/', '대시보드');
+            });
+
+            // --- PAGE LOADING FUNCTION ---
+            const loadPage = async (url, title) => {
+                try {
+                    // 로딩 상태 표시
+                    mainContent.innerHTML = `
+                        <div class="flex items-center justify-center h-full">
+                            <div class="text-center">
+                                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                                <p class="text-gray-600 dark:text-gray-400">페이지 로딩 중...</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // 페이지 콘텐츠 로드
+                    const response = await fetch(url, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                    if (response.ok) {
+                        const html = await response.text();
+                        
+                        // HTML에서 body 내용만 추출
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const bodyContent = doc.body.innerHTML;
+                        
+                        // 메인 콘텐츠 영역에 삽입
+                        mainContent.innerHTML = bodyContent;
+                        
+                        // URL 업데이트 (브라우저 히스토리에 추가)
+                        window.history.pushState({ url, title }, title, url);
+                        
+                        // 사이드바 상태 업데이트
+                        renderSidebar();
+                    } else {
+                        throw new Error('페이지를 로드할 수 없습니다.');
+                    }
+                } catch (error) {
+                    console.error('페이지 로딩 오류:', error);
+                    mainContent.innerHTML = `
+                        <div class="flex items-center justify-center h-full">
+                            <div class="text-center">
+                                <div class="text-red-500 text-6xl mb-4">⚠️</div>
+                                <h2 class="text-xl font-semibold mb-2">페이지 로딩 실패</h2>
+                                <p class="text-gray-600 dark:text-gray-400">${error.message}</p>
+                                <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                                    새로고침
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+            };
+
+            // --- BROWSER BACK/FORWARD SUPPORT ---
+            window.addEventListener('popstate', (event) => {
+                if (event.state && event.state.url) {
+                    loadPage(event.state.url, event.state.title);
+                }
+            });
+
+            // --- URL ROUTING ---
+            const handleInitialRoute = () => {
+                const currentPath = window.location.pathname;
+                
+                // SPA가 아닌 직접 접근을 차단하는 경로들
+                const blockedPaths = [
+                    '/login/', '/login',
+                    '/training/upload/', '/training/upload',
+                    '/training/', '/training',
+                    '/training/input/', '/training/input',
+                    '/training/output/', '/training/output',
+                    '/training/list/', '/training/list'
+                ];
+                
+                // 차단된 경로로 직접 접근한 경우 메인 페이지로 리다이렉트
+                if (blockedPaths.includes(currentPath)) {
+                    window.history.replaceState({ url: '/', title: '대시보드' }, '대시보드', '/');
+                    return;
+                }
+            };
 
             // --- INITIALIZATION ---
             const init = () => {
+                handleInitialRoute();
                 updateHeaderText();
                 renderSidebar();
                 renderContent();

@@ -36,16 +36,35 @@ from .forms import DataUploadForm
 # training/view.py 2025.08.10 ngins7512
 # 학습 세션 목록(다건 조회)
 def training_list(request):
+    # SPA 방식으로만 접근 허용
+    if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return redirect('/')
     return render(request, "training/training_list.html")
 
 
 # 학습 세션 입력
 def training_input(request):
-    return render(request, "training/training_input.html")
+    # SPA 방식으로만 접근 허용
+    if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return redirect('/')
+        
+    if request.method == 'POST':
+        form = DataUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            # 폼 데이터 처리 로직
+            messages.success(request, '훈련 세션이 성공적으로 생성되었습니다.')
+            return redirect('training:training_list')
+    else:
+        form = DataUploadForm()
+    
+    return render(request, "training/training_input.html", {'form': form})
 
 # 학습 세션 출력(단건 조회)
 def training_output(request):
     """메인 대시보드 뷰"""
+    # SPA 방식으로만 접근 허용
+    if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return redirect('/')
     # 최신 훈련 세션 가져오기
     try:
         latest_session = TrainingSession.objects.latest("created_at")
@@ -381,6 +400,10 @@ def dashboard(request):
 def upload_dataset(request):
     """데이터셋 업로드 페이지"""
     print(f'[trining/views.py] upload_dataset -----request.method:{request.method}')
+    
+    # SPA 방식으로만 접근 허용
+    if request.method == "GET" and not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return redirect('/')
     
     if request.method == "POST":
         form = DataUploadForm(request.POST, request.FILES)

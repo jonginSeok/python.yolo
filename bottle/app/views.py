@@ -5,13 +5,20 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.views import LoginView
 
 
-@login_required(login_url="/login/")
 def main_view(request):
     return render(request, "main.html")
 
 class CustomLoginView(LoginView):
     # template_name = "registration/login.html"
     template_name = "login.html"  # ngins7512 / 2025.08.06
+    
+    def get(self, request, *args, **kwargs):
+        # SPA 방식으로만 접근 허용
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return super().get(request, *args, **kwargs)
+        else:
+            # 직접 접근 시 메인 페이지로 리다이렉트
+            return redirect('/')
 
 
 login_view = CustomLoginView.as_view()
