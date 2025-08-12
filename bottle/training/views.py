@@ -80,6 +80,8 @@ from .forms import DataUploadForm
 
 def training_data_api(request, session_id):
     """훈련 데이터 API"""
+    print(f'[training/views.py] training_data_api session_id:{session_id}')
+    
     session = get_object_or_404(TrainingSession, id=session_id)
     metrics = session.metrics.all()
 

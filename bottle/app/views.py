@@ -5,16 +5,15 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.views import LoginView
 
 
-@login_required(login_url="/login/")
+
+@login_required(login_url="/accounts/login/")
 def main_view(request):
     return render(request, "main.html")
 
-class CustomLoginView(LoginView):
-    # template_name = "registration/login.html"
-    template_name = "login.html"  # ngins7512 / 2025.08.06
+# # class CustomLoginView(LoginView):
+# #     template_name = "login.html"  # ngins7512 / 2025.08.06
 
-
-login_view = CustomLoginView.as_view()
+# # login_view = CustomLoginView.as_view()
 
 
 # def login_view(request):
@@ -27,11 +26,7 @@ login_view = CustomLoginView.as_view()
 #             login(request, user)
 #             return redirect("/")
 #         else:
-#             return render(
-#                 request,
-#                 "login.html",
-#                 {"error": "아이디 또는 비밀번호가 올바르지 않습니다."},
-#             )
+#             return render(request, "login.html", {"error": "아이디 또는 비밀번호가 올바르지 않습니다."})
 
 #     return render(request, "login.html")
 
