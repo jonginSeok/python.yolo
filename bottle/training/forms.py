@@ -1,4 +1,4 @@
-# trainings/forms.py
+# training/forms.py
 from django import forms
 from django.core.validators import FileExtensionValidator
 from django.core.exceptions import ValidationError
@@ -8,32 +8,8 @@ from datetime import datetime
 
 
 
-# class TrainingSessionForm(forms.ModelForm):
-#     attachment = forms.FileField(
-#         label="세션 자료 첨부 (선택)",
-#         required=False,
-#         help_text="ZIP 혹은 7Z만 업로드 가능 (최대 100MB)",
-#         error_messages={
-#             "invalid": "유효하지 않은 파일입니다.",
-#             "required": "파일을 첨부해주세요.",
-#         },
-#         validators=[
-#             FileExtensionValidator(
-#                 ["zip", "7z"], message="ZIP 혹은 7Z 파일만 첨부할 수 있습니다."
-#             )
-#         ],
-#         widget=forms.ClearableFileInput(attrs={"class": "form-control-file"}),
-#     )
-
-#     class Meta:
-#         model = TrainingSession
-#         # fields = ['title', 'description', 'attachment']
-#         fields = ["attachment"]
-
-
-
-
 # training/forms.py 2025.08.10 ngins7512
+# upload.html 파일 로드할때
 class DataUploadForm(forms.Form):
     """YOLO 훈련 데이터 업로드 폼"""
     print('[trining/forms.py] DataUploadForm -----')
@@ -53,9 +29,7 @@ class DataUploadForm(forms.Form):
         max_length=20,
         label="버전",
         widget=forms.TextInput(
-            attrs={"class": "form-control",
-                #    "placeholder": "0.0.1"
-            }
+            attrs={"class": "form-control", "placeholder": "0.0.1"}
         ),
     )
     
@@ -77,9 +51,7 @@ class DataUploadForm(forms.Form):
         max_length=100,
         label="데이터셋명",
         widget=forms.TextInput(
-            attrs={"class": "form-control", 
-                #    "placeholder": "Custom Dataset"
-                }
+            attrs={"class": "form-control", "placeholder": "Custom Dataset"}
         ),
     )
     
@@ -88,9 +60,7 @@ class DataUploadForm(forms.Form):
         max_length=100,
         label="GPU 정보",
         widget=forms.TextInput(
-            attrs={"class": "form-control", 
-                #    "placeholder": "NVIDIA RTX 3080"
-            }
+            attrs={"class": "form-control", "placeholder": "NVIDIA RTX 2070"}
         ),
     )
     memory_info = forms.CharField(
@@ -98,9 +68,7 @@ class DataUploadForm(forms.Form):
         max_length=50,
         label="메모리 정보",
         widget=forms.TextInput(
-            attrs={"class": "form-control", 
-                #    "placeholder": "64GB"
-                }
+            attrs={"class": "form-control", "placeholder": "64GB"}
         ),
     )
 
@@ -110,6 +78,16 @@ class DataUploadForm(forms.Form):
         label="데이터셋 ZIP 파일",
         help_text="이미지와 라벨 파일이 포함된 ZIP 파일을 업로드하세요",
         widget=forms.FileInput(attrs={"class": "form-control", "accept": ".zip"}),
+    )
+    
+    
+    class_name = forms.CharField(
+        required=True,
+        max_length=50,
+        label="클래스 정보",
+        widget=forms.TextInput(
+            attrs={"class": "form-control", "placeholder": "good or bad"}
+        ),
     )
     
     total_epochs = forms.IntegerField(
@@ -204,6 +182,7 @@ class DataUploadForm(forms.Form):
     )
     
     start_time = forms.DateTimeField(
+        required=True,
         label="시작 시간",
         initial=datetime.now,
         widget=forms.DateTimeInput(
@@ -212,8 +191,8 @@ class DataUploadForm(forms.Form):
     )
         
     end_time = forms.DateTimeField(
-        label="종료 시간",
         required=False,
+        label="종료 시간",
         widget=forms.DateTimeInput(
             attrs={"class": "form-control", "type": "datetime-local"}
         ),
@@ -221,8 +200,8 @@ class DataUploadForm(forms.Form):
 
     # 설명 (선택사항)
     description = forms.CharField(
-        label="설명",
         required=False,
+        label="설명",
         widget=forms.Textarea(
             attrs={
                 "class": "form-control",
@@ -232,19 +211,20 @@ class DataUploadForm(forms.Form):
         ),
     )
     
-    
     def clean_zip_file(self):
         """ZIP 파일 검증"""
         
         zip_file = self.cleaned_data.get("zip_file")
-        print('[trining/forms.py] DataUploadForm ----- clean_zip_file zip_file:', zip_file)
+        print('[training/forms.py] clean_zip_file ----- clean_zip_file zip_file:', zip_file)
         
         if zip_file:
             if not zip_file.name.endswith(".zip"):
-                print('[trining/forms.py] DataUploadForm ----- zip_file.name.endswith:', zip_file.name.endswith(".zip"))
+                print('[training/forms.py] clean_zip_file ----- zip_file.name.endswith:', zip_file.name.endswith(".zip"))
                 raise forms.ValidationError("ZIP 파일만 업로드 가능합니다.")
+            
             if zip_file.size > 500 * 1024 * 1024:  # 500MB 제한
-                print('[trining/forms.py] DataUploadForm ----- zip_file.size:', (zip_file.size))
+                print('[training/forms.py] clean_zip_file ----- zip_file.size:', (zip_file.size))
                 raise forms.ValidationError("파일 크기는 500MB를 초과할 수 없습니다.")
-            print('[trining/forms.py] DataUploadForm ----- return zip_file:', zip_file)
+            
+            print('[training/forms.py] clean_zip_file ----- return zip_file:', zip_file)
         return zip_file

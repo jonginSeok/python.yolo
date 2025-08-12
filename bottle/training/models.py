@@ -18,6 +18,8 @@ class TrainingSession(models.Model):
     
     # zip_file = models.FileField(upload_to='trainings/%Y/%m/%d/',verbose_name="데이터셋 ZIP 파일")
     
+    
+    
     total_epochs = models.IntegerField(default=100, verbose_name="총 에포크")
     current_epoch = models.IntegerField(default=0, verbose_name="현재 에포크")    
     batch_size = models.IntegerField(default=1, verbose_name="배치 크기")

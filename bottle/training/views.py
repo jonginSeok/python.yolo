@@ -18,80 +18,64 @@ from .forms import DataUploadForm
 
 
 # training/view.py 2025.08.10 ngins7512
-# import json
-# import plotly.graph_objs as go
-# import plotly.utils
-# from django.shortcuts import render, get_object_or_404, redirect
-# from django.http import JsonResponse
-# from django.db.models import Q, Avg, Max, Min
-# from django.utils import timezone
-# from datetime import timedelta
-
-# from .forms import TrainingSessionForm
-# from .models import TrainingSession, TrainingMetric, ClassMetric
-
-
-
-
-# training/view.py 2025.08.10 ngins7512
 # 학습 세션 목록(다건 조회)
-def training_list(request):
-    return render(request, "training/training_list.html")
+# def training_list(request):
+#     return render(request, "training/training_list.html")
 
 
-# 학습 세션 입력
-def training_input(request):
-    return render(request, "training/training_input.html")
+# 학습 세션 입력 /삭제예정 ngins7512 2025.08.12
+# def training_input(request):
+#     return render(request, "training/training_input.html")
 
 # 학습 세션 출력(단건 조회)
-def training_output(request):
-    """메인 대시보드 뷰"""
-    # 최신 훈련 세션 가져오기
-    try:
-        latest_session = TrainingSession.objects.latest("created_at")
-        latest_metrics = latest_session.metrics.last()
-        class_metrics = latest_session.class_metrics.all()
-
-        # 차트 데이터 생성
-        loss_chart = create_loss_chart(latest_session)
-        map_chart = create_map_chart(latest_session)
-
-        # 성능 개선 계산 (이전 10개 에포크와 비교)
-        metrics_count = latest_session.metrics.count()
-        if metrics_count > 10:
-            recent_avg = latest_session.metrics.order_by("-epoch")[:5].aggregate(Avg("map50"))["map50__avg"]
-            old_avg = latest_session.metrics.order_by("-epoch")[5:10].aggregate(Avg("map50"))["map50__avg"]
-            map_change = ((recent_avg - old_avg) / old_avg * 100) if old_avg else 0
-        else:
-            map_change = 0
-
-        # 손실 변화 계산
-        if metrics_count > 5:
-            recent_loss = latest_session.metrics.order_by("-epoch")[:3].aggregate(Avg("train_loss"))["train_loss__avg"]
-            old_loss = latest_session.metrics.order_by("-epoch")[3:6].aggregate(Avg("train_loss"))["train_loss__avg"]
-            loss_change = ((old_loss - recent_loss) / old_loss * 100) if old_loss else 0
-        else:
-            loss_change = 0
-
-    except TrainingSession.DoesNotExist:
-        # 데모 데이터 생성
-        latest_session, latest_metrics, class_metrics = create_demo_data()
-        loss_chart = create_demo_loss_chart()
-        map_chart = create_demo_map_chart()
-        map_change = 2.3
-        loss_change = 12.5
-
-    context = {
-        "session": latest_session,
-        "latest_metrics": latest_metrics,
-        "class_metrics": class_metrics,
-        "loss_chart": loss_chart,
-        "map_chart": map_chart,
-        "map_change": round(map_change, 1),
-        "loss_change": round(loss_change, 1),
-    }
-
-    return render(request, "training/training_output.html", context)
+# def training_output(request):
+#     """메인 대시보드 뷰"""
+#     # 최신 훈련 세션 가져오기
+#     try:
+#         latest_session = TrainingSession.objects.latest("created_at")
+#         latest_metrics = latest_session.metrics.last()
+#         class_metrics = latest_session.class_metrics.all()
+#
+#         # 차트 데이터 생성
+#         loss_chart = create_loss_chart(latest_session)
+#         map_chart = create_map_chart(latest_session)
+#
+#         # 성능 개선 계산 (이전 10개 에포크와 비교)
+#         metrics_count = latest_session.metrics.count()
+#         if metrics_count > 10:
+#             recent_avg = latest_session.metrics.order_by("-epoch")[:5].aggregate(Avg("map50"))["map50__avg"]
+#             old_avg = latest_session.metrics.order_by("-epoch")[5:10].aggregate(Avg("map50"))["map50__avg"]
+#             map_change = ((recent_avg - old_avg) / old_avg * 100) if old_avg else 0
+#         else:
+#             map_change = 0
+#
+#         # 손실 변화 계산
+#         if metrics_count > 5:
+#             recent_loss = latest_session.metrics.order_by("-epoch")[:3].aggregate(Avg("train_loss"))["train_loss__avg"]
+#             old_loss = latest_session.metrics.order_by("-epoch")[3:6].aggregate(Avg("train_loss"))["train_loss__avg"]
+#             loss_change = ((old_loss - recent_loss) / old_loss * 100) if old_loss else 0
+#         else:
+#             loss_change = 0
+#
+#     except TrainingSession.DoesNotExist:
+#         # 데모 데이터 생성
+#         latest_session, latest_metrics, class_metrics = create_demo_data()
+#         loss_chart = create_demo_loss_chart()
+#         map_chart = create_demo_map_chart()
+#         map_change = 2.3
+#         loss_change = 12.5
+#
+#     context = {
+#         "session": latest_session,
+#         "latest_metrics": latest_metrics,
+#         "class_metrics": class_metrics,
+#         "loss_chart": loss_chart,
+#         "map_chart": map_chart,
+#         "map_change": round(map_change, 1),
+#         "loss_change": round(loss_change, 1),
+#     }
+#
+#     return render(request, "training/training_output.html", context)
 
 
 def training_data_api(request, session_id):
@@ -431,8 +415,7 @@ def upload_dataset(request):
             session = TrainingSession.objects.create(
                 model_name=form.cleaned_data["model_name"],
                 dataset_name=form.cleaned_data["dataset_name"],
-                status="pending",
-                # total_epochs=form.cleaned_data["epochs"],
+                status=form.cleaned_data["status"], #"pending",
                 total_epochs=form.cleaned_data["total_epochs"],
                 current_epoch=form.cleaned_data["current_epoch"],
                 batch_size=form.cleaned_data["batch_size"],
@@ -457,6 +440,13 @@ def upload_dataset(request):
                     "label_count": len(label_files),
                 },
             )
+            
+            class_names = request.POST.getlist("class_name")
+            
+            # class 데이터 입력
+            for name in class_names:
+                ClassMetric.objects.create(session_id=session.id, class_name=name)
+
 
             messages.success(request, f"데이터셋이 성공적으로 업로드되었습니다. 훈련 세션 ID: {session.id}",)
 
@@ -465,8 +455,8 @@ def upload_dataset(request):
             # start_training_async(session.id)  # 백그라운드 작업으로 훈련 시작
             print(f"start_training_async({session.id})  # 백그라운드 작업으로 훈련 시작")
 
-            # return redirect("training:dashboard") # training_output
-            return redirect("training:training_output")
+            return redirect("training:dashboard")
+#            return redirect("training:training_output")
     else:
         # print('Before:',form.errors)
         form = DataUploadForm()
