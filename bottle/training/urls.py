@@ -13,5 +13,5 @@ urlpatterns = [
     # path('', views.training_list, name='training_list'),
     path('upload/', views.upload_dataset, name='upload_dataset'),
     path('sessions/', views.training_sessions_list, name='sessions_list'),
-    path('api/training/<int:session_id>/', views.training_data_api, name='training_data_api'),
+    path('api/<int:session_id>/', views.training_data_api, name='training_data_api'),
 ]

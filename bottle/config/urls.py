@@ -23,14 +23,11 @@ from django.conf import settings  # 2025.08.06 ngins7512 추가/대시보드 관
 from django.conf.urls.static import static  # 2025.08.06 ngins7512 추가/대시보드 관련
 
 urlpatterns = [
-    # path("/", LogoutView.as_view(template_name="logout.html"), name="logout"),
     path("", include("app.urls")),  # 앱 URL을 포함시킴
-    path("training/", include("training.urls")),  # 2025.08.06 ngins7512 추가/대시보드 관련
-    
     path("admin/", admin.site.urls),
     path("accounts/", include("accounts.urls")),
     path("accounts/", include("django.contrib.auth.urls")),  # 로그인/로그아웃 뷰
-    
+    path("training/", include("training.urls")),  # 2025.08.06 ngins7512 추가/대시보드 관련
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 if settings.DEBUG:    # 2025.08.06 ngins7512 추가/대시보드 관련 + static 부터
