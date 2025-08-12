@@ -100,10 +100,10 @@
                     <h1 id="page-title" class="text-xl font-semibold text-white">대시보드</h1>
                 </div>
                 <div class="flex items-center gap-6">
-                    <button id="login-btn" class="flex items-center gap-2 text-sm font-medium text-gray-300 hover:text-blue-400 transition-colors">
-                        <i data-lucide="log-in" class="w-4 h-4"></i>
-                        <span id="login-text">로그인</span>
-                    </button>
+                    <form id="logout-form" method="post" action="/accounts/logout/">
+                        {% csrf_token %}
+                        <button type="submit">로그아웃</button>
+                    </form>
                     <select id="language-switcher" class="border border-gray-600 rounded-lg bg-gray-700 p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-white">
                         <option value="ko">🇰🇷 한국어</option>
                         <option value="en">🇺🇸 English</option>
