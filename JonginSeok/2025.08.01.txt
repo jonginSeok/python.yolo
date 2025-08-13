@@ -1,0 +1,73 @@
+김찬운: 각 팀의 팀명과 프로젝트 주제를 올려주세요
+
+B 팀, 병생산공정 또는 음료생산공정에서 발생할 수 있는 bottle상태 분석 학습
+
+
+dataset/images, dataset/labels 각각 이미지와 라벨 파일들이 존재하고 확장자를 뺀 파일명으로 1:1매칭이 된다.
+label_map = {
+    'bad-broken_large': 0,
+    'bad-broken_small': 1,
+    'bad-contamination': 2,
+    'bottle-good': 3,
+} 
+labels 폴더의 각각의 파일들은 1줄의 라벨정보가 있고 space로 split하면 list 값의 0번째 인덱스에 해당하는 숫자는 label_map 정보에서 value 값에 해당한다.
+이미지와 라벨파일들을 data_path = "JonginSeok/dataset/cnn" 의 경로 하단에 train, valid, test 폴더를 생성하고 rate_img = [70,20,10]
+rate_img 의 비율로 파일을 나누어 담아주는 python 코드를 생성해줘
+
+
+
+
+
+Python 3.13.5 버전 설치
+conda 25.5.1 버전 설치
+
+python --version
+conda --version
+
+아나콘다로 가상환경 GPU활용 환경
+
+conda create -n torch_venv python=3.13.9 (X)
+conda create -n torch_venv python=3.13 (O)
+
+conda activate base
+conda activate torch_venv
+
+done
+#
+# To activate this environment, use
+#
+#     $ conda activate torch_venv
+#
+# To deactivate an active environment, use
+#
+#     $ conda deactivate
+
+
+pip install torch torchvision torchaudio
+
+# pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu116
+
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+# pip install ultralytics  opencv-python
+
+
+환경 확인
+import torch
+x = torch.rand(5, 3)
+print(x)
+
+
+
+
+from ultralytics import YOLO
+
+# Load a model
+model = YOLO("yolo11n.pt")  # load an official model
+model = YOLO("path/to/best.pt")  # load a custom model
+
+# Validate the model
+metrics = model.val()  # no arguments needed, dataset and settings remembered
+metrics.box.map  # map50-95
+metrics.box.map50  # map50
+metrics.box.map75  # map75
+metrics.box.maps  # a list contains map50-95 of each category

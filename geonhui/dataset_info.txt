@@ -1,0 +1,24 @@
+=== YOLO 데이터셋 정보 ===
+
+생성 일시: 2025-08-11 
+오후 02:14
+소스 데이터: C:\Users\602-22\Git\python.yolo\geonhui\dataset
+출력 경로: C:\Users\602-22\Git\python.yolo\geonhui
+
+총 클래스 수: 4
+
+클래스 매핑:
+  0: bad-broken_large
+  1: bad-broken_small
+  2: bad-contamination
+  3: bottle-good
+
+데이터 분할 비율:
+  Train: 78%
+  Valid: 16%
+  Test: 6%
+
+실제 파일 수:
+  train: 212개
+  valid: 43개
+  test: 17개

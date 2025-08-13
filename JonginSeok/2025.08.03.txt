@@ -1,0 +1,393 @@
+(torch_venv) C:\Users\ngins\Git\python.yolo>C:/ProgramData/anaconda3/envs/torch_venv/python.exe c:/Users/ngins/Git/python.yolo/JonginSeok/05증강된데이터셋YOLO실행.py
+Ultralytics 8.3.172  Python-3.13.5 torch-2.7.1+cu128 CUDA:0 (NVIDIA GeForce RTX 2070 Super with Max-Q Design, 8192MiB)
+engine\trainer: agnostic_nms=False, amp=True, augment=False, auto_augment=randaugment, batch=16, bgr=0.0, box=7.5, cache=False, cfg=None, classes=None, close_mosaic=10, cls=0.5, conf=None, copy_paste=0.0, copy_paste_mode=flip, cos_lr=False, cutmix=0.0, data=/Users/ngins/Git/python.yolo/JonginSeok/dataset/data.yaml, degrees=0.0, deterministic=True, device=None, dfl=1.5, dnn=False, dropout=0.0, dynamic=False, embed=None, epochs=100, erasing=0.4, exist_ok=False, fliplr=0.5, flipud=0.0, format=torchscript, fraction=1.0, freeze=None, half=False, hsv_h=0.015, hsv_s=0.7, hsv_v=0.4, imgsz=640, int8=False, iou=0.7, keras=False, kobj=1.0, line_width=None, lr0=0.01, lrf=0.01, mask_ratio=4, max_det=300, mixup=0.0, mode=train, model=yolo11n.pt, momentum=0.937, mosaic=1.0, multi_scale=False, name=yolo11n_bottle_4class, nbs=64, nms=False, opset=None, optimize=False, optimizer=auto, overlap_mask=True, patience=100, perspective=0.0, plots=True, pose=12.0, pretrained=True, profile=False, project=JonginSeok/dataset/result, rect=False, resume=False, retina_masks=False, save=True, save_conf=False, save_crop=False, save_dir=JonginSeok\dataset\result\yolo11n_bottle_4class, save_frames=False, save_json=False, save_period=-1, save_txt=False, scale=0.5, seed=0, shear=0.0, show=False, show_boxes=True, show_conf=True, show_labels=True, simplify=True, single_cls=False, source=None, split=val, stream_buffer=False, task=detect, time=None, tracker=botsort.yaml, translate=0.1, val=True, verbose=True, vid_stride=1, visualize=False, warmup_bias_lr=0.1, warmup_epochs=3.0, warmup_momentum=0.8, weight_decay=0.0005, workers=8, workspace=None
+Overriding model.yaml nc=80 with nc=4
+
+                   from  n    params  module                                       arguments         
+
+  0                  -1  1       464  ultralytics.nn.modules.conv.Conv             [3, 16, 3, 2]     
+
+  1                  -1  1      4672  ultralytics.nn.modules.conv.Conv             [16, 32, 3, 2]    
+
+  2                  -1  1      6640  ultralytics.nn.modules.block.C3k2            [32, 64, 1, False, 0.25]
+  3                  -1  1     36992  ultralytics.nn.modules.conv.Conv             [64, 64, 3, 2]    
+
+  4                  -1  1     26080  ultralytics.nn.modules.block.C3k2            [64, 128, 1, False, 0.25]
+  5                  -1  1    147712  ultralytics.nn.modules.conv.Conv             [128, 128, 3, 2]  
+
+  6                  -1  1     87040  ultralytics.nn.modules.block.C3k2            [128, 128, 1, True]
+  7                  -1  1    295424  ultralytics.nn.modules.conv.Conv             [128, 256, 3, 2]  
+
+  8                  -1  1    346112  ultralytics.nn.modules.block.C3k2            [256, 256, 1, True]
+  9                  -1  1    164608  ultralytics.nn.modules.block.SPPF            [256, 256, 5]     
+
+ 10                  -1  1    249728  ultralytics.nn.modules.block.C2PSA           [256, 256, 1]     
+
+ 11                  -1  1         0  torch.nn.modules.upsampling.Upsample         [None, 2, 'nearest']
+ 12             [-1, 6]  1         0  ultralytics.nn.modules.conv.Concat           [1]               
+
+ 13                  -1  1    111296  ultralytics.nn.modules.block.C3k2            [384, 128, 1, False]
+ 14                  -1  1         0  torch.nn.modules.upsampling.Upsample         [None, 2, 'nearest']
+ 15             [-1, 4]  1         0  ultralytics.nn.modules.conv.Concat           [1]               
+
+ 16                  -1  1     32096  ultralytics.nn.modules.block.C3k2            [256, 64, 1, False]
+ 17                  -1  1     36992  ultralytics.nn.modules.conv.Conv             [64, 64, 3, 2]    
+
+ 18            [-1, 13]  1         0  ultralytics.nn.modules.conv.Concat           [1]               
+
+ 19                  -1  1     86720  ultralytics.nn.modules.block.C3k2            [192, 128, 1, False]
+ 20                  -1  1    147712  ultralytics.nn.modules.conv.Conv             [128, 128, 3, 2]  
+
+ 21            [-1, 10]  1         0  ultralytics.nn.modules.conv.Concat           [1]               
+
+ 22                  -1  1    378880  ultralytics.nn.modules.block.C3k2            [384, 256, 1, True]
+ 23        [16, 19, 22]  1    431452  ultralytics.nn.modules.head.Detect           [4, [64, 128, 256]]
+YOLO11n summary: 181 layers, 2,590,620 parameters, 2,590,604 gradients, 6.4 GFLOPs
+
+Transferred 448/499 items from pretrained weights
+Freezing layer 'model.23.dfl.conv.weight'
+AMP: running Automatic Mixed Precision (AMP) checks...
+Traceback (most recent call last):
+  File "c:\Users\ngins\Git\python.yolo\JonginSeok\05증강된데이터셋YOLO실행.py", line 16, in <module>
+    model.train(
+    ~~~~~~~~~~~^
+        data='/Users/ngins/Git/python.yolo/JonginSeok/dataset/data.yaml',
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+        name='yolo11n_bottle_4class'
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\ngins\AppData\Roaming\Python\Python313\site-packages\ultralytics\engine\model.py", line 799, in train
+    self.trainer.train()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\ngins\AppData\Roaming\Python\Python313\site-packages\ultralytics\engine\trainer.py", line 227, in train
+    self._do_train(world_size)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\Users\ngins\AppData\Roaming\Python\Python313\site-packages\ultralytics\engine\trainer.py", line 348, in _do_train
+    self._setup_train(world_size)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\Users\ngins\AppData\Roaming\Python\Python313\site-packages\ultralytics\engine\trainer.py", line 285, in _setup_train
+    self.amp = torch.tensor(check_amp(self.model), device=self.device)
+                            ~~~~~~~~~^^^^^^^^^^^^
+  File "C:\Users\ngins\AppData\Roaming\Python\Python313\site-packages\ultralytics\utils\checks.py", line 782, in check_amp
+    assert amp_allclose(YOLO("yolo11n.pt"), im)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ngins\AppData\Roaming\Python\Python313\site-packages\ultralytics\utils\checks.py", line 770, in amp_allclose
+    a = m(batch, imgsz=imgsz, device=device, verbose=False)[0].boxes.data  # FP32 inference
+        ~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ngins\AppData\Roaming\Python\Python313\site-packages\ultralytics\engine\model.py", line 185, in __call__
+    return self.predict(source, stream, **kwargs)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ngins\AppData\Roaming\Python\Python313\site-packages\ultralytics\engine\model.py", line 555, in predict
+    return self.predictor.predict_cli(source=source) if is_cli else self.predictor(source=source, stream=stream)
+                                                                    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ngins\AppData\Roaming\Python\Python313\site-packages\ultralytics\engine\predictor.py", line 227, in __call__
+    return list(self.stream_inference(source, model, *args, **kwargs))  # merge list of Result into one
+  File "C:\ProgramData\anaconda3\envs\torch_venv\Lib\site-packages\torch\utils\_contextlib.py", line 36, in generator_context
+    response = gen.send(None)
+  File "C:\Users\ngins\AppData\Roaming\Python\Python313\site-packages\ultralytics\engine\predictor.py", line 337, in stream_inference
+    self.results = self.postprocess(preds, im, im0s)
+                   ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\ngins\AppData\Roaming\Python\Python313\site-packages\ultralytics\models\yolo\detect\predict.py", line 56, in postprocess
+    preds = ops.non_max_suppression(
+        preds,
+    ...<8 lines>...
+        return_idxs=save_feats,
+    )
+  File "C:\Users\ngins\AppData\Roaming\Python\Python313\site-packages\ultralytics\utils\ops.py", line
+ 330, in non_max_suppression
+    i = torchvision.ops.nms(boxes, scores, iou_thres)  # NMS
+  File "C:\Users\ngins\AppData\Roaming\Python\Python313\site-packages\torchvision\ops\boxes.py", line
+ 41, in nms
+    return torch.ops.torchvision.nms(boxes, scores, iou_threshold)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\anaconda3\envs\torch_venv\Lib\site-packages\torch\_ops.py", line 1158, in __call__
+    return self._op(*args, **(kwargs or {}))
+           ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+NotImplementedError: Could not run 'torchvision::nms' with arguments from the 'CUDA' backend. This could be because the operator doesn't exist for this backend, or was omitted during the selective/custom build process (if using custom build). If you are a Facebook employee using PyTorch on mobile, please visit https://fburl.com/ptmfixes for possible resolutions. 'torchvision::nms' is only available for these backends: [CPU, Meta, QuantizedCPU, BackendSelect, Python, FuncTorchDynamicLayerBackMode, Functionalize, Named, Conjugate, Negative, ZeroTensor, ADInplaceOrView, AutogradOther, AutogradCPU, AutogradCUDA, AutogradXLA, AutogradMPS, AutogradXPU, AutogradHPU, AutogradLazy, AutogradMTIA, AutogradMeta, Tracer, AutocastCPU, AutocastMTIA, AutocastXPU, AutocastMPS, AutocastCUDA, FuncTorchBatched, BatchedNestedTensor, FuncTorchVmapMode, Batched, VmapMode, FuncTorchGradWrapper, PythonTLSSnapshot, FuncTorchDynamicLayerFrontMode, PreDispatch, PythonDispatcher].
+
+CPU: registered at C:\actions-runner\_work\vision\vision\pytorch\vision\torchvision\csrc\ops\cpu\nms_kernel.cpp:112 [kernel]
+Meta: registered at /dev/null:214 [kernel]
+QuantizedCPU: registered at C:\actions-runner\_work\vision\vision\pytorch\vision\torchvision\csrc\ops\quantized\cpu\qnms_kernel.cpp:124 [kernel]
+BackendSelect: fallthrough registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\core\BackendSelectFallbackKernel.cpp:3 [backend fallback]
+Python: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\core\PythonFallbackKernel.cpp:194 [backend fallback]
+FuncTorchDynamicLayerBackMode: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\functorch\DynamicLayer.cpp:479 [backend fallback]
+Functionalize: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\FunctionalizeFallbackKernel.cpp:349 [backend fallback]
+Named: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\core\NamedRegistrations.cpp:7 [backend fallback]
+Conjugate: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\ConjugateFallback.cpp:17 [backend fallback]
+Negative: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\NegateFallback.cpp:18 [backend fallback]
+ZeroTensor: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\ZeroTensorFallback.cpp:86 [backend fallback]
+ADInplaceOrView: fallthrough registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\core\VariableFallbackKernel.cpp:100 [backend fallback]
+AutogradOther: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\core\VariableFallbackKernel.cpp:63 [backend fallback]
+AutogradCPU: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\core\VariableFallbackKernel.cpp:67 [backend fallback]
+AutogradCUDA: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\core\VariableFallbackKernel.cpp:75 [backend fallback]
+AutogradXLA: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\core\VariableFallbackKernel.cpp:83 [backend fallback]
+AutogradMPS: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\core\VariableFallbackKernel.cpp:91 [backend fallback]
+AutogradXPU: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\core\VariableFallbackKernel.cpp:71 [backend fallback]
+AutogradHPU: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\core\VariableFallbackKernel.cpp:104 [backend fallback]
+AutogradLazy: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\core\VariableFallbackKernel.cpp:87 [backend fallback]
+AutogradMTIA: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\core\VariableFallbackKernel.cpp:79 [backend fallback]
+AutogradMeta: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\core\VariableFallbackKernel.cpp:95 [backend fallback]
+Tracer: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\torch\csrc\autograd\TraceTypeManual.cpp:294 [backend fallback]
+AutocastCPU: registered at C:\actions-runner\_work\vision\vision\pytorch\vision\torchvision\csrc\ops\autocast\nms_kernel.cpp:34 [kernel]
+AutocastMTIA: fallthrough registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\autocast_mode.cpp:466 [backend fallback]
+AutocastXPU: registered at C:\actions-runner\_work\vision\vision\pytorch\vision\torchvision\csrc\ops\autocast\nms_kernel.cpp:41 [kernel]
+AutocastMPS: fallthrough registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\autocast_mode.cpp:209 [backend fallback]
+AutocastCUDA: registered at C:\actions-runner\_work\vision\vision\pytorch\vision\torchvision\csrc\ops\autocast\nms_kernel.cpp:27 [kernel]
+FuncTorchBatched: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\functorch\LegacyBatchingRegistrations.cpp:731 [backend fallback]
+BatchedNestedTensor: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\functorch\LegacyBatchingRegistrations.cpp:758 [backend fallback]
+FuncTorchVmapMode: fallthrough registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\functorch\VmapModeRegistrations.cpp:27 [backend fallback]
+Batched: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\LegacyBatchingRegistrations.cpp:1075 [backend fallback]
+VmapMode: fallthrough registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\VmapModeRegistrations.cpp:33 [backend fallback]
+FuncTorchGradWrapper: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\functorch\TensorWrapper.cpp:208 [backend fallback]
+PythonTLSSnapshot: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\core\PythonFallbackKernel.cpp:202 [backend fallback]
+FuncTorchDynamicLayerFrontMode: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\functorch\DynamicLayer.cpp:475 [backend fallback]
+PreDispatch: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\core\PythonFallbackKernel.cpp:206 [backend fallback]
+PythonDispatcher: registered at C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\core\PythonFallbackKernel.cpp:198 [backend fallback]
+
+
+오류 원인
+NotImplementedError: Could not run 'torchvision::nms' with arguments from the 'CUDA' backend
+이 메시지는 torchvision의 NMS(Non-Maximum Suppression) 연산이 CUDA에서 실행되지 못했다는 뜻입니다. 주된 원인은 다음과 같습니다:
+- PyTorch, torchvision, CUDA 버전 불일치
+- torchvision이 CUDA 지원 없이 빌드됨
+- Jupyter 환경에서 실행 시 오류 발생 (터미널에서는 정상 작동하는 경우도 있음)
+
+🛠️ 해결 방법
+1. 현재 버전 확인
+nvcc --version
+pip show torch torchvision torchaudio
+
+
+2. PyTorch 공식 사이트에서 호환되는 버전 확인
+PyTorch 설치 가이드에서 CUDA 버전에 맞는 torch, torchvision, torchaudio 버전을 확인하세요.
+3. 기존 라이브러리 제거 및 재설치
+pip uninstall torch torchvision torchaudio
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+
+※ 위 명령어는 CUDA 11.8 기준입니다. 본인의 CUDA 버전에 맞게 cu117, cu121 등으로 변경하세요.
+4. 설치 확인
+pip show torch torchvision torchaudio
+
+
+5. YOLO 실행 시 GPU 명시
+model = YOLO("yolov8n.pt")
+results = model("image.jpg", device=0)  # GPU 사용
+
+
+
+💡 추가 팁
+- Jupyter Notebook에서 오류가 발생하고 터미널에서는 정상 작동한다면, Jupyter 커널이 올바른 환경을 참조하고 있는지 확인하세요.
+- torchvision.ops.nms 대신 다른 NMS 구현을 사용하는 것도 임시 해결책이 될 수 있습니다.
+
+
+Transferred 448/499 items from pretrained weights
+Freezing layer 'model.23.dfl.conv.weight'
+AMP: running Automatic Mixed Precision (AMP) checks...
+AMP: checks passed
+train: Fast image access  (ping: 0.00.0 ms, read: 3.30.5 MB/s, size: 28.9 KB)
+train: Scanning C:\Users\ngins\Git\python.yolo\JonginSeok\dataset\test\labels... 33 images, 0 backgrounds, 0 corrupt: 
+train: New cache created: C:\Users\ngins\Git\python.yolo\JonginSeok\dataset\test\labels.cache
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(torch_venv) C:\Users\ngins\Git\python.yolo>pip uninstall torch torchvision torchaudio
+Found existing installation: torch 2.7.1+cu128
+Uninstalling torch-2.7.1+cu128:
+  Would remove:
+    c:\programdata\anaconda3\envs\torch_venv\lib\site-packages\functorch\*
+    c:\programdata\anaconda3\envs\torch_venv\lib\site-packages\torch-2.7.1+cu128.dist-info\*
+    c:\programdata\anaconda3\envs\torch_venv\lib\site-packages\torch\*
+    c:\programdata\anaconda3\envs\torch_venv\lib\site-packages\torchgen\*
+    c:\programdata\anaconda3\envs\torch_venv\scripts\torchfrtrace.exe
+    c:\programdata\anaconda3\envs\torch_venv\scripts\torchrun.exe
+Proceed (Y/n)? Y
+ERROR: Exception:
+Traceback (most recent call last):
+  File "C:\ProgramData\anaconda3\envs\torch_venv\Lib\shutil.py", line 856, in move
+    os.rename(src, real_dst)
+    ~~~~~~~~~^^^^^^^^^^^^^^^
+PermissionError: [WinError 5] 액세스가 거부되었습니다: 'c:\\programdata\\anaconda3\\envs\\torch_venv\\lib\\site-packages\\functorch\\' -> 'C:\\Users\\ngins\\AppData\\Local\\Temp\\pip-uninstall-tl6y470y'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\ProgramData\anaconda3\envs\torch_venv\Lib\site-packages\pip\_internal\cli\base_command.py", line 105, in _run_wrapper
+    status = _inner_run()
+  File "C:\ProgramData\anaconda3\envs\torch_venv\Lib\site-packages\pip\_internal\cli\base_command.py", line 96, in _inner_run
+    return self.run(options, args)
+           ~~~~~~~~^^^^^^^^^^^^^^^
+  File "C:\ProgramData\anaconda3\envs\torch_venv\Lib\site-packages\pip\_internal\commands\uninstall.py", line 106, in run
+    uninstall_pathset = req.uninstall(
+        auto_confirm=options.yes,
+        verbose=self.verbosity > 0,
+    )
+  File "C:\ProgramData\anaconda3\envs\torch_venv\Lib\site-packages\pip\_internal\req\req_install.py", line 723, in uninstall
+    uninstalled_pathset.remove(auto_confirm, verbose)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\anaconda3\envs\torch_venv\Lib\site-packages\pip\_internal\req\req_uninstall.py", line 370, in remove
+    moved.stash(path)
+    ~~~~~~~~~~~^^^^^^
+  File "C:\ProgramData\anaconda3\envs\torch_venv\Lib\site-packages\pip\_internal\req\req_uninstall.py", line 261, in stash
+    renames(path, new_path)
+    ~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\anaconda3\envs\torch_venv\Lib\site-packages\pip\_internal\utils\misc.py", line 348, in renames
+    shutil.move(old, new)
+    ~~~~~~~~~~~^^^^^^^^^^
+  File "C:\ProgramData\anaconda3\envs\torch_venv\Lib\shutil.py", line 874, in move
+    rmtree(src)
+    ~~~~~~^^^^^
+  File "C:\ProgramData\anaconda3\envs\torch_venv\Lib\shutil.py", line 790, in rmtree
+    return _rmtree_unsafe(path, onexc)
+  File "C:\ProgramData\anaconda3\envs\torch_venv\Lib\shutil.py", line 629, in _rmtree_unsafe
+    onexc(os.unlink, fullname, err)
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\anaconda3\envs\torch_venv\Lib\shutil.py", line 625, in _rmtree_unsafe
+    os.unlink(fullname)
+    ~~~~~~~~~^^^^^^^^^^
+
+PermissionError: [WinError 5] 액세스가 거부되었습니다: 'c:\\programdata\\anaconda3\\envs\\torch_venv\\lib\\site-packages\\functorch\\compile\\__pycache__\\__init__.cpython-313.pyc'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(torch_venv) C:\Users\ngins\Git\python.yolo>C:/ProgramData/anaconda3/envs/torch_venv/python.exe c:/Users/ngins/Git/python.yolo/JonginSeok/05증강된데이터셋YOLO실행.py
+Traceback (most recent call last):
+  File "c:\Users\ngins\Git\python.yolo\JonginSeok\05증강된데이터셋YOLO실행.py", line 18, in <module>
+    model.train(
+    ~~~~~~~~~~~^
+        data='JonginSeok/dataset/data.yaml',
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+        hyp='hyp.yaml'
+        ^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\ngins\AppData\Roaming\Python\Python313\site-packages\ultralytics\engine\model.py", line 793, in train
+    self.trainer = (trainer or self._smart_load("trainer"))(overrides=args, _callbacks=self.callbacks)
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ngins\AppData\Roaming\Python\Python313\site-packages\ultralytics\engine\trainer.py", line 119, in __init__
+    self.args = get_cfg(cfg, overrides)
+                ~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\ngins\AppData\Roaming\Python\Python313\site-packages\ultralytics\cfg\__init__.py", line 305, in get_cfg
+    check_dict_alignment(cfg, overrides)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\ngins\AppData\Roaming\Python\Python313\site-packages\ultralytics\cfg\__init__.py", line 498, in check_dict_alignment
+    raise SyntaxError(string + CLI_HELP_MSG) from e
+SyntaxError: 'hyp' is not a valid YOLO argument.
+
+    Arguments received: ['yolo']. Ultralytics 'yolo' commands use the following syntax:
+
+        yolo TASK MODE ARGS
+
+        Where   TASK (optional) is one of ['detect', 'obb', 'segment', 'pose', 'classify']
+                MODE (required) is one of ['benchmark', 'export', 'predict', 'val', 'track', 'train']
+                ARGS (optional) are any number of custom 'arg=value' pairs like 'imgsz=320' that override defaults.
+                    See all ARGS at https://docs.ultralytics.com/usage/cfg or with 'yolo cfg'
+
+    1. Train a detection model for 10 epochs with an initial learning_rate of 0.01
+        yolo train data=coco8.yaml model=yolo11n.pt epochs=10 lr0=0.01
+
+    2. Predict a YouTube video using a pretrained segmentation model at image size 320:
+        yolo predict model=yolo11n-seg.pt source='https://youtu.be/LNwODJXcvt4' imgsz=320
+
+    3. Val a pretrained detection model at batch-size 1 and image size 640:
+        yolo val model=yolo11n.pt data=coco8.yaml batch=1 imgsz=640
+
+    4. Export a YOLO11n classification model to ONNX format at image size 224 by 128 (no TASK required)
+        yolo export model=yolo11n-cls.pt format=onnx imgsz=224,128
+
+    5. Ultralytics solutions usage
+        yolo solutions count or in ['crop', 'blur', 'workout', 'heatmap', 'isegment', 'visioneye', 'speed', 'queue', 'analytics', 'inference', 'trackzone'] source="path/to/video.mp4"
+
+    6. Run special commands:
+        yolo help
+        yolo checks
+        yolo version
+        yolo settings
+        yolo copy-cfg
+        yolo cfg
+        yolo solutions help
+
+    Docs: https://docs.ultralytics.com
+    Solutions: https://docs.ultralytics.com/solutions/
+    Community: https://community.ultralytics.com
+    GitHub: https://github.com/ultralytics/ultralytics
+
+
+
+
+
+C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\cuda\Loss.cu:242: block: [0,0,0], thread: [0,0,0] Assertion `t >= 0 && t < n_classes` failed.
+C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\cuda\Loss.cu:242: block: [0,0,0], thread: [1,0,0] Assertion `t >= 0 && t < n_classes` failed.
+C:\actions-runner\_work\pytorch\pytorch\pytorch\aten\src\ATen\native\cuda\Loss.cu:242: block: [0,0,0], thread: [2,0,0] Assertion `t >= 0 && t < n_classes` failed.
+Traceback (most recent call last):
+  File "c:\Users\ngins\Git\python.yolo\JonginSeok\부록04_BottleCNN_v01.py", line 112, in <module>
+    loss_total += loss.item()
+                  ~~~~~~~~~^^
+RuntimeError: CUDA error: device-side assert triggered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+
+
+
+Epoch(cuda) 99 | Loss: 189.8419 | Train Acc: 0.3040 | Valid Acc: 0.3421
+Epoch(cuda) 100 | Loss: 189.8521 | Train Acc: 0.3040 | Valid Acc: 0.3421
+Traceback (most recent call last):
+  File "c:\Users\ngins\Git\python.yolo\JonginSeok\부록04_BottleCNN_v02.py", line 200, in <module>
+    predict_image(data_path+'/test/bad-contamination/012_png.rf.649902ef1adcb13616394303e1fd0bdd_ratio80.jpg')  # 실제 파일 경로 지정
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\ngins\Git\python.yolo\JonginSeok\부록04_BottleCNN_v02.py", line 192, in predict_image
+    output = model(image_tensor)
+  File "C:\ProgramData\anaconda3\envs\torch_venv\Lib\site-packages\torch\nn\modules\module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\anaconda3\envs\torch_venv\Lib\site-packages\torch\nn\modules\module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+TypeError: BottleCNNWithSize.forward() missing 1 required positional argument: 'size_feats'
+
+
+Validating JonginSeok\dataset\result\yolo11n_bottle_4class13\weights\best.pt...
+Ultralytics 8.3.173  Python-3.13.5 torch-2.7.1+cu128 CUDA:0 (NVIDIA GeForce RTX 2070 Super with Max-Q Design, 8192MiB)
+YOLO11n summary (fused): 100 layers, 2,582,932 parameters, 0 gradients, 6.3 GFLOPs
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100%|██████████| 4/4 [00:01<00:00,  2.51it/s]
+                   all        114        114      0.949      0.994      0.995      0.994
+      bad-broken_large         23         23          1      0.976      0.995      0.989
+      bad-broken_small         32         32      0.862          1      0.995      0.995
+     bad-contamination         30         30      0.942          1      0.995      0.995
+           bottle-good         29         29      0.991          1      0.995      0.995
+Speed: 0.3ms preprocess, 3.3ms inference, 0.0ms loss, 2.7ms postprocess per image
+Results saved to JonginSeok\dataset\result\yolo11n_bottle_4class13
+
+
+- 간단한 CRUD 웹 프로젝트:
+→ MySQL 또는 PostgreSQL (특히 Django 사용 시 PostgreSQL이 더 적합)

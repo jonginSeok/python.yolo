@@ -1,0 +1,12 @@
+lr0: 0.01              # 초기 학습률
+lrf: 0.01              # 학습률 감소 비율
+momentum: 0.937        # 옵티마이저 모멘텀
+weight_decay: 0.0005   # 가중치 감소
+warmup_epochs: 3.0     # 워밍업 에폭 수
+box: 0.05              # 박스 손실 가중치
+cls: 0.5               # 클래스 손실 가중치
+obj: 1.0               # 객체 손실 가중치
+mosaic: 1.0            # 모자이크 증강 사용 여부 (1.0 = 사용)
+mixup: 0.0             # MixUp 증강 사용 여부
+copy_paste: 0.0        # Copy-Paste 증강 사용 여부
+close_mosaic: 10       # 마지막 N 에폭 동안 모자이크 끄기
