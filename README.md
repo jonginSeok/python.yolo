@@ -1,15 +1,18 @@
 # YOLO Training Dashboard - Django 템플릿
 
-현재 React 대시보드와 동일한 기능을 제공하는 Django 웹 애플리케이션입니다.
+ YOLO/CNN Training 을 위한 Django 웹 애플리케이션입니다.
 
 ## 🚀 설치 및 실행
 
-### 1. 가상환경 생성 및 활성화
+### 1. 가상환경 생성 및 활성화(python 자체 가상머신. anaconda3 활용)
 ```bash
-python -m venv venv
+C:\Users\사용자\Git\python.yolo> C:/ProgramData/anaconda3/Scripts/activate
+(base) C:\Users\ngins\Git\python.yolo> conda activate torch_venv
 source venv/bin/activate  # Linux/Mac
 # 또는
 venv\Scripts\activate     # Windows
+
+(torch_venv) C:\Users\ngins\Git\python.yolo>cd bottle
 ```
 
 ### 2. 의존성 설치
@@ -19,8 +22,11 @@ pip install -r requirements.txt
 
 ### 3. 데이터베이스 마이그레이션
 ```bash
-python manage.py makemigrations
-python manage.py migrate
+python manage.py check                    # 변경확인
+python manage.py makemigrations           # 마이그레이션 파일 생성 확인
+python manage.py migrate                  # 마이그레이션 DB적용
+python manage.py showmigrations training  # 마이그레이션 상태 확인
+
 ```
 
 ### 4. 관리자 계정 생성 (선택사항)
@@ -41,7 +47,7 @@ python manage.py runserver
 ```bash
 git url : https://github.com/jonginSeok/python.yolo.git
 database : PostgreSQL 17.5 (AWS)
-tool : VS Code, SQLGate for PostgreSQL , EditPlus, UltraEdit, OneNote(sticky notes)
+tool : VS Code, SQLGate for PostgreSQL , EditPlus, UltraEdit, OneNote(sticky notes) 등등
 site : copilot, lovable.dev, supabase.com 
 
 브라우저에서 `http://127.0.0.1:8000`으로 접속하면 대시보드를 확인할 수 있습니다.
@@ -72,12 +78,12 @@ site : copilot, lovable.dev, supabase.com
 ## 🗂️ 프로젝트 구조
 
 ```
-django_template/
-├── yolo_dashboard/          # Django 프로젝트 설정
+bottle/
+├── config/                 # Django 프로젝트 설정
 │   ├── settings.py
 │   ├── urls.py
 │   └── wsgi.py
-├── training/                # 메인 앱
+├── training/               # 메인 앱
 │   ├── models.py           # 데이터 모델
 │   ├── views.py            # 뷰 로직
 │   ├── urls.py             # URL 설정
@@ -85,18 +91,17 @@ django_template/
 │   └── management/
 │       └── commands/
 │           └── load_demo_data.py
-├── templates/              # 템플릿 파일
-│   ├── base.html
-│   └── training/
-│       └── dashboard.html
+
+...
+
 ├── requirements.txt        # 의존성 목록
-└── manage.py              # Django 관리 스크립트
+└── manage.py               # Django 관리 스크립트
 ```
 
 ## 🎨 디자인 시스템
 
 - **다크 테마**: 전문적인 ML 대시보드 디자인
-- **Tailwind CSS**: 유틸리티 우선 CSS 프레임워크
+// - **Tailwind CSS**: 유틸리티 우선 CSS 프레임워크
 - **반응형**: 모바일, 태블릿, 데스크톱 지원
 - **색상 팔레트**: 보라색 계열 프라이머리 컬러
 
@@ -118,7 +123,7 @@ django_template/
 ## 🔌 API 엔드포인트
 
 - `GET /`: 메인 대시보드
-- `GET /api/training/<session_id>/`: 훈련 데이터 JSON API
+- `GET /training/api/<int:session_id>/'`: 훈련 데이터 JSON API
 
 ## 🛠️ 커스터마이징
 
@@ -167,6 +172,5 @@ def update_training_metrics(session_id, epoch_data):
 4. 브랜치에 Push
 5. Pull Request 생성
 
----
-
-**현재 React 대시보드와 100% 동일한 기능을 제공하는 Django 템플릿입니다!** 🎉
+--- 
+🎉

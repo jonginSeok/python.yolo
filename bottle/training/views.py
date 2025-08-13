@@ -4,8 +4,12 @@ import json
 import plotly.utils
 import plotly.graph_objs as go
 
+# 우선 코드 붙여넣기 / 파일을 분리해서 parameters를 넘겨서 하면 좋을 듯
+import torch
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
+from django.http import HttpResponse
 from django.contrib import messages
 from django.db.models import Q, Avg, Max, Min
 from django.utils import timezone
@@ -14,68 +18,8 @@ from datetime import timedelta
 
 from .models import TrainingSession, TrainingMetric, ClassMetric
 from .forms import DataUploadForm
+from app.tasks import start_training_async  # .delay()로 비동기 실행
 
-
-
-# training/view.py 2025.08.10 ngins7512
-# 학습 세션 목록(다건 조회)
-# def training_list(request):
-#     return render(request, "training/training_list.html")
-
-
-# 학습 세션 입력 /삭제예정 ngins7512 2025.08.12
-# def training_input(request):
-#     return render(request, "training/training_input.html")
-
-# 학습 세션 출력(단건 조회)
-# def training_output(request):
-#     """메인 대시보드 뷰"""
-#     # 최신 훈련 세션 가져오기
-#     try:
-#         latest_session = TrainingSession.objects.latest("created_at")
-#         latest_metrics = latest_session.metrics.last()
-#         class_metrics = latest_session.class_metrics.all()
-#
-#         # 차트 데이터 생성
-#         loss_chart = create_loss_chart(latest_session)
-#         map_chart = create_map_chart(latest_session)
-#
-#         # 성능 개선 계산 (이전 10개 에포크와 비교)
-#         metrics_count = latest_session.metrics.count()
-#         if metrics_count > 10:
-#             recent_avg = latest_session.metrics.order_by("-epoch")[:5].aggregate(Avg("map50"))["map50__avg"]
-#             old_avg = latest_session.metrics.order_by("-epoch")[5:10].aggregate(Avg("map50"))["map50__avg"]
-#             map_change = ((recent_avg - old_avg) / old_avg * 100) if old_avg else 0
-#         else:
-#             map_change = 0
-#
-#         # 손실 변화 계산
-#         if metrics_count > 5:
-#             recent_loss = latest_session.metrics.order_by("-epoch")[:3].aggregate(Avg("train_loss"))["train_loss__avg"]
-#             old_loss = latest_session.metrics.order_by("-epoch")[3:6].aggregate(Avg("train_loss"))["train_loss__avg"]
-#             loss_change = ((old_loss - recent_loss) / old_loss * 100) if old_loss else 0
-#         else:
-#             loss_change = 0
-#
-#     except TrainingSession.DoesNotExist:
-#         # 데모 데이터 생성
-#         latest_session, latest_metrics, class_metrics = create_demo_data()
-#         loss_chart = create_demo_loss_chart()
-#         map_chart = create_demo_map_chart()
-#         map_change = 2.3
-#         loss_change = 12.5
-#
-#     context = {
-#         "session": latest_session,
-#         "latest_metrics": latest_metrics,
-#         "class_metrics": class_metrics,
-#         "loss_chart": loss_chart,
-#         "map_chart": map_chart,
-#         "map_change": round(map_change, 1),
-#         "loss_change": round(loss_change, 1),
-#     }
-#
-#     return render(request, "training/training_output.html", context)
 
 
 def training_data_api(request, session_id):
@@ -405,8 +349,8 @@ def upload_dataset(request):
                         return render(request, "training/upload.html", {"form": form})
 
                     # ZIP 파일 압축 해제
-                    extract_dir = os.path.join(upload_dir, "extracted")
-                    zip_ref.extractall(extract_dir)
+                    # extract_dir = os.path.join(upload_dir, "extracted")
+                    zip_ref.extractall(upload_dir)
 
             except zipfile.BadZipFile:
                 messages.error(request, "올바르지 않은 ZIP 파일입니다.")
@@ -428,7 +372,7 @@ def upload_dataset(request):
                 early_stopping=form.cleaned_data["early_stopping"],
                 patience=form.cleaned_data["patience"],
                 description=form.cleaned_data["description"],
-                dataset_path=extract_dir,
+                dataset_path=upload_dir,
                 config={
                     "epochs": form.cleaned_data["current_epoch"],
                     "batch_size": form.cleaned_data["batch_size"],
@@ -443,13 +387,9 @@ def upload_dataset(request):
                 },
             )
             
-            class_names = request.POST.getlist("class_name")
-            
+            # ClassMetric 모델에 클래스 이름 저장
+            class_names = request.POST.getlist("class_name")            
             print(f"[trining/views.py] class_nameslen: {len(class_names)}")
-            
-            # class 데이터 입력
-            # for name in class_names:
-            #     ClassMetric.objects.create(session_id=session.id, class_name=name)
             
             # 모델 인스턴스 리스트 생성
             class_objects = [ClassMetric(session_id=session.id, class_name=name) for name in class_names]
@@ -458,17 +398,28 @@ def upload_dataset(request):
             ClassMetric.objects.bulk_create(class_objects)
 
 
-
-
             messages.success(request, f"데이터셋이 성공적으로 업로드되었습니다. 훈련 세션 ID: {session.id}",)
 
             # 여기서 실제 YOLO 훈련을 시작할 수 있습니다
             print("[trining/views.py] 여기서 실제 YOLO 훈련을 시작할 수 있습니다")
+            # 우선 코드 붙여넣기 / 파일을 분리해서 parameters를 넘겨서 하면 좋을 듯
+            
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            print('True여야 GPU 사용 가능 :', torch.cuda.is_available())  # True여야 GPU 사용 가능
+            print(f'사용 가능한 GPU({device}) 수:', torch.cuda.device_count())  # 사용 가능한 GPU 수
+            
+            
+            
+            # 1. Celery + Redis: 가장 강력하고 안정적인 방식
+            # pip install celery redis           
+            
+            start_training_async.delay(session.id)  # .delay()로 비동기 실행
             # start_training_async(session.id)  # 백그라운드 작업으로 훈련 시작
+            
             print(f"start_training_async({session.id})  # 백그라운드 작업으로 훈련 시작")
+            return HttpResponse("훈련이 백그라운드에서 시작되었습니다.")
 
-            return redirect("training:dashboard")
-#            return redirect("training:training_output")
+            # return redirect("training:dashboard")
     else:
         # print('Before:',form.errors)
         form = DataUploadForm()
@@ -482,28 +433,4 @@ def training_sessions_list(request):
     sessions = TrainingSession.objects.all().order_by("-created_at")
     context = {"sessions": sessions}
     return render(request, "training/sessions.html", context)
-
-
-# training/views.py
-# def training_create(request):
-#     if request.method == "POST":
-#         form = TrainingSessionForm(request.POST, request.FILES)
-#         if form.is_valid():
-#             form.save()
-#             return redirect("trainings:list")
-#     else:
-#         form = TrainingSessionForm()
-#     return render(request, "training/training_form.html", {"form": form})
-
-
-# def training_update(request, pk):
-#     session = get_object_or_404(TrainingSession, pk=pk)
-#     if request.method == "POST":
-#         form = TrainingSessionForm(request.POST, request.FILES, instance=session)
-#         if form.is_valid():
-#             form.save()
-#             return redirect("trainings:detail", pk=pk)
-#     else:
-#         form = TrainingSessionForm(instance=session)
-#     return render(request, "training/training_form.html", {"form": form})
 
