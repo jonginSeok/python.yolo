@@ -161,6 +161,7 @@ STATIC_URL = "static/"
 
 STATICFILES_DIRS = [
     BASE_DIR / "static",
+    BASE_DIR.parent / "web" / "data_files",
 ]
 
 

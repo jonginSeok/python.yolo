@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
+    <style> 
         body {
             font-family: 'Noto Sans KR', sans-serif;
         }
@@ -605,11 +605,13 @@
                 renderContent();
             });
             
-            // 로그인 버튼 클릭 이벤트
+            // 로그인 버튼 클릭 이벤트 (요소가 존재할 때만 이벤트 리스너 추가)
             const loginBtn = document.getElementById('login-btn');
-            loginBtn.addEventListener('click', () => {
-                loadPage('/login/', '대시보드');
-            });
+            if (loginBtn) {
+                loginBtn.addEventListener('click', () => {
+                    loadPage('/login/', '대시보드');
+                });
+            }
 
             // --- PAGE LOADING FUNCTION ---
             const loadPage = async (url, title) => {
