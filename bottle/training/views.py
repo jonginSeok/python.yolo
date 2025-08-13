@@ -376,7 +376,7 @@ def upload_dataset(request):
             zip_file = form.cleaned_data["zip_file"]
 
             # 업로드 디렉토리 생성
-            upload_dir = os.path.join("media", "datasets", form.cleaned_data["model_name"])
+            upload_dir = os.path.join("media", "datasets", form.cleaned_data["dataset_name"])
             os.makedirs(upload_dir, exist_ok=True)
 
             # ZIP 파일 저장
@@ -445,9 +445,19 @@ def upload_dataset(request):
             
             class_names = request.POST.getlist("class_name")
             
+            print(f"[trining/views.py] class_nameslen: {len(class_names)}")
+            
             # class 데이터 입력
-            for name in class_names:
-                ClassMetric.objects.create(session_id=session.id, class_name=name)
+            # for name in class_names:
+            #     ClassMetric.objects.create(session_id=session.id, class_name=name)
+            
+            # 모델 인스턴스 리스트 생성
+            class_objects = [ClassMetric(session_id=session.id, class_name=name) for name in class_names]
+
+            # 한 번에 저장
+            ClassMetric.objects.bulk_create(class_objects)
+
+
 
 
             messages.success(request, f"데이터셋이 성공적으로 업로드되었습니다. 훈련 세션 ID: {session.id}",)
