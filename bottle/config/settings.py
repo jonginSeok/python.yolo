@@ -45,13 +45,13 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "accounts",
-    "app",  # ← 이게 빠져 있으면 Django가 templatetags를 못 찾음! 로그인 관련
-    "corsheaders",  # 2025.08.06 ngins7512 대시보드 관련
-    "training",     # 2025.08.06 ngins7512 대시보드 관련
+    "app",               # ← 이게 빠져 있으면 Django가 templatetags를 못 찾음! 로그인 관련
+    "corsheaders",
+    "training",
 ]
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",  # 2025.08.06 ngins7512 추가/대시보드 관련
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -61,14 +61,14 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+
 ROOT_URLCONF = "config.urls"
-# ROOT_URLCONF = 'yolo_dashboard.urls'  # 2025.08.06 ngins7512 추가/대시보드 관련은 이렇게
+
 
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         # "DIRS": [],
-        # 새 템플릿 경로 # ngins7512 / 2025.08.06
         "DIRS": [
             BASE_DIR / 'accounts' / 'templates',
             BASE_DIR / "app" / "templates",
@@ -77,7 +77,7 @@ TEMPLATES = [
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
-                "django.template.context_processors.debug",  # 2025.08.06 ngins7512 추가/대시보드 관련
+                "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
@@ -86,32 +86,11 @@ TEMPLATES = [
     },
 ]
 
+
 WSGI_APPLICATION = "config.wsgi.application"
-# WSGI_APPLICATION = 'yolo_dashboard.wsgi.application' # 2025.08.06 ngins7512 추가/대시보드 관련은 이렇게
 
 
 # Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.sqlite3",
-#         "NAME": BASE_DIR / "db.sqlite3",
-#     }
-# }
-
-# ngins7512 / 2025.08.05
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.postgresql",
-#         "NAME": "postgres",  # DB 이름
-#         "USER": "postgres",  # 사용자 이름
-#         "PASSWORD": "yolo11ai",  # 비밀번호
-#         "HOST": "localhost",  # 또는 실제 DB 서버 주소
-#         "PORT": "5432",  # PostgreSQL 기본 포트
-#     }
-# }
-# ngins7512 / 2025.08.05
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -177,7 +156,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CORS_ALLOW_ALL_ORIGINS = True
 
 
-# Celery + Redis 를 위한 설정
+# Celery + Redis 를 위한 설정(https://github.com/microsoftarchive/redis/releases 설치)
 CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"

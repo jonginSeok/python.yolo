@@ -8,11 +8,8 @@ from datetime import datetime
 
 
 
-# training/forms.py 2025.08.10 ngins7512
-# upload.html 파일 로드할때
 class DataUploadForm(forms.Form):
     """YOLO 훈련 데이터 업로드 폼"""
-    print('[trining/forms.py] DataUploadForm -----')
 
     # 기본 정보
     model_name = forms.CharField(
@@ -215,16 +212,12 @@ class DataUploadForm(forms.Form):
         """ZIP 파일 검증"""
         
         zip_file = self.cleaned_data.get("zip_file")
-        print('[training/forms.py] clean_zip_file ----- clean_zip_file zip_file:', zip_file)
         
         if zip_file:
             if not zip_file.name.endswith(".zip"):
-                print('[training/forms.py] clean_zip_file ----- zip_file.name.endswith:', zip_file.name.endswith(".zip"))
                 raise forms.ValidationError("ZIP 파일만 업로드 가능합니다.")
-            
             if zip_file.size > 500 * 1024 * 1024:  # 500MB 제한
-                print('[training/forms.py] clean_zip_file ----- zip_file.size:', (zip_file.size))
                 raise forms.ValidationError("파일 크기는 500MB를 초과할 수 없습니다.")
             
-            print('[training/forms.py] clean_zip_file ----- return zip_file:', zip_file)
         return zip_file
+    

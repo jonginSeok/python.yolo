@@ -4,7 +4,6 @@ import json
 import plotly.utils
 import plotly.graph_objs as go
 
-# 우선 코드 붙여넣기 / 파일을 분리해서 parameters를 넘겨서 하면 좋을 듯
 import torch
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -18,14 +17,13 @@ from datetime import timedelta
 
 from .models import TrainingSession, TrainingMetric, ClassMetric
 from .forms import DataUploadForm
-from app.tasks import start_training_async  # .delay()로 비동기 실행
+
+from training.tasks import start_training_async  # .delay()로 비동기 실행
 
 
 
 def training_data_api(request, session_id):
     """훈련 데이터 API"""
-    print(f'[training/views.py] training_data_api session_id:{session_id}')
-    
     session = get_object_or_404(TrainingSession, id=session_id)
     metrics = session.metrics.all()
 
@@ -61,6 +59,7 @@ def training_data_api(request, session_id):
     }
 
     return JsonResponse(data)
+
 
 
 def create_loss_chart(session):
@@ -101,6 +100,7 @@ def create_loss_chart(session):
     return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
 
+
 def create_map_chart(session):
     """mAP 차트 생성"""
     metrics = session.metrics.all()
@@ -139,9 +139,9 @@ def create_map_chart(session):
     return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
 
+
 def create_demo_data():
     """데모 데이터 생성"""
-
     class DemoSession:
         model_name = "YOLOv8n"
         version = "1.0.2"
@@ -186,6 +186,7 @@ def create_demo_data():
     return DemoSession(), DemoMetrics(), demo_class_metrics
 
 
+
 def create_demo_loss_chart():
     """데모 손실 차트"""
     epochs = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
@@ -221,6 +222,7 @@ def create_demo_loss_chart():
     return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
 
+
 def create_demo_map_chart():
     """데모 mAP 차트"""
     epochs = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
@@ -254,6 +256,7 @@ def create_demo_map_chart():
 
     fig = go.Figure(data=[trace1, trace2], layout=layout)
     return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+
 
 
 def dashboard(request):
@@ -310,11 +313,9 @@ def dashboard(request):
 # 학습 세션 입력 데이터 전송
 def upload_dataset(request):
     """데이터셋 업로드 페이지"""
-    print(f'[trining/views.py] upload_dataset -----request.method:{request.method}')
-    
     if request.method == "POST":
         form = DataUploadForm(request.POST, request.FILES)
-        print(f'[trining/views.py] upload_dataset -----form.is_valid:{form.is_valid()}')
+        print(f'[trining/views.py] upload_dataset form.is_valid:{form.is_valid()}')
         if form.is_valid():
             # 파일 저장 및 처리
             zip_file = form.cleaned_data["zip_file"]
@@ -385,47 +386,48 @@ def upload_dataset(request):
                     "image_count": len(image_files),
                     "label_count": len(label_files),
                 },
+                created_id=request.user
             )
             
             # ClassMetric 모델에 클래스 이름 저장
             class_names = request.POST.getlist("class_name")            
-            print(f"[trining/views.py] class_nameslen: {len(class_names)}")
+            print(f"[trining/views.py] upload_dataset class_nameslen: {len(class_names)}")
             
             # 모델 인스턴스 리스트 생성
-            class_objects = [ClassMetric(session_id=session.id, class_name=name) for name in class_names]
+            class_objects = [
+                ClassMetric(
+                    session_id=session.id,
+                    index=i, # 0부터 시작하는 인덱스
+                    class_name=name, 
+                    created_id=request.user,
+                ) for i, name in enumerate(class_names)
+            ]
 
             # 한 번에 저장
             ClassMetric.objects.bulk_create(class_objects)
 
-
             messages.success(request, f"데이터셋이 성공적으로 업로드되었습니다. 훈련 세션 ID: {session.id}",)
 
             # 여기서 실제 YOLO 훈련을 시작할 수 있습니다
-            print("[trining/views.py] 여기서 실제 YOLO 훈련을 시작할 수 있습니다")
+            print("여기서 실제 YOLO 훈련을 시작할 수 있습니다")
             # 우선 코드 붙여넣기 / 파일을 분리해서 parameters를 넘겨서 하면 좋을 듯
             
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             print('True여야 GPU 사용 가능 :', torch.cuda.is_available())  # True여야 GPU 사용 가능
             print(f'사용 가능한 GPU({device}) 수:', torch.cuda.device_count())  # 사용 가능한 GPU 수
             
-            
-            
-            # 1. Celery + Redis: 가장 강력하고 안정적인 방식
-            # pip install celery redis           
-            
+            # Celery + Redis: 가장 강력하고 안정적인 방식
+            # pip install celery redis
             start_training_async.delay(session.id)  # .delay()로 비동기 실행
-            # start_training_async(session.id)  # 백그라운드 작업으로 훈련 시작
-            
-            print(f"start_training_async({session.id})  # 백그라운드 작업으로 훈련 시작")
-            return HttpResponse("훈련이 백그라운드에서 시작되었습니다.")
+            print(f"# 백그라운드 작업으로 훈련 시작 start_training_async({session.id}) ")
 
-            # return redirect("training:dashboard")
+            # return HttpResponse("훈련이 백그라운드에서 시작되었습니다.")
+            return redirect("training:dashboard")
     else:
-        # print('Before:',form.errors)
         form = DataUploadForm()
-        print('After:',form.errors)
 
     return render(request, "training/upload.html", {"form": form})
+
 
 
 def training_sessions_list(request):

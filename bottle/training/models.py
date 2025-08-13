@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils import timezone
 
+
+
 class TrainingSession(models.Model):
     STATUS_CHOICES = [
         ('training', '훈련 중'),
@@ -15,11 +17,6 @@ class TrainingSession(models.Model):
     dataset_name = models.CharField(max_length=100, verbose_name="데이터셋")
     gpu_info = models.CharField(max_length=100, verbose_name="GPU 정보")
     memory_info = models.CharField(max_length=50, verbose_name="메모리 정보")
-    
-    # zip_file = models.FileField(upload_to='trainings/%Y/%m/%d/',verbose_name="데이터셋 ZIP 파일")
-    
-    
-    
     total_epochs = models.IntegerField(default=100, verbose_name="총 에포크")
     current_epoch = models.IntegerField(default=0, verbose_name="현재 에포크")    
     batch_size = models.IntegerField(default=1, verbose_name="배치 크기")
@@ -30,14 +27,15 @@ class TrainingSession(models.Model):
     early_stopping = models.BooleanField(default=True, verbose_name="조기 종료 사용")
     patience = models.IntegerField(default=10, verbose_name="조기 종료 patience")
     description = models.CharField(max_length=16000, verbose_name="설명")
-    
     dataset_path = models.CharField(max_length=6000, verbose_name="데이터셋 경로")
     config = models.CharField(max_length=16000, verbose_name="설정정보 ")
-    
     start_time = models.DateTimeField(default=timezone.now, verbose_name="시작 시간")
     end_time = models.DateTimeField(null=True, blank=True, verbose_name="종료 시간")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성 시간")
+    created_id = models.CharField(max_length=500, verbose_name="생성 유저 id")
+    # updated_at = models.DateTimeField(auto_now=True, verbose_name="수정 시간")
+    # updated_id = models.CharField(max_length=500, verbose_name="수정 유저 id")
         
     def __str__(self):
         return f"{self.model_name} v{self.version}"
@@ -59,6 +57,8 @@ class TrainingSession(models.Model):
         minutes = (duration.total_seconds() % 3600) // 60
         return f"{int(hours)}h {int(minutes)}m"
 
+
+
 class TrainingMetric(models.Model):
     session = models.ForeignKey(TrainingSession, on_delete=models.CASCADE, related_name='metrics')
     epoch = models.IntegerField(verbose_name="에포크")
@@ -68,8 +68,12 @@ class TrainingMetric(models.Model):
     map95 = models.FloatField(verbose_name="mAP@0.5:0.95")
     precision = models.FloatField(default=0.0, verbose_name="정밀도")
     recall = models.FloatField(default=0.0, verbose_name="재현율")
-    timestamp = models.DateTimeField(auto_now_add=True)
-    
+    timestamp = models.DateTimeField(auto_now_add=True, verbose_name="시간")
+
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성 시간")
+    created_id = models.CharField(max_length=500, verbose_name="생성 유저 id")
+    # updated_at = models.DateTimeField(auto_now=True, verbose_name="수정 시간")
+    # updated_id = models.CharField(max_length=500, verbose_name="수정 유저 id")
     class Meta:
         ordering = ['epoch']
         unique_together = ['session', 'epoch']
@@ -77,14 +81,21 @@ class TrainingMetric(models.Model):
     def __str__(self):
         return f"Epoch {self.epoch} - {self.session.model_name}"
 
+
+
 class ClassMetric(models.Model):
     session = models.ForeignKey(TrainingSession, on_delete=models.CASCADE, related_name='class_metrics')
+    index = models.IntegerField(verbose_name="인덱스")
     class_name = models.CharField(max_length=50, verbose_name="클래스명")
     precision = models.FloatField(verbose_name="정밀도")
     recall = models.FloatField(verbose_name="재현율")
     f1_score = models.FloatField(verbose_name="F1 점수")
     instances = models.IntegerField(verbose_name="인스턴스 수")
-    
+
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성 시간")
+    created_id = models.CharField(max_length=500, verbose_name="생성 유저 id")
+    # updated_at = models.DateTimeField(auto_now=True, verbose_name="수정 시간")
+    # updated_id = models.CharField(max_length=500, verbose_name="수정 유저 id")
     class Meta:
         unique_together = ['session', 'class_name']
     
