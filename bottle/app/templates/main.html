@@ -268,7 +268,7 @@
                                 // 학습목록 버튼 클릭 시 아무런 반응 없음
                                 return;
                             } else if (item.id === 'startLearning') {
-                                loadPage('/training/upload/', '학습 하기');
+                                loadPage('/training/upload/', '학습 하기', 'startLearning');
                                 return;
                             }
                             // #문성준 수정완료
@@ -614,7 +614,7 @@
             }
 
             // --- PAGE LOADING FUNCTION ---
-            const loadPage = async (url, title) => {
+            const loadPage = async (url, title, pageId = null) => {
                 try {
                     // 로딩 상태 표시
                     mainContent.innerHTML = `
@@ -644,10 +644,18 @@
                         mainContent.innerHTML = bodyContent;
                         
                         // URL 업데이트 (브라우저 히스토리에 추가)
-                        window.history.pushState({ url, title }, title, url);
+                        window.history.pushState({ url, title, pageId }, title, url);
+                        
+                        // activePage 업데이트 (페이지 ID가 제공된 경우)
+                        if (pageId) {
+                            activePage = pageId;
+                        }
                         
                         // 사이드바 상태 업데이트
                         renderSidebar();
+                        
+                        // 페이지 제목 업데이트
+                        pageTitle.textContent = title;
                     } else {
                         throw new Error('페이지를 로드할 수 없습니다.');
                     }
@@ -671,7 +679,12 @@
             // --- BROWSER BACK/FORWARD SUPPORT ---
             window.addEventListener('popstate', (event) => {
                 if (event.state && event.state.url) {
-                    loadPage(event.state.url, event.state.title);
+                    loadPage(event.state.url, event.state.title, event.state.pageId);
+                } else {
+                    // 홈으로 돌아간 경우
+                    activePage = 'dashboard';
+                    renderSidebar();
+                    renderContent();
                 }
             });
 

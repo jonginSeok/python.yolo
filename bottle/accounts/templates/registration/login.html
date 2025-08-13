@@ -127,7 +127,8 @@
     display: inline-block !important;
     transition: all 0.3s ease !important;
     text-align: center !important;
-    width: 100% !important;
+    width: auto !important;
+    min-width: 200px !important;
     font-weight: 500 !important;
     font-size: 16px !important;
   }
@@ -212,7 +213,7 @@
       </div>
 
       <!-- 로그인 폼 -->
-      <div id="login-form" class="yolo-form-container active">
+      <div id="login-form" class="yolo-form-container {% if not show_register_form %}active{% endif %}">
         <h3 style="text-align: center; margin-bottom: 30px; font-size: 1.5em; color: #ffffff;">로그인</h3>
         
         {% if form.errors %}
@@ -236,10 +237,18 @@
       </div>
 
       <!-- 회원가입 폼 -->
-      <div id="register-form" class="yolo-form-container">
+      <div id="register-form" class="yolo-form-container {% if show_register_form %}active{% endif %}">
         <h3 style="text-align: center; margin-bottom: 30px; font-size: 1.5em; color: #ffffff;">회원가입</h3>
         
-        <form method="post" action="/register/">
+        {% if register_errors %}
+        <div class="yolo-error-message">
+          {% for error in register_errors %}
+            <div>{{ error }}</div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        
+        <form method="post" action="/accounts/register/">
           {% csrf_token %}
           <div class="yolo-form-group">
             <label for="reg_username" class="yolo-form-label">아이디</label>
@@ -280,4 +289,6 @@
     document.getElementById('register-form').classList.remove('active');
     document.getElementById('login-form').classList.add('active');
   }
+
+
 </script>
