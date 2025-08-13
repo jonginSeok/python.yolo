@@ -134,6 +134,9 @@
 
             const languageSwitcher = document.getElementById('language-switcher');
             
+            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+            // ★★★★★ 1. 번역 객체에 good/bad 관련 텍스트 추가 ★★★★★
+            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
             // --- TRANSLATIONS ---
             const translations = {
                 en: {
@@ -152,10 +155,9 @@
                     detectionsAndConfidence: "YOLO Model Performance",
                     detectionCount: "Detection Count",
                     top3Classes: "Top 3 Classes",
-                    detectionsByTime: "Detections by Time",
-                    morning: "Morning",
-                    afternoon: "Afternoon",
-                    night: "Night",
+                    goodVsBad: "Good vs. Bad", // 변경됨
+                    good: "Good", // 추가됨
+                    bad: "Bad", // 추가됨
                     recentDetections: "Recent Detections",
                     imageID: "Image ID",
                     searchByImageID: "Search by Image ID...",
@@ -179,10 +181,9 @@
                     detectionsAndConfidence: "YOLO 모델 성능",
                     detectionCount: "탐지 수",
                     top3Classes: "상위 3개 클래스",
-                    detectionsByTime: "시간대별 탐지",
-                    morning: "오전",
-                    afternoon: "오후",
-                    night: "밤",
+                    goodVsBad: "정상 / 불량", // 변경됨
+                    good: "정상", // 추가됨
+                    bad: "불량", // 추가됨
                     recentDetections: "최근 탐지 내역",
                     imageID: "이미지 ID",
                     searchByImageID: "이미지 ID로 검색...",
@@ -249,9 +250,6 @@
                             <span class="ml-4 sidebar-text">${t(item.label)}</span>
                         `;
                         
-                        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★
-                        // ★★★★★  1. 이 부분이 수정되었습니다.  ★★★★★
-                        // ★★★★★★★★★★★★★★★★★★★★★★★★★★★
                         a.onclick = (e) => {
                             e.preventDefault();
                             
@@ -352,12 +350,16 @@
                 const detectionCounts = classLabels.map(cls => classStats[cls].count);
                 const avgConfidencePerClass = classLabels.map(cls => (classStats[cls].confidenceSum / classStats[cls].count) * 100);
 
-                const detectionsByTime = { morning: 0, afternoon: 0, night: 0 };
+                // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+                // ★★★★★ 2. 시간대별 탐지 로직을 good/bad 집계 로직으로 변경 ★★★★★
+                // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+                const goodBadStats = { good: 0, bad: 0 };
                 mockData.detections.forEach(d => {
-                    const hour = new Date(d.timestamp).getHours();
-                    if (hour >= 6 && hour < 12) detectionsByTime.morning++;
-                    else if (hour >= 12 && hour < 18) detectionsByTime.afternoon++;
-                    else detectionsByTime.night++;
+                    if (d.class === 'bottle-good') {
+                        goodBadStats.good++;
+                    } else {
+                        goodBadStats.bad++;
+                    }
                 });
 
                 // --- HTML Structure ---
@@ -396,7 +398,7 @@
                                     <div class="h-40"><canvas id="doughnutChart1"></canvas></div>
                                 </div>
                                 <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">${t('detectionsByTime')}</h3>
+                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">${t('goodVsBad')}</h3>
                                     <div class="h-40"><canvas id="doughnutChart2"></canvas></div>
                                 </div>
                             </div>
@@ -404,29 +406,29 @@
                         
                         <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
                              <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${t('recentDetections')}</h3>
-                                <div class="relative">
-                                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4"></i>
-                                    <input type="text" id="detection-search" placeholder="${t('searchByImageID')}" class="pl-10 pr-4 py-2 w-full sm:w-64 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm">
-                                </div>
-                            </div>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-sm text-left">
-                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                                        <tr>
-                                            <th scope="col" class="px-6 py-3">${t('imageID')}</th>
-                                            <th scope="col" class="px-6 py-3">${t('class')}</th>
-                                            <th scope="col" class="px-6 py-3">${t('confidence')}</th>
-                                            <th scope="col" class="px-6 py-3">${t('precision')}</th>
-                                            <th scope="col" class="px-6 py-3">${t('recall')}</th>
-                                            <th scope="col" class="px-6 py-3">${t('map50')}</th>
-                                            <th scope="col" class="px-6 py-3">${t('map95')}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="detections-table-body">
-                                    </tbody>
-                                </table>
-                            </div>
+                                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${t('recentDetections')}</h3>
+                                 <div class="relative">
+                                     <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4"></i>
+                                     <input type="text" id="detection-search" placeholder="${t('searchByImageID')}" class="pl-10 pr-4 py-2 w-full sm:w-64 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm">
+                                 </div>
+                             </div>
+                             <div class="overflow-x-auto">
+                                 <table class="w-full text-sm text-left">
+                                     <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                                         <tr>
+                                             <th scope="col" class="px-6 py-3">${t('imageID')}</th>
+                                             <th scope="col" class="px-6 py-3">${t('class')}</th>
+                                             <th scope="col" class="px-6 py-3">${t('confidence')}</th>
+                                             <th scope="col" class="px-6 py-3">${t('precision')}</th>
+                                             <th scope="col" class="px-6 py-3">${t('recall')}</th>
+                                             <th scope="col" class="px-6 py-3">${t('map50')}</th>
+                                             <th scope="col" class="px-6 py-3">${t('map95')}</th>
+                                         </tr>
+                                     </thead>
+                                     <tbody id="detections-table-body">
+                                     </tbody>
+                                 </table>
+                             </div>
                         </div>
                     </div>
                 `;
@@ -499,19 +501,24 @@
                     options: doughnutOptions
                 });
 
+                // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+                // ★★★★★ 4. 두 번째 도넛 차트를 good/bad 데이터로 그리도록 수정 ★★★★★
+                // ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
                 charts.doughnut2 = new Chart(document.getElementById('doughnutChart2'), {
                     type: 'doughnut',
-                    data: { labels: [t('morning'), t('afternoon'), t('night')], datasets: [{ data: Object.values(detectionsByTime), backgroundColor: ['#f59e0b', '#ea580c', '#1e3a8a'], borderWidth: 0 }] },
+                    data: { 
+                        labels: [t('bad'), t('good')], 
+                        datasets: [{ 
+                            data: [goodBadStats.bad, goodBadStats.good], 
+                            backgroundColor: ['#ef4444', '#22c55e'], // Red for bad, Green for good
+                            borderWidth: 0 
+                        }] 
+                    },
                     options: doughnutOptions
                 });
 
                 lucide.createIcons();
             };
-
-            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★
-            // ★★★★★ 이 함수는 삭제되었습니다. ★★★★★
-            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★
-            // const renderLearningListPage = () => { ... };
 
             const renderGenericPage = () => {
                 destroyCharts();
@@ -530,9 +537,6 @@
                 }
             };
             
-            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★
-            // ★★★★★  2. 이 부분이 수정되었습니다.  ★★★★★
-            // ★★★★★★★★★★★★★★★★★★★★★★★★★★★
             const renderContent = () => {
                 const pageData = menuItems.find(p => p.id === activePage);
                 if (!pageData) { // 페이지 정보가 없는 경우에 대한 예외 처리
