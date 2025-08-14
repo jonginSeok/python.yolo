@@ -18,7 +18,8 @@ from datetime import timedelta
 from .models import TrainingSession, TrainingMetric, ClassMetric
 from .forms import DataUploadForm
 
-from training.tasks import start_training_async  # .delay()로 비동기 실행
+# from training.tasks import start_training_async  # .delay()로 비동기 실행
+from .tasks import start_training_async
 
 
 
@@ -33,6 +34,24 @@ def training_data_api(request, session_id):
             "model_name": session.model_name,
             "version": session.version,
             "status": session.status,
+            "dataset_name" : session.dataset_name,
+
+            "gpu_info" : session.gpu_info,
+            "memory_info" : session.memory_info,
+            "total_epochs" : session.total_epochs,
+            "current_epoch" : session.current_epoch,
+            "learning_rate" : session.learning_rate,
+            "image_size" : session.image_size,
+            "optimizer" : session.optimizer,
+            "augmentation" : session.augmentation,
+            "early_stopping" : session.early_stopping,
+            "patience" : session.patience,
+            "description" : session.description,
+            "dataset_path" : session.dataset_path,
+            "config" : session.config,
+            "start_time" : session.start_time,
+            "end_time" : session.end_time,
+            
             "progress": session.progress_percentage,
             "training_time": session.training_duration,
         },
@@ -417,12 +436,14 @@ def upload_dataset(request):
             print(f'사용 가능한 GPU({device}) 수:', torch.cuda.device_count())  # 사용 가능한 GPU 수
             
             # Celery + Redis: 가장 강력하고 안정적인 방식
-            # pip install celery redis
-            start_training_async.delay(session.id)  # .delay()로 비동기 실행
+            result = start_training_async.delay(3, 7)  # 비동기 실행
             print(f"# 백그라운드 작업으로 훈련 시작 start_training_async({session.id}) ")
 
             # return HttpResponse("훈련이 백그라운드에서 시작되었습니다.")
-            return redirect("training:dashboard")
+            # return redirect("training:dashboard")
+            
+            return JsonResponse({'task_id': result.id}) # Celery + Redis
+
     else:
         form = DataUploadForm()
 
@@ -436,3 +457,5 @@ def training_sessions_list(request):
     context = {"sessions": sessions}
     return render(request, "training/sessions.html", context)
 
+# Celery + Redis: 가장 강력하고 안정적인 방식
+# pip install celery redis

@@ -1,53 +1,26 @@
 # training/tasks.py
 import os
 from celery import shared_task
-from django.shortcuts import get_object_or_404
-from .models import TrainingSession
-from ultralytics import YOLO
+# from django.shortcuts import get_object_or_404
+# from .models import TrainingSession, TrainingMetric, ClassMetric
+# from ultralytics import YOLO
+
+import time
 
 
-@shared_task
-def start_training_async(session_id):
+@shared_task(bind=True)
+def start_training_async(self, x, y):
     # 여기에 실제 훈련 로직 작성    # 예: 모델 학습, 파일 처리, 로그 저장 등
-    print(f"[start_training_async] 세션 {session_id}에 대해 훈련 시작!")
-    session = get_object_or_404(TrainingSession, id=session_id)
-    session.status = "진행 중"
-    session.save()
+    time.sleep(5)
+    return {'result': x + y, 'task_id': self.request.id}
 
+# 7. Celery 워커 실행
+# celery -A config worker -l info
+# celery -A config worker --loglevel=info
 
-    # if __name__ == "__main__":
-    #     from ultralytics import YOLO
+# Flower는 웹 UI를 통해 작업 목록, 상태, 실행 시간, 실패 로그를 확인할 수 있습니다.
+# celery -A config flower --port=5555
 
-    # 기존 모델 불러오기 (COCO 학습됨)
-    model = YOLO("yolo11n.pt")
-    
-    model.train(
-        # bottle/media/datasets/Bottle
-        data=os.path.join("bottle/media/datasets/", session.dataset_name, "/data.yaml"),
-        epochs=session.current_epoch,           # 10 -> 50 -> 100
-        imgsz=session.image_size,               # GPU 메모리에 따라 640, 512, 416 등으로 조절 가능
-        batch=session.batch_size,               # 16 -> 16 -> 8  # 메모리 문제로 배치 사이즈 줄임
-        project="JonginSeok/dataset/result",
-        name=session.dataset_name,
-        verbose=True,                           # 학습 과정 출력
-        hsv_h=0.03,
-        hsv_s=0.6,
-        hsv_v=0.5,
-        mosaic=1.0,
-        fliplr=0.5,
-
-        
-        
-        # close_mosaic=10,
-        # pretrained=True,
-        # patience=10,                          # 정확도(es_metric)가 10번을 넘기면 그만
-        # es_metric='metrics/mAP50-95(B)'       # mAP50' # old version
-        # hyp='hyp.yaml'
-    )
-
-    print(f"세션 {session.id}에 대한 훈련 완료!")
-    session.status = "완료"
-    session.save()
 
 
 # 1. Celery 워커 실행 확인
@@ -77,10 +50,18 @@ def start_training_async(session_id):
 # print(result.get(timeout=10))  # 결과를 기다렸다가 출력
 # 단, .get()은 동기적으로 기다리는 거라서 테스트용으로만 쓰는 게 좋아.
 
-# (pytorch_env) PS C:\Users\ngins\Git\python.yolo\bottle\config> celery -A config worker --loglevel=info
-# Usage: celery [OPTIONS] COMMAND [ARGS]...
-# Try 'celery --help' for help.
+# 실행
+# (pytorch_env) PS C:\Users\ngins\Git\python.yolo\bottle> celery -A config worker --loglevel=info
 
-# Error: 
-# Unable to load celery application.
-# The module config was not found.
+
+Flower 웹 UI 인증 기본값은 비활성화이고, 개발·테스트 환경에서만 이 변수를 켜서 사용합니다.
+설정 방법
+1) 터미널에서 직접 설정
+export FLOWER_UNAUTHENTICATED_API=true   # macOS / Linux
+set FLOWER_UNAUTHENTICATED_API=true      # Windows CMD
+$env:FLOWER_UNAUTHENTICATED_API="true"   # PowerShell
+그리고 Flower 실행:
+    celery -A myproject flower --port=5555
+
+2) .env 파일에 추가 (Docker나 Compose 환경)
+FLOWER_UNAUTHENTICATED_API=true

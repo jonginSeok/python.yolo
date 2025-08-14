@@ -233,7 +233,9 @@
         margin-top: 5px;
     }
 </style>
-{% endblock %} {% block content %}
+{% endblock %} 
+
+{% block content %}
 <div class="upload-container">
     <div class="upload-card">
         <h1 style="color: white; text-align: center; margin-bottom: 30px; font-size: 2em">
@@ -450,7 +452,7 @@
         </form>
     </div>
 </div>
-
+{% block extra_js %}
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const fileInput = document.getElementById("id_zip_file");
@@ -491,17 +493,6 @@
         uploadArea.addEventListener("dragleave", function () {
             this.classList.remove("dragover");
         });
-
-        // uploadArea.addEventListener("drop", function (e) {
-        //     e.preventDefault();
-        //     this.classList.remove("dragover");
-
-        //     const files = e.dataTransfer.files;
-        //     if (files.length > 0) {
-        //         fileInput.files = files;
-        //         fileInput.dispatchEvent(new Event("change"));
-        //     }
-        // });
 
         uploadArea.addEventListener("drop", function (e) {
             e.preventDefault();
@@ -591,5 +582,5 @@
             submitBtn.disabled = true;
         });
     });
-</script>
+</script>{% endblock %}
 {% endblock %}
