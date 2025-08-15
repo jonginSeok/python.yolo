@@ -1,5 +1,7 @@
 # config/celery.py
-from __future__ import absolute_import
+
+# 1. Celery 설정 확인 (celery.py)
+# from __future__ import absolute_import
 
 import os
 from celery import Celery

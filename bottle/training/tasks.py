@@ -11,8 +11,27 @@ import time
 @shared_task(bind=True)
 def start_training_async(self, x, y):
     # 여기에 실제 훈련 로직 작성    # 예: 모델 학습, 파일 처리, 로그 저장 등
-    time.sleep(5)
-    return {'result': x + y, 'task_id': self.request.id}
+    # time.sleep(15)
+    # return {'result': x + y, 'task_id': self.request.id}
+
+    print("Task executed")
+    return "Success"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # 7. Celery 워커 실행
 # celery -A config worker -l info
@@ -48,20 +67,21 @@ def start_training_async(self, x, y):
 # Python
 # result = start_training.delay(session.id)
 # print(result.get(timeout=10))  # 결과를 기다렸다가 출력
-# 단, .get()은 동기적으로 기다리는 거라서 테스트용으로만 쓰는 게 좋아.
+# 단, .get()은 동기적으로 기다리는 거라서 테스트용으로만 쓰는 게 좋음
 
 # 실행
 # (pytorch_env) PS C:\Users\ngins\Git\python.yolo\bottle> celery -A config worker --loglevel=info
 
 
-Flower 웹 UI 인증 기본값은 비활성화이고, 개발·테스트 환경에서만 이 변수를 켜서 사용합니다.
-설정 방법
-1) 터미널에서 직접 설정
-export FLOWER_UNAUTHENTICATED_API=true   # macOS / Linux
-set FLOWER_UNAUTHENTICATED_API=true      # Windows CMD
-$env:FLOWER_UNAUTHENTICATED_API="true"   # PowerShell
-그리고 Flower 실행:
-    celery -A myproject flower --port=5555
+# Flower 웹 UI 인증 기본값은 비활성화이고, 개발·테스트 환경에서만 이 변수를 켜서 사용합니다.
+# 설정 방법
+# 1) 터미널에서 직접 설정
+# export FLOWER_UNAUTHENTICATED_API=true   # macOS / Linux
+# set FLOWER_UNAUTHENTICATED_API=true      # Windows CMD
+# $env:FLOWER_UNAUTHENTICATED_API="true"   # PowerShell
+# 그리고 Flower 실행:
+#   celery -A myproject flower --port=5555
+#   celery -A config flower --port=5555
 
-2) .env 파일에 추가 (Docker나 Compose 환경)
-FLOWER_UNAUTHENTICATED_API=true
+# 2) .env 파일에 추가 (Docker나 Compose 환경)
+# FLOWER_UNAUTHENTICATED_API=true

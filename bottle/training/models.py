@@ -17,8 +17,10 @@ class TrainingSession(models.Model):
     dataset_name = models.CharField(max_length=100, verbose_name="데이터셋")
     gpu_info = models.CharField(max_length=100, verbose_name="GPU 정보")
     memory_info = models.CharField(max_length=50, verbose_name="메모리 정보")
-    total_epochs = models.IntegerField(default=100, verbose_name="총 에포크")
-    current_epoch = models.IntegerField(default=0, verbose_name="현재 에포크")    
+    # total_epochs = models.IntegerField(default=100, verbose_name="총 에포크")
+    total_epochs = 100
+    # current_epoch = models.IntegerField(default=0, verbose_name="현재 에포크")    
+    epochs = models.IntegerField(default=100, verbose_name="에포크 수")
     batch_size = models.IntegerField(default=1, verbose_name="배치 크기")
     learning_rate = models.FloatField(default=0.01, verbose_name="학습률")    
     image_size = models.IntegerField(default=640, verbose_name="이미지 크기")    
@@ -44,7 +46,7 @@ class TrainingSession(models.Model):
     def progress_percentage(self):
         if self.total_epochs == 0:
             return 0
-        return min((self.current_epoch / self.total_epochs) * 100, 100)
+        return min((self.epochs / self.total_epochs) * 100, 100)
     
     @property
     def training_duration(self):

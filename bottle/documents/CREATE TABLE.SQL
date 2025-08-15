@@ -6,6 +6,16 @@ DROP TABLE IF EXISTS training_trainingmetric;
 DROP TABLE IF EXISTS training_trainingsession;
 
 
+/*
+* PostgreSQL에서 테이블의 컬럼명을 변경하거나 특정 컬럼을 제거
+--ALTER TABLE 테이블_이름 RENAME COLUMN 변경_전_컬럼_이름 TO 변경_후_컬럼_이름;
+ALTER TABLE training_trainingsession RENAME COLUMN current_epoch TO epoch;
+
+--ALTER TABLE 테이블_이름 DROP COLUMN 컬럼_이름;
+ALTER TABLE training_trainingsession DROP COLUMN total_epochs;
+*/
+
+
 -- Table: training_session
 DROP TABLE IF EXISTS training_trainingsession;
 CREATE TABLE training_trainingsession (
@@ -16,8 +26,9 @@ CREATE TABLE training_trainingsession (
     dataset_name VARCHAR(100) NOT NULL,
     gpu_info VARCHAR(100) NOT NULL,
     memory_info VARCHAR(50) NOT NULL,
-    total_epochs INTEGER NOT NULL DEFAULT 100,
-    current_epoch INTEGER NOT NULL DEFAULT 10,
+    epochs INTEGER NOT NULL DEFAULT 100,
+    -- total_epochs INTEGER NOT NULL DEFAULT 100,
+    -- current_epoch INTEGER NOT NULL DEFAULT 10,
     batch_size integer CHECK (batch_size >= 1 AND batch_size <= 64),		--# 배치 크기
     learning_rate FLOAT NOT NULL DEFAULT 0.01  CHECK (learning_rate >= 0.0001 AND learning_rate <= 1.0),   --# 학습률
     image_size integer NOT NULL ,  --# 이미지 크기
@@ -89,8 +100,9 @@ COMMENT ON COLUMN public.training_trainingsession.status IS '상태';
 COMMENT ON COLUMN public.training_trainingsession.dataset_name IS '데이터셋';
 COMMENT ON COLUMN public.training_trainingsession.gpu_info IS 'GPU 정보';
 COMMENT ON COLUMN public.training_trainingsession.memory_info IS '메모리 정보';
-COMMENT ON COLUMN public.training_trainingsession.total_epochs IS '총 에포크';
-COMMENT ON COLUMN public.training_trainingsession.current_epoch IS '현재 에포크';
+COMMENT ON COLUMN public.training_trainingsession.epochs IS '에포크';
+-- COMMENT ON COLUMN public.training_trainingsession.total_epochs IS '총 에포크';
+-- COMMENT ON COLUMN public.training_trainingsession.current_epoch IS '현재 에포크';
 COMMENT ON COLUMN public.training_trainingsession.batch_size IS '배치 크기';
 COMMENT ON COLUMN public.training_trainingsession.learning_rate IS '학습률';
 COMMENT ON COLUMN public.training_trainingsession.image_size IS '이미지 크기';
