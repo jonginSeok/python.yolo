@@ -1,219 +1,505 @@
-{% extends 'base.html' %} {% load static %} {% load custom_filters %} {% block title %}YOLO Training Dashboard{% endblock %} {% block content %}
-<div class="min-h-screen bg-background p-6">
-    <div class="max-w-7xl mx-auto space-y-6">
-        <!-- Header -->
-        <div class="space-y-2">
-            <h1 class="text-3xl font-bold text-foreground">YOLO Training Dashboard</h1>
-            <p class="text-muted-foreground">객체 탐지 모델 훈련 진행 상황과 성능 메트릭을 모니터링하세요</p>
+{% load static %} {% load custom_filters %} 
+
+{% block title %}훈련 세션 결과{% endblock %}
+<!-- Plotly.js -->
+        <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+{% block extra_css %}
+<style>
+    body {
+        background-color: black;
+        font-family: "Inter", sans-serif;
+        color: black;
+        margin: 0;
+        padding: 0;
+    }
+
+    input,
+    textarea {
+        color: black;
+        background-color: black;
+        background: linear-gradient(135deg, #0f172a, #1e293b);
+    }
+
+    select {
+        background-color: black; /* 기본 배경색 */
+        color: black; /* 텍스트 색상 */
+        border: 1px solid #ccc;
+        padding: 8px;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    select:focus {
+        outline: none;
+        border-color: #007bff; /* 포커스 시 테두리 색상 */
+        box-shadow: 0 0 5px rgba(0, 123, 255, 0.5); /* 포커스 시 그림자 */
+        background-color: #e6f0ff; /* 포커스 시 배경색 */
+    }
+    select option {
+        background-color: black; /* 드롭다운 옵션 배경 */
+        color: #e6f0ff; /* 옵션 텍스트 색상 */
+        padding: 8px;
+    }
+    select option:hover {
+        background-color: rgba(255, 255, 255, 0.2); /* 드롭다운 옵션 호버 배경 */
+        color: #e6f0ff; /* 옵션 텍스트 색상 */
+    }
+    select option:checked {
+        background-color: rgba(24, 23, 23, 0.336); /* 선택된 옵션 배경 */
+        color: black; /* 선택된 옵션 텍스트 색상 */
+    }
+    select option:disabled {
+        background-color: rgba(255, 255, 255, 0.1); /* 비활성 옵션 배경 */
+        color: rgba(255, 255, 255, 0.5); /* 비활성 옵션 텍스트 색상 */
+    }
+    select option:disabled:hover {
+        background-color: rgba(255, 255, 255, 0.1); /* 비활성 옵션 호버 배경 */
+        color: rgba(255, 255, 255, 0.5); /* 비활성 옵션 텍스트 색상 */
+    }
+    .sessions-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px, 20px, 20px, 20px;
+    }
+
+    .sessions-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        color: white;
+    }
+
+    .sessions-header h1 {
+        font-size: 2.5em;
+        margin: 0;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #1d4ed8, #1e3a8a);
+        text-decoration: none;
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .sessions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 20px;
+    }
+
+    .sessions-grid2 {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+
+    .session-card {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 15px;
+        padding: 10px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all 0.3s ease;
+    }
+
+    .session-card2 {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 15px;
+        padding: 10px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all 0.3s ease;
+    }
+
+    .session-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .session-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        
+    }
+
+    .session-title {
+        color: white;
+        font-size: 1.3em;
+        font-weight: 600;
+        margin: 0;
+        border-bottom-width: hsl(240 3.7% 15.9% / var(--tw-border-opacity, 1));
+    }
+
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.85em;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-pending {
+        background: rgba(251, 191, 36, 0.2);
+        color: #fbbf24;
+        border: 1px solid #fbbf24;
+    }
+
+    .status-training {
+        background: rgba(59, 130, 246, 0.2);
+        color: #3b82f6;
+        border: 1px solid #3b82f6;
+    }
+
+    .status-completed {
+        background: rgba(16, 185, 129, 0.2);
+        color: #10b981;
+        border: 1px solid #10b981;
+    }
+
+    .status-failed {
+        background: rgba(239, 68, 68, 0.2);
+        color: #ef4444;
+        border: 1px solid #ef4444;
+    }
+
+    .session-info {
+        color: rgba(255, 255, 255, 0.8);
+        /* margin-bottom: 15px; */
+        margin-bottom: 1px;
+    }
+
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+    }
+
+    .info-label {
+        font-weight: 400;
+        margin-top: 1px;
+        font-size: 0.85em;
+    }
+
+    .info-value {
+        color: white;
+        font-weight: 600;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 10px 0;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+        transition: width 0.3s ease;
+    }
+
+    .session-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+    }
+
+    .btn-small {
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 0.9em;
+        transition: all 0.3s ease;
+        flex: 1;
+        text-align: center;
+    }
+
+    .btn-view {
+        background: rgba(59, 130, 246, 0.2);
+        color: #3b82f6;
+        border: 1px solid #3b82f6;
+    }
+
+    .btn-view:hover {
+        background: rgba(59, 130, 246, 0.3);
+        color: #3b82f6;
+        text-decoration: none;
+    }
+
+    .btn-delete {
+        background: rgba(239, 68, 68, 0.2);
+        color: #ef4444;
+        border: 1px solid #ef4444;
+    }
+
+    .btn-delete:hover {
+        background: rgba(239, 68, 68, 0.3);
+        color: #ef4444;
+        text-decoration: none;
+    }
+
+    .empty-state {
+        text-align: center;
+        color: rgba(255, 255, 255, 0.7);
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 4em;
+        color: rgba(255, 255, 255, 0.3);
+        margin-bottom: 20px;
+    }
+
+    @media (max-width: 768px) {
+        .sessions-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .sessions-header {
+            flex-direction: column;
+            gap: 15px;
+            text-align: center;
+        }
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="sessions-container">
+    
+    <!-- Header -->
+    <div class="sessions-header">
+        <h1><i class="fas fa-list"></i> 훈련 결과</h1>
+        <!-- <p class="">객체 탐지 모델 훈련 진행 상황과 성능 메트릭을 모니터링하세요</p> -->
+        <div>
+            <a href="{% url 'training:sessions_list' %}" class="btn-primary"> <i class="fas fa-plus"></i> 훈련 세션 목록 </a>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="sessions-grid">
+        <!-- Current mAP@0.5 -->
+        <div class="session-card" style="max-width: 300px;">
+            <div class="session-info">
+                <h3 class="info-label">Current mAP@0.5</h3>
+                {% if map_change > 0 %}
+                <div class="status-badge">
+                    <i data-lucide="trending-up" class="w-3 h-3"></i>
+                    <span class="status-pending">{{ map_change }}%</span>
+                </div>
+                {% endif %}
+            </div>
+            <div class="session-info">
+                <span class="session-title">{% if latest_metrics %}{{ latest_metrics.map50|floatformat:1|mul:100 }}{% else %}00.0{% endif %}</span>
+                <span class="info-value">%</span>
+            </div>
+            <p class="session-info">Mean Average Precision at IoU 0.5</p>
         </div>
 
-        <!-- Key Metrics -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- Current mAP@0.5 -->
-            <div class="bg-card border border-border rounded-lg p-4">
-                <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-medium text-muted-foreground">Current mAP@0.5</h3>
-                    {% if map_change > 0 %}
-                    <div class="flex items-center space-x-1 text-xs text-success">
-                        <i data-lucide="trending-up" class="w-3 h-3"></i>
-                        <span>{{ map_change }}%</span>
-                    </div>
-                    {% endif %}
+        <!-- Training Loss -->
+        <div class="session-card" style="max-width: 300px;">
+            <div class="session-info">
+                <h3 class="info-label">Training Loss</h3>
+                {% if loss_change > 0 %}
+                <div class="status-badge">
+                    <i data-lucide="trending-down" class="w-3 h-3"></i>
+                    <span class="status-pending">{{ loss_change }}%</span>
                 </div>
-                <div class="text-2xl font-bold text-foreground">
-                    {% if latest_metrics %}{{ latest_metrics.map50|floatformat:1|mul:100 }}{% else %}88.0{% endif %}
-                    <span class="text-sm text-muted-foreground ml-1">%</span>
-                </div>
-                <p class="text-xs text-muted-foreground mt-1">Mean Average Precision at IoU 0.5</p>
+                {% endif %}
             </div>
-
-            <!-- Training Loss -->
-            <div class="bg-card border border-border rounded-lg p-4">
-                <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-medium text-muted-foreground">Training Loss</h3>
-                    {% if loss_change > 0 %}
-                    <div class="flex items-center space-x-1 text-xs text-success">
-                        <i data-lucide="trending-down" class="w-3 h-3"></i>
-                        <span>{{ loss_change }}%</span>
-                    </div>
-                    {% endif %}
-                </div>
-                <div class="text-2xl font-bold text-foreground">
-                    {% if latest_metrics %}{{ latest_metrics.train_loss|floatformat:3 }}{% else %}0.220{% endif %}
-                </div>
-                <p class="text-xs text-muted-foreground mt-1">Current training loss value</p>
+            <div class="session-info">
+                <span class="session-title">{% if latest_metrics %}{{ latest_metrics.train_loss|floatformat:3 }}{% else %}0.220{% endif %}</span>
             </div>
-
-            <!-- Validation Loss -->
-            <div class="bg-card border border-border rounded-lg p-4">
-                <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-medium text-muted-foreground">Validation Loss</h3>
-                    <div class="flex items-center space-x-1 text-xs text-success">
-                        <i data-lucide="trending-down" class="w-3 h-3"></i>
-                        <span>10.8%</span>
-                    </div>
-                </div>
-                <div class="text-2xl font-bold text-foreground">
-                    {% if latest_metrics %}{{ latest_metrics.val_loss|floatformat:3 }}{% else %}0.220{% endif %}
-                </div>
-                <p class="text-xs text-muted-foreground mt-1">Current validation loss value</p>
-            </div>
-
-            <!-- Current Epoch -->
-            <div class="bg-card border border-border rounded-lg p-4">
-                <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-medium text-muted-foreground">Current Epoch</h3>
-                </div>
-                <div class="text-2xl font-bold text-foreground">
-                    {{ session.epochs }}
-                    <span class="text-sm text-muted-foreground ml-1">/ {{ session.total_epochs }}</span>
-                </div>
-                <p class="text-xs text-muted-foreground mt-1">Training progress</p>
-            </div>
+            <p class="session-info">Current training loss value</p>
         </div>
 
-        <!-- Model Information and Class Metrics -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Model Info -->
-            <div class="bg-card border border-border rounded-lg">
-                <div class="p-4 border-b border-border">
-                    <div class="flex items-center justify-between">
-                        <h2 class="text-lg font-semibold text-foreground">{{ session.model_name }}</h2>
-                        {% if session.status == 'training' %}
-                        <span class="bg-info text-info-foreground px-2 py-1 rounded text-sm">훈련 중</span>
-                        {% elif session.status == 'completed' %}
-                        <span class="bg-success text-success-foreground px-2 py-1 rounded text-sm">완료</span>
-                        {% elif session.status == 'failed' %}
-                        <span class="bg-destructive text-destructive-foreground px-2 py-1 rounded text-sm">실패</span>
-                        {% endif %}
-                    </div>
-                    <p class="text-sm text-muted-foreground">Version {{ session.version }}</p>
+        <!-- Validation Loss -->
+        <div class="session-card" style="max-width: 300px;">
+            <div class="session-info">
+                <h3 class="info-label">Validation Loss</h3>
+                {% if loss_change > 0 %}
+                <div class="status-badge">
+                    <i data-lucide="trending-down" class="w-3 h-3"></i>
+                    <span class="status-pending">{{ loss_change }}%</span>
                 </div>
+                {% endif %}
+            </div>
+            <div class="session-info">
+                <span class="session-title">{% if latest_metrics %}{{ latest_metrics.val_loss|floatformat:3 }}{% else %}0.000{% endif %}</span>
+            </div>
+            <p class="session-info">Current validation loss value</p>
+        </div>
 
-                <div class="p-4 space-y-4">
-                    {% if session.status == 'training' %}
-                    <div class="space-y-2">
-                        <div class="flex justify-between text-sm">
-                            <span class="text-muted-foreground">Training Progress</span>
-                            <span class="text-foreground">{{ session.progress_percentage|floatformat:0 }}%</span>
-                        </div>
-                        <div class="w-full bg-secondary rounded-full h-2">
-                            <div class="bg-primary h-2 rounded-full" style="width: {{ session.progress_percentage }}%"></div>
-                        </div>
-                    </div>
+        <!-- Current Epoch -->
+        <div class="session-card" style="max-width: 300px;">
+            <div class="session-info">
+                <h3 class="info-label">Current Epoch</h3>
+            </div>
+            <div class="session-info">
+                <span class="session-title">{{ session.epochs }}
+                </span>/ {{ session.total_epochs }}
+            </div>
+            <p class="session-info">Training progress</p>
+        </div>
+    </div>
+
+    <!-- Model Information and Class Metrics -->
+    <div class="sessions-grid2">
+        <!-- Model Info -->
+        <div class="session-card">
+            <div class="session-header">
+                <h2 class="session-title">{{ session.model_name }}</h2>
+                <p class="info-value">Version {{ session.version }}</p>
+                <p>{% if session.status == 'training' %}
+                    <span class="status-badge status-training">훈련 중</span>
+                    {% elif session.status == 'completed' %}
+                    <span class="status-badge status-completed">완료</span>
+                    {% elif session.status == 'failed' %}
+                    <span class="status-badge status-failed">실패</span>
                     {% endif %}
-
-                    <div class="grid grid-cols-2 gap-4 text-sm">
-                        <div class="flex items-center space-x-2">
-                            <i data-lucide="clock" class="w-4 h-4 text-muted-foreground"></i>
-                            <div>
-                                <p class="text-muted-foreground">Training Time</p>
-                                <p class="text-foreground font-medium">{{ session.training_duration }}</p>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center space-x-2">
-                            <i data-lucide="cpu" class="w-4 h-4 text-muted-foreground"></i>
-                            <div>
-                                <p class="text-muted-foreground">GPU</p>
-                                <p class="text-foreground font-medium">{{ session.gpu_info }}</p>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center space-x-2">
-                            <i data-lucide="memory-stick" class="w-4 h-4 text-muted-foreground"></i>
-                            <div>
-                                <p class="text-muted-foreground">Memory</p>
-                                <p class="text-foreground font-medium">{{ session.memory_info }}</p>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center space-x-2">
-                            <i data-lucide="hard-drive" class="w-4 h-4 text-muted-foreground"></i>
-                            <div>
-                                <p class="text-muted-foreground">Dataset</p>
-                                <p class="text-foreground font-medium">{{ session.dataset_name }}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                </p>
             </div>
 
-            <!-- Class Metrics -->
-            <div class="bg-card border border-border rounded-lg">
-                <div class="p-4 border-b border-border">
-                    <h2 class="text-lg font-semibold text-foreground">Class Performance</h2>
+            <div class="session-info" style="border:1px solid #2f3031;border-radius:10px; padding: 10px;">
+                {% if session.status == 'training' %}
+                <div class="">
+                    <div class="" style="margin-top: 20px;">
+                        <span class="">Training Progress</span>
+                        <span class="">{{ session.progress_percentage|floatformat:0 }}%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {{ session.progress_percentage }}%"></div>
+                    </div>
                 </div>
-                <div class="p-4">
-                    <div class="space-y-4">
-                        {% for metric in class_metrics %}
-                        <div class="space-y-2">
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm font-medium text-foreground">{{ metric.class_name }}</span>
-                                <span class="text-xs text-muted-foreground">{{ metric.instances }} instances</span>
-                            </div>
+                {% endif %}
 
-                            <div class="grid grid-cols-3 gap-2 text-xs">
-                                <div>
-                                    <div class="flex justify-between mb-1">
-                                        <span class="text-muted-foreground">Precision</span>
-                                        <span class="text-foreground">{{ metric.precision|floatformat:1|mul:100 }}%</span>
-                                    </div>
-                                    <div class="w-full bg-secondary rounded-full h-1">
-                                        <div class="bg-primary h-1 rounded-full" style="width: {{ metric.precision|mul:100 }}%"></div>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div class="flex justify-between mb-1">
-                                        <span class="text-muted-foreground">Recall</span>
-                                        <span class="text-foreground">{{ metric.recall|floatformat:1|mul:100 }}%</span>
-                                    </div>
-                                    <div class="w-full bg-secondary rounded-full h-1">
-                                        <div class="bg-primary h-1 rounded-full" style="width: {{ metric.recall|mul:100 }}%"></div>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div class="flex justify-between mb-1">
-                                        <span class="text-muted-foreground">F1-Score</span>
-                                        <span class="text-foreground">{{ metric.f1_score|floatformat:1|mul:100 }}%</span>
-                                    </div>
-                                    <div class="w-full bg-secondary rounded-full h-1">
-                                        <div class="bg-primary h-1 rounded-full" style="width: {{ metric.f1_score|mul:100 }}%"></div>
-                                    </div>
-                                </div>
-                            </div>
+                <div class="">
+                    <div class="">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="clock" class="lucide lucide-clock w-4 h-4 text-muted-foreground"><path d="M12 6v6l4 2"></path><circle cx="12" cy="12" r="10"></circle></svg>
+                        <div class="info-item">
+                            <span class="info-label">Training Time</span>
+                            <span class="info-value">{{ session.training_duration }}</span>
                         </div>
-                        {% endfor %}
+                    </div>
+
+                    <div class="">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="cpu" class="lucide lucide-cpu w-4 h-4 text-muted-foreground"><path d="M12 20v2"></path><path d="M12 2v2"></path><path d="M17 20v2"></path><path d="M17 2v2"></path><path d="M2 12h2"></path><path d="M2 17h2"></path><path d="M2 7h2"></path><path d="M20 12h2"></path><path d="M20 17h2"></path><path d="M20 7h2"></path><path d="M7 20v2"></path><path d="M7 2v2"></path><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="8" y="8" width="8" height="8" rx="1"></rect></svg>
+                        <div class="info-item">
+                            <span class="info-label">GPU</span>
+                            <span class="info-value">{{ session.gpu_info }}</span>
+                        </div>
+                    </div>
+
+                    <div class="">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="memory-stick" class="lucide lucide-memory-stick w-4 h-4 text-muted-foreground"><path d="M6 19v-3"></path><path d="M10 19v-3"></path><path d="M14 19v-3"></path><path d="M18 19v-3"></path><path d="M8 11V9"></path><path d="M16 11V9"></path><path d="M12 11V9"></path><path d="M2 15h20"></path><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v1.1a2 2 0 0 0 0 3.837V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5.1a2 2 0 0 0 0-3.837Z"></path></svg>
+                        <div class="info-item">
+                            <span class="info-label">Memory</span>
+                            <span class="info-value">{{ session.memory_info }}</span>
+                        </div>
+                    </div>
+
+                    <div class="">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="hard-drive" class="lucide lucide-hard-drive w-4 h-4 text-muted-foreground"><line x1="22" x2="2" y1="12" y2="12"></line><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path><line x1="6" x2="6.01" y1="16" y2="16"></line><line x1="10" x2="10.01" y1="16" y2="16"></line></svg>
+                        <div class="info-item">
+                            <span class="info-label" style="align-items: start;">Dataset</span>
+                            <span class="info-value">{{ session.dataset_name }}</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Training Charts -->
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <!-- Loss Chart -->
-            <div class="bg-card border border-border rounded-lg">
-                <div class="p-4 border-b border-border">
-                    <h2 class="text-lg font-semibold text-foreground">Training & Validation Loss</h2>
-                </div>
-                <div class="p-4">
-                    <div id="loss-chart" style="height: 350px"></div>
-                </div>
+        <!-- Class Metrics -->
+        <div class="session-card">
+            <div class="session-header">
+                <h2 class="session-title">Class Performance</h2>
             </div>
+            <div class="session-info" style="border:1px solid #2f3031;border-radius:10px; padding: 10px;">
+                <div class="">
+                    {% for metric in class_metrics %}
+                    
+                    <div class="" style="margin-top: 20px;">
+                        <div class="info-item">
+                            <span class="info-value">{{ metric.class_name }}</span>
+                            <span class="info-label">{{ metric.instances }} instances</span>
+                        </div>
 
-            <!-- mAP Chart -->
-            <div class="bg-card border border-border rounded-lg">
-                <div class="p-4 border-b border-border">
-                    <h2 class="text-lg font-semibold text-foreground">Mean Average Precision (mAP)</h2>
-                </div>
-                <div class="p-4">
-                    <div id="map-chart" style="height: 350px"></div>
+                        <div class="" style="display: flex; gap: 1.5em;">
+                            <div class="" style="min-width: 10em;">
+                                <div class="info-item">
+                                    <span class="info-label">Precision</span>
+                                    <span class="info-value">{{ metric.precision|floatformat:1|mul:100 }}%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: {{ metric.precision|mul:100 }}%"></div>
+                                </div>
+                            </div>
+
+                            <div class="" style="min-width: 10em;">
+                                <div class="info-item">
+                                    <span class="info-label">Recall</span>
+                                    <span class="info-value">{{ metric.recall|floatformat:1|mul:100 }}%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: {{ metric.recall|mul:100 }}%"></div>
+                                </div>
+                            </div>
+
+                            <div class="" style="min-width: 10em;">
+                                <div class="info-item">
+                                    <span class="info-label">F1-Score</span>
+                                    <span class="info-value">{{ metric.f1_score|floatformat:1|mul:100 }}%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: {{ metric.f1_score|mul:100 }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Training Charts -->
+    <div class="sessions-grid2">
+        <!-- Loss Chart -->
+        <div class="session-card2">
+            <div class="session-header">
+                <h2 class="session-title">Training & Validation Loss</h2>
+            </div>
+            <div class="" style="border:1px solid #2f3031;border-radius:10px;">
+                <div id="loss-chart" style="height: 350px"></div>
+            </div>
+        </div>
+
+        <!-- mAP Chart -->
+        <div class="session-card2">
+            <div class="session-header">
+                <h2 class="session-title">Mean Average Precision (mAP)</h2>
+            </div>
+            <div class="" style="border:1px solid #2f3031;border-radius:10px;">
+                <div id="map-chart" style="height: 350px"></div>
+            </div>
+        </div>
+    </div>
+    
 </div>
 
 <script>
