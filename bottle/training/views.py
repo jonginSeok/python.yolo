@@ -16,11 +16,14 @@ from django.conf import settings
 from ultralytics import YOLO
 from datetime import timedelta
 
+
 from .models import TrainingSession, TrainingMetric, ClassMetric
 from .forms import DataUploadForm
 from .tasks import start_training_async
-
 # from training.tasks import start_training_async  # .delay()로 비동기 실행
+
+from . import SizeLetterCNN
+
 
 
 def training_data_api(request, session_id):
@@ -288,16 +291,24 @@ def dashboard(request):
         # 성능 개선 계산 (이전 10개 에포크와 비교)
         metrics_count = latest_session.metrics.count()
         if metrics_count > 10:
-            recent_avg = latest_session.metrics.order_by("-epoch")[:5].aggregate(Avg("map50"))["map50__avg"]
-            old_avg = latest_session.metrics.order_by("-epoch")[5:10].aggregate(Avg("map50"))["map50__avg"]
+            recent_avg = latest_session.metrics.order_by("-epoch")[:5].aggregate(
+                Avg("map50")
+            )["map50__avg"]
+            old_avg = latest_session.metrics.order_by("-epoch")[5:10].aggregate(
+                Avg("map50")
+            )["map50__avg"]
             map_change = ((recent_avg - old_avg) / old_avg * 100) if old_avg else 0
         else:
             map_change = 0
 
         # 손실 변화 계산
         if metrics_count > 5:
-            recent_loss = latest_session.metrics.order_by("-epoch")[:3].aggregate(Avg("train_loss"))["train_loss__avg"]
-            old_loss = latest_session.metrics.order_by("-epoch")[3:6].aggregate(Avg("train_loss"))["train_loss__avg"]
+            recent_loss = latest_session.metrics.order_by("-epoch")[:3].aggregate(
+                Avg("train_loss")
+            )["train_loss__avg"]
+            old_loss = latest_session.metrics.order_by("-epoch")[3:6].aggregate(
+                Avg("train_loss")
+            )["train_loss__avg"]
             loss_change = ((old_loss - recent_loss) / old_loss * 100) if old_loss else 0
         else:
             loss_change = 0
@@ -332,11 +343,49 @@ def upload_dataset(request):
         print(f"# form.is_valid:{form.is_valid()}")
 
         if form.is_valid():
+            
+            # 훈련 세션 생성(training_trainingsession)
+            session = TrainingSession.objects.create(
+                model_name=form.cleaned_data["model_name"],
+                version=form.cleaned_data["version"],
+                status=form.cleaned_data["status"],  # "pending",
+                dataset_name=form.cleaned_data["dataset_name"],
+                gpu_info=form.cleaned_data["gpu_info"],
+                memory_info=form.cleaned_data["memory_info"],
+                # total_epochs=form.cleaned_data["total_epochs"],
+                # current_epoch=form.cleaned_data["current_epoch"],
+                epochs=form.cleaned_data["epochs"],
+                batch_size=form.cleaned_data["batch_size"],
+                learning_rate=form.cleaned_data["learning_rate"],
+                image_size=form.cleaned_data["image_size"],
+                optimizer=form.cleaned_data["optimizer"],
+                augmentation=form.cleaned_data["augmentation"],
+                early_stopping=form.cleaned_data["early_stopping"],
+                patience=form.cleaned_data["patience"],
+                description=form.cleaned_data["description"],
+                # dataset_path=upload_dir,
+                # config={
+                #     "epochs": form.cleaned_data["epochs"],
+                #     "batch_size": form.cleaned_data["batch_size"],
+                #     "learning_rate": form.cleaned_data["learning_rate"],
+                #     "image_size": form.cleaned_data["image_size"],
+                #     "optimizer": form.cleaned_data["optimizer"],
+                #     "augmentation": form.cleaned_data["augmentation"],
+                #     "early_stopping": form.cleaned_data["early_stopping"],
+                #     "patience": form.cleaned_data["patience"],
+                #     # "image_count": len(image_files),
+                #     # "label_count": len(label_files),
+                # },
+                created_id=request.user,
+            )
+
+
+
             # 파일 저장 및 처리
             zip_file = form.cleaned_data["zip_file"]
 
             # 업로드 디렉토리 생성
-            upload_dir = os.path.join("media", "datasets", form.cleaned_data["dataset_name"])
+            upload_dir = os.path.join("media", "datasets", str(session.id), form.cleaned_data["dataset_name"])
             os.makedirs(upload_dir, exist_ok=True)
 
             # ZIP 파일 저장
@@ -373,22 +422,16 @@ def upload_dataset(request):
                 os.remove(zip_path)
                 return render(request, "training/upload.html", {"form": form})
 
-            # 훈련 세션 생성(training_trainingsession)
-            session = TrainingSession.objects.create(
-                model_name=form.cleaned_data["model_name"],
-                dataset_name=form.cleaned_data["dataset_name"],
-                status=form.cleaned_data["status"],  # "pending",
-                # total_epochs=form.cleaned_data["total_epochs"],
-                # current_epoch=form.cleaned_data["current_epoch"],
-                epochs=form.cleaned_data["epochs"],
-                batch_size=form.cleaned_data["batch_size"],
-                learning_rate=form.cleaned_data["learning_rate"],
-                image_size=form.cleaned_data["image_size"],
-                optimizer=form.cleaned_data["optimizer"],
-                augmentation=form.cleaned_data["augmentation"],
-                early_stopping=form.cleaned_data["early_stopping"],
-                patience=form.cleaned_data["patience"],
-                description=form.cleaned_data["description"],
+            # 방법 1: 객체를 가져와서 수정 후 .save() 사용
+            # session = TrainingSession.objects.get(id=1)  # 원하는 객체 가져오기
+            # session.name = "Updated Name"               # 필드 수정
+            # session.duration = 90
+            # session.save()                              # 변경사항 저장
+            # 장점: 모델의 save() 메서드가 호출되므로 커스텀 로직이 실행됨
+            # 단점: 객체를 메모리에 로드해야 하므로 성능이 떨어질 수 있음
+
+            # 방법 2: QuerySet.update() 사용
+            TrainingSession.objects.filter(id=session.id).update(
                 dataset_path=upload_dir,
                 config={
                     "epochs": form.cleaned_data["epochs"],
@@ -402,21 +445,20 @@ def upload_dataset(request):
                     "image_count": len(image_files),
                     "label_count": len(label_files),
                 },
-                created_id=request.user,
             )
+            # 장점: SQL UPDATE를 직접 실행하므로 빠름
+            # 단점: save() 메서드나 pre_save/post_save 시그널이 호출되지 않음
+
+
 
             # 모델 인스턴스 생성(training_classmetric)
             class_names = []
-
             print(f"# model_name: {form.cleaned_data["model_name"]}")
 
             if "CNN" == form.cleaned_data["model_name"]:
                 # ClassMetric 모델에 클래스 이름 저장 /CNN
                 class_names = request.POST.getlist("class_name")
-                print("Class Names:", class_names)
-                print(
-                    f"# CNN class_names len: {len(class_names)}"
-                )
+                print(f"# CNN Class_names len: {len(class_names)} Class Name:{class_names}")
 
             elif "YOLOv11n" == form.cleaned_data["model_name"]:
                 # data.yaml 파일 읽어 저장 /YOLO
@@ -430,16 +472,16 @@ def upload_dataset(request):
                     data = yaml.safe_load(f)
 
                 # 각 항목을 변수에 담기
-                train_path = data.get("train")
-                val_path = data.get("val")
-                test_path = data.get("test", None)  # test가 없을 수도 있으니 기본값 설정
+                # train_path = data.get("train")
+                # val_path = data.get("val")
+                # test_path = data.get("test", None)  # test가 없을 수도 있으니 기본값 설정
                 num_classes = data.get("nc")
                 class_names = data.get("names")
 
                 # 확인 출력
-                print("Train Path:", train_path)
-                print("Validation Path:", val_path)
-                print("Test Path:", test_path)
+                # print("Train Path:", train_path)
+                # print("Validation Path:", val_path)
+                # print("Test Path:", test_path)
                 print("Number of Classes:", num_classes)
                 print("Class Names:", class_names)
 
@@ -456,106 +498,113 @@ def upload_dataset(request):
 
             # 한 번에 저장
             ClassMetric.objects.bulk_create(class_objects)
-
             messages.success(request, f"데이터셋이 성공적으로 업로드되었습니다. 훈련 세션 ID: {session.id}",)
 
-            # 여기서 실제 YOLO 훈련을 시작할 수 있습니다
             print("여기서 실제 YOLO 훈련을 시작할 수 있습니다")
             # 우선 코드 붙여넣기 / 파일을 분리해서 parameters를 넘겨서 하면 좋을 듯
 
-            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            
-            print("True여야 GPU 사용 가능 :", torch.cuda.is_available())  # True여야 GPU 사용 가능
-            print(f"사용 가능한 GPU({device}) 수:", torch.cuda.device_count())  # 사용 가능한 GPU 수
+            # CNN 과 YOLO 분기
+            if session.model_name == "CNN":
+                SizeLetterCNN.data_path = session.dataset_path
+                SizeLetterCNN.BATCH_SIZE = session.batch_size
+                SizeLetterCNN.EPOCHS = session.epochs
+                SizeLetterCNN.LR = session.learning_rate
+                SizeLetterCNN.optimizerName = session.optimizer
+                SizeLetterCNN.label_map = enumerate(class_names)
+                SizeLetterCNN.save_path = session.dataset_path + "/cnn_with_size_letterbox.pth"
 
-            # Celery + Redis: 가장 강력하고 안정적인 방식
-            # result = start_training_async.delay(3, 7)  # 비동기 실행
-            # print(f"# 백그라운드 작업으로 훈련 시작 start_training_async({session.id}) ")
-            # return JsonResponse({'task_id': result.id}) # Celery + Redis
+            elif session.model_name == "YOLOv11n":
+                device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-            data_yaml_path = os.path.join(upload_dir, "data.yaml")
-            print(f" data_yaml_path : [{data_yaml_path}]")
+                print("True여야 GPU 사용 가능 :", torch.cuda.is_available())  # True여야 GPU 사용 가능
+                print(f"사용 가능한 GPU({device}) 수:", torch.cuda.device_count())  # 사용 가능한 GPU 수
 
-            # 기존 모델 불러오기 (COCO 학습됨)
-            model = YOLO("yolo11n.pt")  # 각자의 경로 .to('cuda')
-            model.train(
-                data=data_yaml_path,  # bottle\media\datasets\bottle\data.yaml
-                epochs=session.epochs,
-                imgsz=session.image_size,  # GPU 메모리에 따라 640, 512, 416 등으로 조절 가능
-                batch=session.batch_size,  # 메모리 문제로 배치 사이즈 줄임
-                project=os.path.join(upload_dir, "result", str(session.id)),
-                name=session.model_name,
-                verbose=True,  # 학습 과정 출력
-                patience=session.patience,  # 정확도(es_metric)가 10번을 넘기면 그만
-                # close_mosaic=10,
-                # pretrained=True,
-                # es_metric='metrics/mAP50-95(B)'   # mAP50' # old version
-            )
+                # Celery + Redis: 가장 강력하고 안정적인 방식
+                # result = start_training_async.delay(3, 7)  # 비동기 실행
+                # return JsonResponse({'task_id': result.id}) # Celery + Redis
 
-            # 결과파일 읽어들이기 bottle\media\datasets\bottle\result\26\YOLOv11n\results.csv
-            import pandas as pd
-            import psycopg2
-            from datetime import datetime
-
-            df = pd.read_csv(os.path.join(upload_dir, "result", str(session.id), session.model_name, "results.csv",))
-
-            # 모든 데이터를 저장 (예: 변수로)
-            all_data = df.to_dict(orient="list")  # 열 기준으로 리스트로 저장
-
-            conn = psycopg2.connect(
-                dbname="postgres",
-                user="postgres",
-                password="yolo11ai",
-                host="postgres.cxg2cwseemwh.ap-northeast-2.rds.amazonaws.com",
-                port="5432",
-            )
-            cursor = conn.cursor()
-
-            for i in range(session.epochs):
-                epoch = int(df.loc[i, "epoch"])
-                train_loss = float(df.loc[i, "train/box_loss"])
-                precision = float(df.loc[i, "metrics/precision(B)"])
-                recall = float(df.loc[i, "metrics/recall(B)"])
-                val_loss = float(df.loc[i, "val/box_loss"])
-                map50 = float(df.loc[i, "metrics/mAP50(B)"])
-                map95 = float(df.loc[i, "metrics/mAP50-95(B)"])
-
-                cursor.execute(
-                    """
-                INSERT INTO training_trainingmetric (session_id, epoch, train_loss, val_loss, map50, map95, precision, recall, timestamp ,created_at, created_id)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """,
-                    (
-                        session.id,
-                        epoch,
-                        train_loss,
-                        val_loss,
-                        map50,
-                        map95,
-                        precision,
-                        recall,
-                        datetime.now(),
-                        datetime.now(),
-                        str(request.user),
-                    ),
+                # 기존 모델 불러오기 (COCO 학습됨)
+                model = YOLO("yolo11n.pt")  # 각자의 경로 .to('cuda')
+                model.train(
+                    data=data_yaml_path,  # bottle\media\datasets\bottle\data.yaml
+                    epochs=session.epochs,
+                    imgsz=session.image_size,  # GPU 메모리에 따라 640, 512, 416 등으로 조절 가능
+                    batch=session.batch_size,  # 메모리 문제로 배치 사이즈 줄임
+                    optimizer=session.optimizer,  # 옵티마이져
+                    lr0=float(session.learning_rate),
+                    weight_decay=0.01,
+                    
+                    project=os.path.join(upload_dir, "result", str(session.id)), # 저장 경로
+                    name=session.model_name,     # yolo이름
+                    verbose=True,                  # 학습 과정 출력
+                    patience=session.patience,       # 정확도(es_metric)가 10번을 넘기면 그만
+                    # es_metric='metrics/mAP50-95(B)'   # SyntaxError: 'es_metric' is not a valid YOLO argument.
                 )
 
-            conn.commit()
-            conn.close()
+                # 결과파일 읽어들이기 ex) bottle\media\datasets\bottle\result\26\YOLOv11n\results.csv
+                import pandas as pd
+                import psycopg2
+                from datetime import datetime
 
-            # 상태 변경 completed:완료
-            session = TrainingSession.objects.update(
-                status="completed",
-                # updated_at=datetime.now(),
-                # updated_id="system",
-            )
+                df = pd.read_csv(os.path.join(upload_dir,"result",str(session.id),session.model_name,"results.csv",))
+
+                # 모든 데이터를 저장 (예: 변수로)
+                all_data = df.to_dict(orient="list")  # 열 기준으로 리스트로 저장
+
+                conn = psycopg2.connect(
+                    dbname="postgres",
+                    user="postgres",
+                    password="yolo11ai",
+                    host="postgres.cxg2cwseemwh.ap-northeast-2.rds.amazonaws.com",
+                    port="5432",
+                )
+                cursor = conn.cursor()
+
+                for i in range(session.epochs):
+                    epoch = int(df.loc[i, "epoch"])
+                    train_loss = float(df.loc[i, "train/box_loss"])
+                    precision = float(df.loc[i, "metrics/precision(B)"])
+                    recall = float(df.loc[i, "metrics/recall(B)"])
+                    val_loss = float(df.loc[i, "val/box_loss"])
+                    map50 = float(df.loc[i, "metrics/mAP50(B)"])
+                    map95 = float(df.loc[i, "metrics/mAP50-95(B)"])
+
+                    cursor.execute(
+                        """
+                    INSERT INTO training_trainingmetric (session_id, epoch, train_loss, val_loss, map50, map95, precision, recall, timestamp ,created_at, created_id)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                        (
+                            session.id,
+                            epoch,
+                            train_loss,
+                            val_loss,
+                            map50,
+                            map95,
+                            precision,
+                            recall,
+                            datetime.now(),
+                            datetime.now(),
+                            str(request.user),
+                        ),
+                    )
+
+                conn.commit()
+                conn.close()
+
+                # 상태 변경 completed:완료
+                session = TrainingSession.objects.update(
+                    status="completed",
+                    # updated_at=datetime.now(),
+                    # updated_id="system",
+                )
 
             # return HttpResponse("훈련이 백그라운드에서 시작되었습니다.")
             return redirect("training:dashboard")
 
     else:
         # 초기값세팅 2. 뷰에서 동적으로  설정. 상황에 따라 기본값을 바꿀 수 있어요 (예: 로그인한 사용자 이름 등).
-        form = DataUploadForm(initial={"dataset_name": "bottle"})
+        form = DataUploadForm()
 
     return render(request, "training/upload.html", {"form": form})
 

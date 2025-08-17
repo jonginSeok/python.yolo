@@ -13,44 +13,43 @@ class DataUploadForm(forms.Form):
     # 기본 정보
     # model_name = forms.CharField(
     #     required=True,
-    #     max_length=100,
     #     label="모델명",
+    #     max_length=100,
+    #     initial="YOLOv11n",  # 초기값세팅 1.  속성 사용 (가장 일반적인 방법)
     #     widget=forms.TextInput(
     #         attrs={"class": "form-control", "placeholder": "YOLOv8n"}
     #     ),
-    #     initial="YOLOv11n",  # 초기값세팅 1.  속성 사용 (가장 일반적인 방법)
     # )
 
     model_name = forms.ChoiceField(
         required=True,
         label="모델명",
-        initial="YOLOv11n",
         choices=[
             ("CNN", "CNN"),
-            # ("YOLOv8n", "YOLO v8n"),
             ("YOLOv11n", "YOLO v11n"),
         ],
+        initial="YOLOv11n",  # 초기값세팅
         widget=forms.Select(attrs={"class": "form-control"}),
     )
 
     version = forms.CharField(
         required=True,
-        max_length=20,
         label="버전",
-        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "0.0.1"}),
+        max_length=20,
         initial="0.0.1",  # 초기값세팅
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "0.0.1"}),
     )
 
     status = forms.ChoiceField(
         required=True,
         label="상태",
-        initial="training",
         choices=[
             ("training", "훈련 중"),
             ("completed", "완료"),
             ("failed", "실패"),
             ("paused", "일시정지"),
         ],
+        initial="training",  # 초기값세팅
         widget=forms.Select(attrs={"class": "form-control"}),
     )
 
@@ -58,6 +57,7 @@ class DataUploadForm(forms.Form):
         required=True,
         max_length=100,
         label="데이터셋명",
+        initial="bottle",  # 초기값세팅
         widget=forms.TextInput(
             attrs={"class": "form-control", "placeholder": "Custom Dataset"}
         ),
@@ -75,11 +75,18 @@ class DataUploadForm(forms.Form):
             }
         ),
     )
+    
     memory_info = forms.CharField(
         required=True,
         max_length=50,
         label="메모리 정보",
-        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "64GB"}),
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control", 
+                "placeholder": "64GB",
+                "value": "64GB",  # 초기값세팅 3. 의 로 직접  지정
+            }
+        ),
     )
 
     # 파일 업로드
@@ -103,53 +110,53 @@ class DataUploadForm(forms.Form):
     # total_epochs = forms.IntegerField(
     #     required=True,
     #     label="총 에포크",
-    #     initial=100,
     #     min_value=1,
     #     max_value=1000,
+#     initial=100,
     #     widget=forms.NumberInput(attrs={"class": "form-control"}),
     # )
-    
+
     # current_epoch
     # current_epoch = forms.IntegerField(
     #     required=True,
     #     label="현재 에포크",
-    #     initial=20,
     #     min_value=1,
     #     max_value=1000,
+    #     initial=20,
     #     widget=forms.NumberInput(attrs={"class": "form-control"}),
     # )
+
     epochs = forms.IntegerField(
         required=True,
         label="에포크",
-        initial=5,
         min_value=1,
         max_value=1000,
+        initial=3,  # 초기값세팅
         widget=forms.NumberInput(attrs={"class": "form-control"}),
     )
 
     batch_size = forms.IntegerField(
         required=True,
         label="배치 크기",
-        initial=4,
         min_value=1,
         max_value=64,
+        initial=4,  # 초기값세팅
         widget=forms.NumberInput(attrs={"class": "form-control"}),
     )
 
     learning_rate = forms.FloatField(
         required=True,
         label="학습률",
-        initial=0.01,
-        min_value=0.0001,
+        min_value=0.01,
         max_value=1.0,
-        widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.0001"}),
+        initial=0.01,  # 초기값세팅
+        widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
     )
 
     # image_size = forms.IntegerField(
     image_size = forms.ChoiceField(
         required=True,
         label="이미지 크기",
-        initial=640,
         choices=[
             (128, "128"),
             (224, "224"),
@@ -159,6 +166,7 @@ class DataUploadForm(forms.Form):
             (800, "800"),
             (1024, "1024"),
         ],
+        initial=128,  # 초기값세팅
         widget=forms.Select(attrs={"class": "form-control"}),
     )
 
@@ -172,37 +180,37 @@ class DataUploadForm(forms.Form):
             ("AdamW", "AdamW"),
             ("RMSprop", "RMSprop"),
         ],
-        initial="Adam",
+        initial="Adam",  # 초기값세팅
         widget=forms.Select(attrs={"class": "form-control"}),
     )
 
     patience = forms.IntegerField(
         required=True,
         label="조기 종료 patience",
-        initial=10,
         min_value=1,
         max_value=100,
+        initial=10,  # 초기값세팅
         widget=forms.NumberInput(attrs={"class": "form-control"}),
     )
 
     augmentation = forms.BooleanField(
         label="데이터 증강 사용",
         required=False,
-        initial=False,
+        initial=False,  # 초기값세팅
         widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
     )
 
     early_stopping = forms.BooleanField(
         label="조기 종료 사용",
         required=False,
-        initial=False,
+        initial=False,  # 초기값세팅
         widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
     )
 
     start_time = forms.DateTimeField(
         required=True,
         label="시작 시간",
-        initial=datetime.now,
+        initial=datetime.now,  # 초기값세팅
         widget=forms.DateTimeInput(
             attrs={"class": "form-control", "type": "datetime-local"}
         ),
@@ -220,6 +228,7 @@ class DataUploadForm(forms.Form):
     description = forms.CharField(
         required=False,
         label="설명",
+        initial="훈련에 대한 설명",  # 초기값세팅 1.  속성 사용 (가장 일반적인 방법)
         widget=forms.Textarea(
             attrs={
                 "class": "form-control",
@@ -227,7 +236,6 @@ class DataUploadForm(forms.Form):
                 "placeholder": "훈련에 대한 설명을 입력하세요",
             }
         ),
-        initial="훈련에 대한 설명",  # 초기값세팅 1.  속성 사용 (가장 일반적인 방법)
     )
 
     # 초기값세팅 4.  메서드에서 동적 설정
@@ -235,7 +243,7 @@ class DataUploadForm(forms.Form):
     # • 	더 복잡한 로직이 필요한 경우 유용해요.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['memory_info'].initial = '64GB'
+        self.fields["memory_info"].initial = "64GB"
 
     def clean_zip_file(self):
         """ZIP 파일 검증"""
