@@ -17,10 +17,19 @@ venv\Scripts\activate     # Windows
 pip install -r requirements.txt
 ```
 
-### 3. 데이터베이스 마이그레이션
+### 3. 데이터베이스 설정
+PostgreSQL 데이터베이스가 필요합니다. AWS RDS 또는 로컬 PostgreSQL을 사용하세요.
+
+#### 데이터베이스 마이그레이션
 ```bash
 python manage.py makemigrations
 python manage.py migrate
+```
+
+#### 데이터베이스 스키마 문제 해결
+만약 `column training_trainingsession.total_epochs does not exist` 에러가 발생한다면:
+```bash
+python manage.py migrate training
 ```
 
 ### 4. 관리자 계정 생성 (선택사항)

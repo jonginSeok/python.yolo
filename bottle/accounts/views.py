@@ -9,7 +9,8 @@ from django import forms
 
 @method_decorator(csrf_protect, name='dispatch')
 class CustomLoginView(LoginView):
-    template_name = "registration/login.html"  # accounts/login
+    template_name = "registration/login_with_intro.html"  # 인트로 애니메이션이 포함된 로그인 페이지
+    # template_name = "registration/login.html"  # accounts/login #기존 로그인 페이지
     
     def get(self, request, *args, **kwargs):
         print("=== CustomLoginView.get() 호출됨 ===")

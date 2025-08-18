@@ -1,0 +1,462 @@
+{% load form_tags %}
+{% load static %}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>YOLO - AI 객체 탐지 시스템</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/gsap/3.2.6/gsap.min.js'></script>
+    
+    <style>
+        @font-face {
+            src: url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/2479807/CosiAzure-Black.woff2') format('woff2');
+            font-family: 'Cosi Azure';
+        }
+
+        @font-face {
+            src: url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/2479807/ageo-regular.woff2') format('woff2');
+            font-family: 'Ageo';
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cosi Azure', sans-serif;
+            text-rendering: optimizeLegibility;
+            color: white;
+            background-color: #151515;
+            overflow-x: hidden;
+        }
+
+        .hidden {
+            visibility: hidden;
+            opacity: 0;
+        }
+
+        /* 인트로 애니메이션 스타일 */
+        .intro {
+            position: fixed;
+            display: grid;
+            place-items: center;
+            height: 100vh;
+            width: 100%;
+            background-color: white;
+            z-index: 10;
+        }
+        
+        .intro__title {
+            color: white;
+            max-width: 45%;
+            text-align: center;
+            mix-blend-mode: difference;
+            z-index: 2;
+            transform: translateY(40px);
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+        
+        .intro__background {
+            position: absolute;
+            top: 0;
+            background-color: black;
+            width: 50%;
+            height: 100%;
+            transform: scaleX(0);
+        }
+        
+        .intro__background--left {
+            left: 0;
+            transform-origin: left center;
+        }
+        
+        .intro__background--right {
+            left: 50%;
+            transform-origin: right center;
+        }
+
+        /* 로그인 페이지 스타일 */
+        .login-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background-color: #0f0f23;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            z-index: 5;
+        }
+
+        .login-container.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .yolo-login-page {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            background-color: #0f0f23;
+            font-family: "Inter", sans-serif;
+            color: #ffffff;
+        }
+
+        .yolo-auth-container {
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .yolo-auth-card {
+            background: #1a1a2e;
+            border-radius: 20px;
+            padding: 50px 40px;
+            backdrop-filter: blur(10px);
+            border: 1px solid #16213e;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .yolo-auth-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #3b82f6, #e94560);
+        }
+
+        .yolo-auth-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .yolo-auth-logo {
+            font-size: 2.5em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #3b82f6, #e94560);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .yolo-auth-subtitle {
+            color: #a8a8a8;
+            font-size: 1.1em;
+            margin-bottom: 30px;
+        }
+
+        .yolo-form-group {
+            margin-bottom: 25px;
+        }
+
+        .yolo-form-label {
+            color: #ffffff;
+            font-weight: 500;
+            margin-bottom: 10px;
+            display: block;
+            font-size: 0.95em;
+        }
+
+        .yolo-form-control {
+            background: #0f3460 !important;
+            border: 2px solid #533483 !important;
+            border-radius: 12px !important;
+            color: #ffffff !important;
+            padding: 15px 18px !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            font-size: 16px !important;
+            transition: all 0.3s ease !important;
+        }
+
+        .yolo-form-control:focus {
+            background: #0f3460 !important;
+            border-color: #e94560 !important;
+            outline: none !important;
+            box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.2) !important;
+            transform: translateY(-2px) !important;
+        }
+
+        .yolo-form-control::placeholder {
+            color: #a8a8a8 !important;
+        }
+
+        .yolo-btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+            color: white !important;
+            border: none !important;
+            padding: 16px 30px !important;
+            border-radius: 12px !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            transition: all 0.3s ease !important;
+            width: 100% !important;
+            font-size: 16px !important;
+            margin-bottom: 20px !important;
+        }
+
+        .yolo-btn-primary:hover {
+            background: linear-gradient(135deg, #1d4ed8, #1e3a8a) !important;
+            transform: translateY(-3px) !important;
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4) !important;
+        }
+
+        .yolo-btn-secondary {
+            background: rgba(255, 255, 255, 0.1) !important;
+            color: white !important;
+            border: 2px solid rgba(255, 255, 255, 0.2) !important;
+            padding: 16px 30px !important;
+            border-radius: 12px !important;
+            text-decoration: none !important;
+            display: inline-block !important;
+            transition: all 0.3s ease !important;
+            text-align: center !important;
+            width: auto !important;
+            min-width: 200px !important;
+            font-weight: 500 !important;
+            font-size: 16px !important;
+        }
+
+        .yolo-btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2) !important;
+            border-color: rgba(255, 255, 255, 0.3) !important;
+            text-decoration: none !important;
+            color: white !important;
+            transform: translateY(-2px) !important;
+        }
+
+        .yolo-error-message {
+            background: rgba(239, 68, 68, 0.1) !important;
+            color: #ef4444 !important;
+            font-size: 0.9em !important;
+            margin-bottom: 20px !important;
+            text-align: center !important;
+            padding: 12px !important;
+            border-radius: 8px !important;
+            border: 1px solid rgba(239, 68, 68, 0.3) !important;
+        }
+
+        .yolo-success-message {
+            background: rgba(34, 197, 94, 0.1) !important;
+            color: #22c55e !important;
+            font-size: 0.9em !important;
+            margin-bottom: 20px !important;
+            text-align: center !important;
+            padding: 12px !important;
+            border-radius: 8px !important;
+            border: 1px solid rgba(34, 197, 94, 0.3) !important;
+        }
+
+        .yolo-auth-footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .yolo-auth-footer a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .yolo-auth-footer a:hover {
+            color: #e94560;
+        }
+
+        .yolo-toggle-form {
+            background: none;
+            border: none;
+            color: #3b82f6;
+            cursor: pointer;
+            font-size: 0.9em;
+            text-decoration: underline;
+            margin-top: 15px;
+        }
+
+        .yolo-toggle-form:hover {
+            color: #e94560;
+        }
+
+        .yolo-form-container {
+            display: none;
+        }
+
+        .yolo-form-container.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- 인트로 애니메이션 -->
+    <section class="intro">
+        <h2 class="intro__title hidden">Quality is visible in the smallest cracks</h2>
+        <div class="intro__background intro__background--left"></div>
+        <div class="intro__background intro__background--right"></div>
+    </section>
+
+    <!-- 로그인 페이지 -->
+    <div class="login-container" id="loginContainer">
+        <div class="yolo-login-page">
+            <div class="yolo-auth-container">
+                <div class="yolo-auth-card">
+                    <div class="yolo-auth-header">
+                        <div class="yolo-auth-logo">YOLO</div>
+                        <div class="yolo-auth-subtitle">AI 객체 탐지 시스템</div>
+                    </div>
+
+                    <!-- 로그인 폼 -->
+                    <div id="login-form" class="yolo-form-container {% if not show_register_form %}active{% endif %}">
+                        <h3 style="text-align: center; margin-bottom: 30px; font-size: 1.5em; color: #ffffff;">로그인</h3>
+                        
+                        {% if form.errors %}
+                        <div class="yolo-error-message">아이디 또는 비밀번호가 올바르지 않습니다.</div>
+                        {% endif %}
+                        
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="yolo-form-group">
+                                <label for="id_username" class="yolo-form-label">아이디</label>
+                                {{ form.username|add_class:"yolo-form-control" }}
+                            </div>
+                            <div class="yolo-form-group">
+                                <label for="id_password" class="yolo-form-label">비밀번호</label>
+                                {{ form.password|add_class:"yolo-form-control" }}
+                            </div>
+                            <button type="submit" class="yolo-btn-primary">로그인</button>
+                        </form>
+                        
+                        <button class="yolo-toggle-form" onclick="showRegisterForm()">회원가입하기</button>
+                    </div>
+
+                    <!-- 회원가입 폼 -->
+                    <div id="register-form" class="yolo-form-container {% if show_register_form %}active{% endif %}">
+                        <h3 style="text-align: center; margin-bottom: 30px; font-size: 1.5em; color: #ffffff;">회원가입</h3>
+                        
+                        {% if register_errors %}
+                        <div class="yolo-error-message">
+                            {% for error in register_errors %}
+                                <div>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <form method="post" action="/accounts/register/">
+                            {% csrf_token %}
+                            <div class="yolo-form-group">
+                                <label for="reg_username" class="yolo-form-label">아이디</label>
+                                <input type="text" id="reg_username" name="username" class="yolo-form-control" placeholder="아이디를 입력하세요" required>
+                            </div>
+                            <div class="yolo-form-group">
+                                <label for="reg_email" class="yolo-form-label">이메일</label>
+                                <input type="email" id="reg_email" name="email" class="yolo-form-control" placeholder="이메일을 입력하세요" required>
+                            </div>
+                            <div class="yolo-form-group">
+                                <label for="reg_password1" class="yolo-form-label">비밀번호</label>
+                                <input type="password" id="reg_password1" name="password1" class="yolo-form-control" placeholder="비밀번호를 입력하세요" required>
+                            </div>
+                            <div class="yolo-form-group">
+                                <label for="reg_password2" class="yolo-form-label">비밀번호 확인</label>
+                                <input type="password" id="reg_password2" name="password2" class="yolo-form-control" placeholder="비밀번호를 다시 입력하세요" required>
+                            </div>
+                            <button type="submit" class="yolo-btn-primary">회원가입</button>
+                        </form>
+                        
+                        <button class="yolo-toggle-form" onclick="showLoginForm()">로그인하기</button>
+                    </div>
+
+                    <div class="yolo-auth-footer">
+                        <a href="/" class="yolo-btn-secondary">메인으로 돌아가기</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const animationOptions = {
+            ease: 'expo.inOut'
+        }
+
+        const introAnimation = () => {
+            const tl = gsap.timeline({
+                defaults: {
+                    ease: animationOptions.ease,
+                    duration: 1,
+                }
+            });
+            
+            tl.to('.intro__title', {
+                duration: 1.5,
+                y: 0,
+                autoAlpha: 1,
+                delay: 0.5,
+            })
+            .to('.intro__background--left, .intro__background--right', {
+                scaleX: 1,
+            })
+            .to('.intro__background--left, .intro__background--right', {
+                scaleY: 0,
+                transformOrigin: 'top center',
+            })
+            .to('.intro__title', {
+                duration: 1.5,
+                y: -60,
+                autoAlpha: 0,
+            }, '-=0.6')
+            .to('.intro', {
+                y: '-100%',
+            }, '-=0.5')
+            .to('#loginContainer', {
+                autoAlpha: 1,
+                visibility: 'visible',
+                duration: 0.5,
+            })
+            .from('.yolo-auth-card', {
+                y: 50,
+                autoAlpha: 0,
+                duration: 1,
+                ease: 'power2.out',
+            }, '-=0.3')
+            
+            return tl;
+        }
+
+        // 페이지 로드 시 애니메이션 시작
+        document.addEventListener('DOMContentLoaded', function() {
+            const master = gsap.timeline({
+                paused: false,
+                delay: 0.2,
+            });
+
+            master.add(introAnimation());
+        });
+
+        // 폼 전환 함수들
+        function showRegisterForm() {
+            document.getElementById('login-form').classList.remove('active');
+            document.getElementById('register-form').classList.add('active');
+        }
+
+        function showLoginForm() {
+            document.getElementById('register-form').classList.remove('active');
+            document.getElementById('login-form').classList.add('active');
+        }
+    </script>
+</body>
+</html>
