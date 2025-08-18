@@ -100,5 +100,5 @@ def check_imbalance(named_counts, threshold=0.1):
 # 실행
 base_path = "dataset/origin"
 named_counts = analyze_class_distribution(base_path)
-visualize_distribution(named_counts)
+# visualize_distribution(named_counts)
 check_imbalance(named_counts)

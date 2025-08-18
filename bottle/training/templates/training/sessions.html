@@ -272,13 +272,18 @@
 
             <div class="session-info">
                 <div class="info-item">
+                    <span class="info-label">ID:</span>
+                    <span class="info-value">{{ session.id }}</span>
+                </div>
+                
+                <div class="info-item">
                     <span class="info-label">데이터셋:</span>
                     <span class="info-value">{{ session.dataset_name }}</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">에포크:</span>
                     <!-- <span class="info-value">{{ session.current_epoch }}/{{ session.total_epochs }}</span> -->
-                     <span class="info-value">{{ session.epochs }}/{{ session.total_epochs }}</span>
+                    <span class="info-value">{{ session.epochs }}/{{ session.total_epochs }}</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">배치 크기:</span>
@@ -330,12 +335,30 @@
     {% endif %}
 </div>
 {% block extra_js %}
+<script src="{% static 'js/jquery-3.7.1.min.js' %}"></script>
 <script>
     function confirmDelete(sessionId) {
         if (confirm("정말로 이 훈련 세션을 삭제하시겠습니까?")) {
-            // 여기에 삭제 로직 추가
-            alert("삭제 기능은 아직 구현되지 않았습니다.");
-        }
+        $.ajax({
+            url: '/training/delete/',
+            type: 'POST',
+            data: {
+                session_id: sessionId,
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.success) {
+                    alert("세션이 삭제되었습니다.");
+                    location.reload();  // 또는 해당 요소만 제거
+                } else {
+                    alert("삭제 실패: " + response.error);
+                }
+            },
+            error: function() {
+                alert("서버 오류로 삭제에 실패했습니다.");
+            }
+        });
+    }
     }
 </script>
 {% endblock %} {% endblock %}

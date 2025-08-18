@@ -64,6 +64,11 @@ class TrainingSession(models.Model):
 class TrainingMetric(models.Model):
     session = models.ForeignKey(TrainingSession, on_delete=models.CASCADE, related_name='metrics')
     epoch = models.IntegerField(verbose_name="에포크")
+    # CNN
+    loss_total = models.FloatField(verbose_name="Loss Total")
+    train_acc = models.FloatField(verbose_name="Train Accuracy")
+    val_acc = models.FloatField(verbose_name="Valid Accuracy")
+    # YOLO
     train_loss = models.FloatField(verbose_name="훈련 손실")
     val_loss = models.FloatField(verbose_name="검증 손실")
     map50 = models.FloatField(verbose_name="mAP@0.5")

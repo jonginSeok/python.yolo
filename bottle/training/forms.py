@@ -1,8 +1,8 @@
 # training/forms.py
 from django import forms
-from django.core.validators import FileExtensionValidator
-from django.core.exceptions import ValidationError
-from .models import TrainingSession
+# from django.core.validators import FileExtensionValidator
+# from django.core.exceptions import ValidationError
+# from .models import TrainingSession
 
 from datetime import datetime
 
@@ -23,7 +23,7 @@ class DataUploadForm(forms.Form):
 
     model_name = forms.ChoiceField(
         required=True,
-        label="모델명",
+        label="모델",
         choices=[
             ("CNN", "CNN"),
             ("YOLOv11n", "YOLO v11n"),
@@ -107,31 +107,12 @@ class DataUploadForm(forms.Form):
     )
 
     # 훈련 설정
-    # total_epochs = forms.IntegerField(
-    #     required=True,
-    #     label="총 에포크",
-    #     min_value=1,
-    #     max_value=1000,
-#     initial=100,
-    #     widget=forms.NumberInput(attrs={"class": "form-control"}),
-    # )
-
-    # current_epoch
-    # current_epoch = forms.IntegerField(
-    #     required=True,
-    #     label="현재 에포크",
-    #     min_value=1,
-    #     max_value=1000,
-    #     initial=20,
-    #     widget=forms.NumberInput(attrs={"class": "form-control"}),
-    # )
-
     epochs = forms.IntegerField(
         required=True,
         label="에포크",
         min_value=1,
         max_value=1000,
-        initial=3,  # 초기값세팅
+        initial=50,  # 초기값세팅
         widget=forms.NumberInput(attrs={"class": "form-control"}),
     )
 
@@ -193,6 +174,13 @@ class DataUploadForm(forms.Form):
         widget=forms.NumberInput(attrs={"class": "form-control"}),
     )
 
+    early_stopping = forms.BooleanField(
+        label="조기 종료 사용",
+        required=False,
+        initial=False,  # 초기값세팅
+        widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
+    )
+    
     augmentation = forms.BooleanField(
         label="데이터 증강 사용",
         required=False,
@@ -200,11 +188,40 @@ class DataUploadForm(forms.Form):
         widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
     )
 
-    early_stopping = forms.BooleanField(
-        label="조기 종료 사용",
+    # 회전각도
+    rotation_angle = forms.IntegerField(
         required=False,
-        initial=False,  # 초기값세팅
-        widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        label="이미지 회전(각)",
+        min_value=5,
+        max_value=180,
+        initial=40,  # 초기값세팅
+        widget=forms.NumberInput(attrs={"class": "form-control"}),
+    )
+    
+    train_percent = forms.IntegerField(
+        required=False,
+        label="train %",
+        min_value=5,
+        max_value=100,
+        initial=70,  # 초기값세팅
+        widget=forms.NumberInput(attrs={"class": "form-control"}),
+    )
+        
+    valid_percent = forms.IntegerField(
+        required=False,
+        label="valid %",
+        min_value=5,
+        max_value=100,
+        initial=20,  # 초기값세팅
+        widget=forms.NumberInput(attrs={"class": "form-control"}),
+    )
+    test_percent = forms.IntegerField(
+        required=False,
+        label="test %",
+        min_value=5,
+        max_value=100,
+        initial=10,  # 초기값세팅
+        widget=forms.NumberInput(attrs={"class": "form-control"}),
     )
 
     start_time = forms.DateTimeField(
@@ -243,7 +260,7 @@ class DataUploadForm(forms.Form):
     # • 	더 복잡한 로직이 필요한 경우 유용해요.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["memory_info"].initial = "64GB"
+        # self.fields["memory_info"].initial = "64GB"  # 초기값세팅
 
     def clean_zip_file(self):
         """ZIP 파일 검증"""

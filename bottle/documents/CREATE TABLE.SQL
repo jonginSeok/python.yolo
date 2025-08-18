@@ -7,12 +7,30 @@ DROP TABLE IF EXISTS training_trainingsession;
 
 
 /*
+
 * PostgreSQL에서 테이블의 컬럼명을 변경하거나 특정 컬럼을 제거
 --ALTER TABLE 테이블_이름 RENAME COLUMN 변경_전_컬럼_이름 TO 변경_후_컬럼_이름;
 ALTER TABLE training_trainingsession RENAME COLUMN current_epoch TO epoch;
 
 --ALTER TABLE 테이블_이름 DROP COLUMN 컬럼_이름;
 ALTER TABLE training_trainingsession DROP COLUMN total_epochs;
+
+ALTER TABLE training_trainingsession
+ADD COLUMN created_id  VARCHAR(500) NOT NULL;
+
+
+ALTER TABLE training_sessions
+ADD COLUMN loss FLOAT,
+ADD COLUMN epoch INTEGER;
+
+-- TRUNCATE TABLE training_trainingmetric RESTART IDENTITY;
+-- TRUNCATE TABLE training_classmetric RESTART IDENTITY;
+-- TRUNCATE TABLE training_trainingsession RESTART IDENTITY;
+
+-- ALTER SEQUENCE training_trainingmetric_id_seq RESTART WITH 1;
+-- ALTER SEQUENCE training_classmetric_id_seq RESTART WITH 1;
+-- ALTER SEQUENCE training_trainingsession_id_seq RESTART WITH 1;
+
 */
 
 
@@ -27,19 +45,17 @@ CREATE TABLE training_trainingsession (
     gpu_info VARCHAR(100) NOT NULL,
     memory_info VARCHAR(50) NOT NULL,
     epochs INTEGER NOT NULL DEFAULT 100,
-    -- total_epochs INTEGER NOT NULL DEFAULT 100,
-    -- current_epoch INTEGER NOT NULL DEFAULT 10,
     batch_size integer CHECK (batch_size >= 1 AND batch_size <= 64),		--# 배치 크기
     learning_rate FLOAT NOT NULL DEFAULT 0.01  CHECK (learning_rate >= 0.0001 AND learning_rate <= 1.0),   --# 학습률
     image_size integer NOT NULL ,  --# 이미지 크기
     optimizer VARCHAR(10) DEFAULT 'SGD',  --# 옵티마이저
     augmentation BOOLEAN  DEFAULT True ,   --# 데이터 증강 사용
-		early_stopping BOOLEAN  DEFAULT True ,  --# 조기 종료 사용
-		patience integer DEFAULT 10 CHECK (patience >= 1 AND patience <= 100) ,   -- # 조기 종료 patience
-		description TEXT,   -- # 설명
-		dataset_path VARCHAR(6000), -- 데이터셋 경로 
-		config TEXT,  -- 설정정보 
-		start_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    early_stopping BOOLEAN  DEFAULT True ,  --# 조기 종료 사용
+    patience integer DEFAULT 10 CHECK (patience >= 1 AND patience <= 100) ,   -- # 조기 종료 patience
+    description TEXT,   -- # 설명
+    dataset_path VARCHAR(6000), -- 데이터셋 경로 
+    config TEXT,  -- 설정정보 
+    start_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     end_time TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_id  VARCHAR(500) NOT NULL
