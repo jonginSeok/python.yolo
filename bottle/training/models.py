@@ -20,7 +20,7 @@ class TrainingSession(models.Model):
     
     
     
-    epochs = models.IntegerField(default=100, verbose_name="총 에포크")
+    total_epochs = models.IntegerField(default=100, verbose_name="총 에포크")
     current_epoch = models.IntegerField(default=0, verbose_name="현재 에포크")    
     batch_size = models.IntegerField(default=1, verbose_name="배치 크기")
     learning_rate = models.FloatField(default=0.01, verbose_name="학습률")    
@@ -44,9 +44,9 @@ class TrainingSession(models.Model):
     
     @property
     def progress_percentage(self):
-        if self.epochs == 0:
+        if self.total_epochs == 0:
             return 0
-        return min((self.current_epoch / self.epochs) * 100, 100)
+        return min((self.current_epoch / self.total_epochs) * 100, 100)
     
     @property
     def training_duration(self):

@@ -418,7 +418,7 @@ def upload_dataset(request):
                 model_name=form.cleaned_data["model_name"],
                 dataset_name=form.cleaned_data["dataset_name"],
                 status=form.cleaned_data["status"], #"pending",
-                epochs=form.cleaned_data["epochs"],
+                total_epochs=form.cleaned_data["total_epochs"],
                 current_epoch=form.cleaned_data["current_epoch"],
                 batch_size=form.cleaned_data["batch_size"],
                 learning_rate=form.cleaned_data["learning_rate"],
@@ -430,7 +430,7 @@ def upload_dataset(request):
                 description=form.cleaned_data["description"],
                 dataset_path=extract_dir,
                 config={
-                    "epochs": form.cleaned_data["current_epoch"],
+                    "total_epochs": form.cleaned_data["total_epochs"],
                     "batch_size": form.cleaned_data["batch_size"],
                     "learning_rate": form.cleaned_data["learning_rate"],
                     "image_size": form.cleaned_data["image_size"],
