@@ -224,3 +224,9 @@ total_epochs -> epochs 변경
 
 forms.py
 admin.py 동일함.
+
+
+# 문성준 ver5 수정 내용 
+
+DB 와 django 데이터 테이블 동기화 
+깃 풀 한다음에 makemigrations/migrate 한번 하셔야 함.
