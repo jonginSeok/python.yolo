@@ -22,7 +22,16 @@ from django.urls import path, include
 from django.conf import settings  # 2025.08.06 ngins7512 추가/대시보드 관련
 from django.conf.urls.static import static  # 2025.08.06 ngins7512 추가/대시보드 관련
 
+from django.http import HttpResponse
+
+
+def empty_favicon(request):
+    return HttpResponse(status=204)
+
+
 urlpatterns = [
+    path('favicon.ico', empty_favicon), # GET http://127.0.0.1:8000/favicon.ico 404 (Not Found) 이런 오류 제거
+
     path("", include("app.urls")),  # 앱 URL을 포함시킴
     path("admin/", admin.site.urls),
     path("accounts/", include("accounts.urls")),

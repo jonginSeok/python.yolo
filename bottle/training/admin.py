@@ -12,8 +12,9 @@ class TrainingSessionAdmin(admin.ModelAdmin):
         "model_name",
         "version",
         "status",
-        "current_epoch",
-        "total_epochs",
+        # "current_epoch",
+        # "total_epochs",
+        "epochs",
         "progress_percentage",
         "created_at",
     ]

@@ -45,13 +45,13 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "accounts",
-    "app",  # ← 이게 빠져 있으면 Django가 templatetags를 못 찾음! 로그인 관련
-    "corsheaders",  # 2025.08.06 ngins7512 대시보드 관련
-    "training",     # 2025.08.06 ngins7512 대시보드 관련
+    "app",               # ← 이게 빠져 있으면 Django가 templatetags를 못 찾음! 로그인 관련
+    "corsheaders",
+    "training",
 ]
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",  # 2025.08.06 ngins7512 추가/대시보드 관련
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -61,14 +61,14 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+
 ROOT_URLCONF = "config.urls"
-# ROOT_URLCONF = 'yolo_dashboard.urls'  # 2025.08.06 ngins7512 추가/대시보드 관련은 이렇게
+
 
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         # "DIRS": [],
-        # 새 템플릿 경로 # ngins7512 / 2025.08.06
         "DIRS": [
             BASE_DIR / 'accounts' / 'templates',
             BASE_DIR / "app" / "templates",
@@ -77,7 +77,7 @@ TEMPLATES = [
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
-                "django.template.context_processors.debug",  # 2025.08.06 ngins7512 추가/대시보드 관련
+                "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
@@ -86,32 +86,11 @@ TEMPLATES = [
     },
 ]
 
+
 WSGI_APPLICATION = "config.wsgi.application"
-# WSGI_APPLICATION = 'yolo_dashboard.wsgi.application' # 2025.08.06 ngins7512 추가/대시보드 관련은 이렇게
 
 
 # Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.sqlite3",
-#         "NAME": BASE_DIR / "db.sqlite3",
-#     }
-# }
-
-# ngins7512 / 2025.08.05
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.postgresql",
-#         "NAME": "postgres",  # DB 이름
-#         "USER": "postgres",  # 사용자 이름
-#         "PASSWORD": "yolo11ai",  # 비밀번호
-#         "HOST": "localhost",  # 또는 실제 DB 서버 주소
-#         "PORT": "5432",  # PostgreSQL 기본 포트
-#     }
-# }
-# ngins7512 / 2025.08.05
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -147,16 +126,14 @@ LANGUAGE_CODE = "ko-kr"  # 2025.08.06 ngins7512 추가/대시보드 관련
 
 # TIME_ZONE = "UTC"
 TIME_ZONE = "Asia/Seoul"  # 2025.08.06 ngins7512 추가/대시보드 관련
-
 USE_I18N = True
-
 USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 # STATIC_ROOT = BASE_DIR / "staticfiles" # 2025.08.10 ngins7512
 
 STATICFILES_DIRS = [
@@ -168,10 +145,39 @@ STATICFILES_DIRS = [
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 
-# 2025.08.06 ngins7512 추가/대시보드 관련소스에서 추가
+# 대시보드 관련소스에서 추가
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+# 1. Celery 설정 확인 (celery.py)
+
+# 2. Django 설정에 Redis 브로커 추가
+# Celery + Redis 를 위한 설정 (https://github.com/microsoftarchive/redis/releases 설치)
+CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_RESULT_BACKEND = "redis://localhost:6379/0" # Celery는 기본적으로 결과를 저장하지 않지만, 설정하면 결과도 확인
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+
+# 3. Redis 서버 실행 여부 확인
+# redis-server
+# (pytorch_env) C:\Users\ngins\Git\python.yolo>redis-server
+
+# 4. Celery 워커 실행
+# celery -A config worker --loglevel=info
+
+# 5. 작업 함수(task) 정의 확인
+# # app/tasks.py
+
+# 6. 작업 호출 예시
+
+# 추가 디버깅 팁
+# pip show celery
+# pip show billiard
+
+# redis-cli ping 명령어로 Redis 연결 확인: PONG이 나오면 정상입니다.
+# (pytorch_env) C:\Users\ngins\Git\python.yolo>redis-cli ping   
+# PONG 

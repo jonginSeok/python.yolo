@@ -7,3 +7,10 @@ seaborn==0.12.2
 plotly==5.17.0
 django-extensions==3.2.3
 python-decouple==3.8
+celery==5.3.6
+torch
+torchvision
+torchaudio
+PyYAML
+psycopg2-binary==2.9.9
+ultralytics==8.3.34
