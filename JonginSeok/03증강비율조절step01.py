@@ -1,16 +1,16 @@
 import os
 import shutil
 import glob
-import cv2  # pip install opencv-python
-from PIL import Image, ImageOps
+# import cv2  # pip install opencv-python
+from PIL import Image #, ImageOps
 
 """
 🔢 클래스별 샘플 수:
 
-valid - bad-broken_large : 20 개
-      - bad-broken_small : 22 개
-      - bad-contamination: 21 개
-train - bottle-good      : 209 개
+valid   - bad-broken_large : 20 개
+        - bad-broken_small : 22 개
+        - bad-contamination: 21 개
+train   - bottle-good      : 209 개
 
 - bad-broken_large : 180 개
 - bad-broken_small : 198 개
@@ -19,22 +19,21 @@ train - bottle-good      : 209 개
 
 """
 
-rotate_angle = 0  # 회전 비율 rotation_angle
-rotate_add = 40
 
+rotation_angle = 40
+
+rotation = 0  # 회전 비율 rotation_angle
 # valid 파일 처리
-for i in range(0, 8):
-    ratio = f"ratio{rotate_angle}"  # 파일명에 추가할 회전 비율
-    print(f"🗂️  회전 비율: {rotate_angle}도, 파일명에 회전비율: {ratio}")
+for i in range(0, int(360 // rotation_angle)):
+    ratio = f"rot{rotation}"  # 파일명에 추가할 회전 비율
+    # print(f"🗂️  회전 비율: {rotation}도, 파일명에 회전비율: _{ratio}")
 
     # 🗂️ 설정: 원본 이미지 폴더 및 저장 위치
-    input_image_folder = "/Users/ngins/Git/python.yolo/dataset/origin/valid/images/"  # 원본 이미지 폴더 경로
-    output_image_folder = (
-        "/Users/ngins/Git/python.yolo/JonginSeok/dataset/images/"  # 저장할 폴더 경로
-    )
+    input_image_folder = "dataset/origin/valid/images/"  # 원본 이미지 폴더 경로
+    output_image_folder = "JonginSeok/dataset/images/"  # 저장할 폴더 경로
 
-    input_labels_folder = "/Users/ngins/Git/python.yolo/dataset/origin/valid/labels/"
-    output_labels_folder = "/Users/ngins/Git/python.yolo/JonginSeok/dataset/labels/"
+    input_labels_folder = "dataset/origin/valid/labels/"
+    output_labels_folder = "JonginSeok/dataset/labels/"
 
     # 폴더가 없으면 생성
     os.makedirs(output_image_folder, exist_ok=True)
@@ -46,7 +45,7 @@ for i in range(0, 8):
     for ext in image_extensions:
         image_files.extend(glob.glob(os.path.join(input_image_folder, ext)))
 
-    print(f"📝 총 {len(image_files)}개의 이미지 파일을 찾았습니다.")
+    # print(f"📝 총 {len(image_files)}개의 이미지 파일을 찾았습니다.")
 
     def rotate_images_fill_white(image_files, rotation_angle, output_dir):
         os.makedirs(output_dir, exist_ok=True)
@@ -79,7 +78,7 @@ for i in range(0, 8):
                     "RGB"
                 )  # 최종 RGB 변환
 
-                if rotate_angle == 0:
+                if rotation == 0:
                     output_path = os.path.join(output_dir, f"{basename}.jpg")
                 else:
                     output_path = os.path.join(output_dir, f"{basename}_{ratio}.jpg")
@@ -89,7 +88,7 @@ for i in range(0, 8):
             except Exception as e:
                 print(f"⚠️ Error with {img_path}: {e}")
 
-    rotate_images_fill_white(image_files, rotate_angle, output_image_folder)
+    rotate_images_fill_white(image_files, rotation, output_image_folder)
 
     # 라벨 파일도 같은 방식으로 가져오기
     label_extensions = ["*.txt"]
@@ -111,7 +110,7 @@ for i in range(0, 8):
                     continue  # 잘못된 형식의 라벨은 무시
                 class_id = parts[0]
                 x_center, y_center, width, height = map(float, parts[1:5])
-                new_lines.append(f"{class_id} {x_center} {y_center} {width} {height}/n")
+                new_lines.append(f"{class_id} {x_center} {y_center} {width} {height}")
 
             # 새 라벨 파일 저장
             label_name = os.path.basename(label_file)
@@ -119,7 +118,7 @@ for i in range(0, 8):
             # 확장자 분리
             basename, extension = os.path.splitext(label_name)
 
-            if rotate_angle == 0:
+            if rotation == 0:
                 new_label_file = os.path.join(output_labels_folder, f"{basename}.txt")
             else:
                 new_label_file = os.path.join(
@@ -133,7 +132,7 @@ for i in range(0, 8):
         except Exception as e:
             print(f"⚠️ Error with {new_label_file}: {e}")
 
-    rotate_angle += rotate_add
+    rotation += rotation_angle
 
 # train 파일 처리
 # 경로 설정
@@ -147,14 +146,13 @@ output_labels_folder = "JonginSeok/dataset/labels/"
 os.makedirs(output_image_folder, exist_ok=True)
 os.makedirs(output_labels_folder, exist_ok=True)
 
-count = 0
+
 # 이미지 파일 복사
 for file_name in os.listdir(input_image_folder):
     src = os.path.join(input_image_folder, file_name)
     dst = os.path.join(output_image_folder, file_name)
     if os.path.isfile(src):
         shutil.copy2(src, dst)
-        count += 1
 
 # 라벨 파일 복사
 for file_name in os.listdir(input_labels_folder):
@@ -163,5 +161,5 @@ for file_name in os.listdir(input_labels_folder):
     if os.path.isfile(src):
         shutil.copy2(src, dst)
 
-print(f"📝 총 {count}개의 이미지 파일을 찾았습니다.")
+# print(f"📝 총 {count}개의 이미지 파일을 찾았습니다.")
 print("✅ 이미지와 라벨 파일 복사가 완료되었습니다.")
