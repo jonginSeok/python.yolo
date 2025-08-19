@@ -90,7 +90,7 @@ class DataUploadForm(forms.Form):
         ),
     )
     
-    total_epochs = forms.IntegerField(
+    epochs = forms.IntegerField(
         required=True,
         label="총 에포크",
         initial=100,

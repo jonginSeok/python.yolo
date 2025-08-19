@@ -206,7 +206,7 @@ def create_demo_data():
         gpu_info = "RTX 4090"
         memory_info = "24GB"
         current_epoch = 50
-        total_epochs = 100
+        epochs = 100
 
         @property
         def progress_percentage(self):
@@ -418,7 +418,7 @@ def upload_dataset(request):
                 model_name=form.cleaned_data["model_name"],
                 dataset_name=form.cleaned_data["dataset_name"],
                 status=form.cleaned_data["status"], #"pending",
-                total_epochs=form.cleaned_data["total_epochs"],
+                epochs=form.cleaned_data["epochs"],
                 current_epoch=form.cleaned_data["current_epoch"],
                 batch_size=form.cleaned_data["batch_size"],
                 learning_rate=form.cleaned_data["learning_rate"],

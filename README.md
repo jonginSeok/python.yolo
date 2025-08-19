@@ -179,3 +179,48 @@ def update_training_metrics(session_id, epoch_data):
 ---
 
 **현재 React 대시보드와 100% 동일한 기능을 제공하는 Django 템플릿입니다!** 🎉
+
+
+#문성준 수정부분 안내 및 사유 작성
+
+python manage.py dbshell을 통해서 DB내에 스키마를 확인해보았음.
+코드 : \d training_trainingsession(스키마 확인)
+
+확인후 django의 필드값을 확인해봄.
+
+장고 모델에서는 total_epochs가 있었지만 DB에서는 epochs로 
+정의 되어있었음.
+
+해서 해당 문제를 DB에 맞게 장고모델을 수정함.
+total_epochs -> epochs
+
+변경한 파일명 : models.py , views.py , foms.py , admin.py 수정
+
+아래 변경 내용을 첨부하며 merge시 내용을 참고.
+
+models.py 수정 부분
+
+total_epochs = models.IntegerField(default=100, verbose_name="총 에포크") #기존
+
+epochs = models.IntegerField(default=100, verbose_name="총 에포크") #변경
+
+def progress_percentage(self):
+       if self.total_epochs == 0:
+           return 0
+       return min((self.current_epoch / self.total_epochs) * 100, 100) #기존
+
+
+def progress_percentage(self):
+        if self.epochs == 0:
+            return 0
+        return min((self.current_epoch / self.epochs) * 100, 100)
+#변경
+
+
+
+views.py  
+total_epochs -> epochs 변경
+위와 동일한 개념
+
+forms.py
+admin.py 동일함.
