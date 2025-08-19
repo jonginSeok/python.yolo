@@ -17,17 +17,26 @@ class TrainingSession(models.Model):
     dataset_name = models.CharField(max_length=100, verbose_name="데이터셋")
     gpu_info = models.CharField(max_length=100, verbose_name="GPU 정보")
     memory_info = models.CharField(max_length=50, verbose_name="메모리 정보")
-    # total_epochs = models.IntegerField(default=100, verbose_name="총 에포크")
-    total_epochs = 100
-    # current_epoch = models.IntegerField(default=0, verbose_name="현재 에포크")    
-    epochs = models.IntegerField(default=100, verbose_name="에포크 수")
+    total_epochs = models.IntegerField(default=100, verbose_name="총 에포크")
+    current_epoch = models.IntegerField(default=0, verbose_name="현재 에포크")    
+    
     batch_size = models.IntegerField(default=1, verbose_name="배치 크기")
     learning_rate = models.FloatField(default=0.01, verbose_name="학습률")    
-    image_size = models.IntegerField(default=640, verbose_name="이미지 크기")    
+    image_size = models.IntegerField(default=640, verbose_name="이미지 크기")
     optimizer = models.CharField(default="Adam", verbose_name="옵티마이저")
+    
     augmentation = models.BooleanField(default=True, verbose_name="데이터 증강")
+    
+    rotation_angle = models.IntegerField(default=640, verbose_name="이미지 회전(각)")
+    train_percent = models.IntegerField(default=640, verbose_name="이미지 크기")
+    valid_percent = models.IntegerField(default=640, verbose_name="이미지 크기")
+    test_percent = models.IntegerField(default=640, verbose_name="이미지 크기")
+    
+    
     early_stopping = models.BooleanField(default=True, verbose_name="조기 종료 사용")
+    
     patience = models.IntegerField(default=10, verbose_name="조기 종료 patience")
+    
     description = models.CharField(max_length=16000, verbose_name="설명")
     dataset_path = models.CharField(max_length=6000, verbose_name="데이터셋 경로")
     config = models.CharField(max_length=16000, verbose_name="설정정보 ")
@@ -35,9 +44,9 @@ class TrainingSession(models.Model):
     end_time = models.DateTimeField(null=True, blank=True, verbose_name="종료 시간")
 
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성 시간")
-    created_id = models.CharField(max_length=500, verbose_name="생성 유저 id")
-    # updated_at = models.DateTimeField(auto_now=True, verbose_name="수정 시간")
-    # updated_id = models.CharField(max_length=500, verbose_name="수정 유저 id")
+    created_id = models.CharField(max_length=500, verbose_name="생성자 id")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="수정 시간")
+    updated_id = models.CharField(max_length=500, verbose_name="수정자 id")
         
     def __str__(self):
         return f"{self.model_name} v{self.version}"
@@ -46,7 +55,7 @@ class TrainingSession(models.Model):
     def progress_percentage(self):
         if self.total_epochs == 0:
             return 0
-        return min((self.epochs / self.total_epochs) * 100, 100)
+        return min((self.current_epoch / self.total_epochs) * 100, 100)
     
     @property
     def training_duration(self):
@@ -65,9 +74,9 @@ class TrainingMetric(models.Model):
     session = models.ForeignKey(TrainingSession, on_delete=models.CASCADE, related_name='metrics')
     epoch = models.IntegerField(verbose_name="에포크")
     # CNN
-    loss_total = models.FloatField(verbose_name="Loss Total")
-    train_acc = models.FloatField(verbose_name="Train Accuracy")
-    val_acc = models.FloatField(verbose_name="Valid Accuracy")
+    loss_total = models.FloatField(verbose_name="총 손실")
+    train_acc = models.FloatField(verbose_name="훈련 정확도")
+    val_acc = models.FloatField(verbose_name="유효 정확도")
     # YOLO
     train_loss = models.FloatField(verbose_name="훈련 손실")
     val_loss = models.FloatField(verbose_name="검증 손실")
@@ -78,9 +87,9 @@ class TrainingMetric(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True, verbose_name="시간")
 
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성 시간")
-    created_id = models.CharField(max_length=500, verbose_name="생성 유저 id")
-    # updated_at = models.DateTimeField(auto_now=True, verbose_name="수정 시간")
-    # updated_id = models.CharField(max_length=500, verbose_name="수정 유저 id")
+    created_id = models.CharField(max_length=500, verbose_name="생성자 id")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="수정 시간")
+    updated_id = models.CharField(max_length=500, verbose_name="수정자 id")
     class Meta:
         ordering = ['epoch']
         unique_together = ['session', 'epoch']
@@ -100,9 +109,9 @@ class ClassMetric(models.Model):
     instances = models.IntegerField(verbose_name="인스턴스 수")
 
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성 시간")
-    created_id = models.CharField(max_length=500, verbose_name="생성 유저 id")
-    # updated_at = models.DateTimeField(auto_now=True, verbose_name="수정 시간")
-    # updated_id = models.CharField(max_length=500, verbose_name="수정 유저 id")
+    created_id = models.CharField(max_length=500, verbose_name="생성자 id")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="수정 시간")
+    updated_id = models.CharField(max_length=500, verbose_name="수정자 id")
     class Meta:
         unique_together = ['session', 'class_name']
     
