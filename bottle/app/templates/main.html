@@ -570,4 +570,154 @@
                 if (!iconContainer) return;
 
                 const iconName = isSidebarOpen ? 'chevron-left' : 'chevron-right';
-                iconContainer.innerHTML = `<i data-lucide="${icon
+                iconContainer.innerHTML = `<i data-lucide="${iconName}"></i>`;
+
+                if (isSidebarOpen) {
+                    sidebar.classList.remove('w-20');
+                    sidebar.classList.add('w-64');
+                    sidebarLogo.style.display = 'block';
+                    sidebarCollapseText.textContent = t('collapseMenu');
+                    document.querySelectorAll('.sidebar-text').forEach(el => el.style.display = 'inline');
+                } else {
+                    sidebar.classList.remove('w-64');
+                    sidebar.classList.add('w-20');
+                    sidebarLogo.style.display = 'none';
+                    sidebarCollapseText.textContent = t('expandMenu');
+                    document.querySelectorAll('.sidebar-text').forEach(el => el.style.display = 'none');
+                }
+                lucide.createIcons();
+            };
+
+            // Event listeners
+            sidebarToggleBtn.addEventListener('click', () => {
+                isSidebarOpen = !isSidebarOpen;
+                updateSidebarState();
+            });
+
+            sidebarOpenBtn.addEventListener('click', () => {
+                sidebar.classList.remove('-translate-x-full');
+                if (window.innerWidth < 768) {
+                    const overlay = document.createElement('div');
+                    overlay.id = 'sidebar-overlay';
+                    overlay.className = 'fixed inset-0 bg-black bg-opacity-50 z-10 md:hidden';
+                    overlay.addEventListener('click', () => {
+                        sidebar.classList.add('-translate-x-full');
+                        overlay.remove();
+                    });
+                    document.body.appendChild(overlay);
+                }
+            });
+            
+            sidebarCloseBtn.addEventListener('click', () => {
+                sidebar.classList.add('-translate-x-full');
+                const overlay = document.getElementById('sidebar-overlay');
+                if (overlay) overlay.remove();
+            });
+
+            languageSwitcher.addEventListener('change', (e) => {
+                currentLanguage = e.target.value;
+                updateHeaderText();
+                renderSidebar();
+                renderContent();
+            });
+
+            const loadPage = async (url, title, pageId = null) => {
+                try {
+                    mainContent.innerHTML = `
+                        <div class="flex items-center justify-center h-full">
+                            <div class="text-center">
+                                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                                <p class="text-gray-600 dark:text-gray-400">페이지 로딩 중...</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    const response = await fetch(url, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                    if (response.ok) {
+                        const html = await response.text();
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const bodyContent = doc.body.innerHTML;
+                        mainContent.innerHTML = bodyContent;
+                        window.history.pushState({ url, title, pageId }, title, url);
+                        if (pageId) {
+                            activePage = pageId;
+                        }
+                        renderSidebar();
+                        pageTitle.textContent = title;
+                    } else {
+                        throw new Error('페이지를 로드할 수 없습니다.');
+                    }
+                } catch (error) {
+                    console.error('페이지 로딩 오류:', error);
+                    mainContent.innerHTML = `
+                        <div class="flex items-center justify-center h-full">
+                            <div class="text-center">
+                                <div class="text-red-500 text-6xl mb-4">⚠️</div>
+                                <h2 class="text-xl font-semibold mb-2">페이지 로딩 실패</h2>
+                                <p class="text-gray-600 dark:text-gray-400">${error.message}</p>
+                                <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                                    새로고침
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+            };
+
+            window.addEventListener('popstate', (event) => {
+                if (event.state && event.state.url) {
+                    loadPage(event.state.url, event.state.title, event.state.pageId);
+                } else {
+                    activePage = 'dashboard';
+                    renderSidebar();
+                    renderContent();
+                }
+            });
+
+            const handleInitialRoute = () => {
+                const currentPath = window.location.pathname;
+                const blockedPaths = [
+                    '/login/', '/login',
+                    '/training/upload/', '/training/upload',
+                    '/training/sessions/', '/training/sessions',
+                    '/training/', '/training',
+                    '/training/input/', '/training/input',
+                    '/training/output/', '/training/output',
+                    '/training/list/', '/training/list'
+                ];
+                
+                if (blockedPaths.includes(currentPath)) {
+                    window.history.replaceState({ url: '/', title: '대시보드', pageId: 'dashboard' }, '대시보드', '/');
+                    activePage = 'dashboard'; 
+                }
+            };
+
+            // 자동 새로고침
+            const refreshDashboardData = async () => {
+                if (activePage === 'dashboard') {
+                    console.log('대시보드 데이터 새로고침 중...');
+                    await renderDashboard();
+                    console.log('대시보드 데이터가 새로고침되었습니다.');
+                }
+            };
+
+            setInterval(refreshDashboardData, 30000);
+
+            // 초기화
+            const init = () => {
+                handleInitialRoute();
+                updateHeaderText();
+                renderSidebar();
+                renderContent();
+            };
+
+            init();
+        });
+    </script>
+</body>
+</html>
