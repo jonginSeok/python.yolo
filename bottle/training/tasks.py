@@ -1,6 +1,7 @@
 # training/tasks.py
 import os
 from celery import shared_task
+
 # from django.shortcuts import get_object_or_404
 # from .models import TrainingSession, TrainingMetric, ClassMetric
 # from ultralytics import YOLO
@@ -18,28 +19,12 @@ def start_training_async(self, x, y):
     return "Success"
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # 7. Celery 워커 실행
 # celery -A config worker -l info
 # celery -A config worker --loglevel=info
 
 # Flower는 웹 UI를 통해 작업 목록, 상태, 실행 시간, 실패 로그를 확인할 수 있습니다.
 # celery -A config flower --port=5555
-
 
 
 # 1. Celery 워커 실행 확인

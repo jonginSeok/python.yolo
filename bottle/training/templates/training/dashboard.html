@@ -1,8 +1,6 @@
-{% load static %} {% load custom_filters %} 
-
-{% block title %}훈련 세션 결과{% endblock %}
+{% load static %} {% load custom_filters %} {% block title %}훈련 세션 결과{% endblock %}
 <!-- Plotly.js -->
-        <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 {% block extra_css %}
 <style>
     body {
@@ -113,10 +111,10 @@
         border: 1px solid rgba(255, 255, 255, 0.2);
         transition: all 0.3s ease; */
 
-background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.1);
         border-radius: 15px;
         padding: 30px;
-        
+
         /* Safari & WebKit */
         -webkit-backdrop-filter: blur(10px);
 
@@ -138,10 +136,10 @@ background: rgba(255, 255, 255, 0.1);
         border: 1px solid rgba(255, 255, 255, 0.2);
         transition: all 0.3s ease; */
 
-background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.1);
         border-radius: 15px;
         padding: 30px;
-        
+
         /* Safari & WebKit */
         -webkit-backdrop-filter: blur(10px);
 
@@ -165,7 +163,6 @@ background: rgba(255, 255, 255, 0.1);
         justify-content: space-between;
         align-items: center;
         margin-bottom: 15px;
-        
     }
 
     .session-title {
@@ -310,10 +307,8 @@ background: rgba(255, 255, 255, 0.1);
         }
     }
 </style>
-{% endblock %}
-{% block content %}
+{% endblock %} {% block content %}
 <div class="sessions-container">
-    
     <!-- Header -->
     <div class="sessions-header">
         <h1><i class="fas fa-list"></i> 훈련 결과</h1>
@@ -326,7 +321,7 @@ background: rgba(255, 255, 255, 0.1);
     <!-- Key Metrics -->
     <div class="sessions-grid">
         <!-- Current mAP@0.5 -->
-        <div class="session-card" style="max-width: 300px;">
+        <div class="session-card" style="max-width: 300px">
             <div class="session-info">
                 <h3 class="info-label">Current mAP@0.5</h3>
                 {% if map_change > 0 %}
@@ -344,7 +339,7 @@ background: rgba(255, 255, 255, 0.1);
         </div>
 
         <!-- Training Loss -->
-        <div class="session-card" style="max-width: 300px;">
+        <div class="session-card" style="max-width: 300px">
             <div class="session-info">
                 <h3 class="info-label">Training Loss</h3>
                 {% if loss_change > 0 %}
@@ -361,7 +356,7 @@ background: rgba(255, 255, 255, 0.1);
         </div>
 
         <!-- Validation Loss -->
-        <div class="session-card" style="max-width: 300px;">
+        <div class="session-card" style="max-width: 300px">
             <div class="session-info">
                 <h3 class="info-label">Validation Loss</h3>
                 {% if loss_change > 0 %}
@@ -378,14 +373,11 @@ background: rgba(255, 255, 255, 0.1);
         </div>
 
         <!-- Current Epoch -->
-        <div class="session-card" style="max-width: 300px;">
+        <div class="session-card" style="max-width: 300px">
             <div class="session-info">
                 <h3 class="info-label">Current Epoch</h3>
             </div>
-            <div class="session-info">
-                <span class="session-title">{{ session.current_epoch }}
-                </span>/ {{ session.total_epochs }}
-            </div>
+            <div class="session-info"><span class="session-title">{{ session.current_epoch }} </span>/ {{ session.total_epochs }}</div>
             <p class="session-info">Training progress</p>
         </div>
     </div>
@@ -397,7 +389,8 @@ background: rgba(255, 255, 255, 0.1);
             <div class="session-header">
                 <h2 class="session-title">{{ session.model_name }}</h2>
                 <p class="info-value">Version {{ session.version }}</p>
-                <p>{% if session.status == 'training' %}
+                <p>
+                    {% if session.status == 'training' %}
                     <span class="status-badge status-training">훈련 중</span>
                     {% elif session.status == 'completed' %}
                     <span class="status-badge status-completed">완료</span>
@@ -407,10 +400,10 @@ background: rgba(255, 255, 255, 0.1);
                 </p>
             </div>
 
-            <div class="session-info" style="border:1px solid #2f3031;border-radius:10px; padding: 10px;">
+            <div class="session-info" style="border: 1px solid #2f3031; border-radius: 10px; padding: 10px">
                 {% if session.status == 'training' %}
                 <div class="">
-                    <div class="" style="margin-top: 20px;">
+                    <div class="" style="margin-top: 20px">
                         <span class="">Training Progress</span>
                         <span class="">{{ session.progress_percentage|floatformat:0 }}%</span>
                     </div>
@@ -422,7 +415,22 @@ background: rgba(255, 255, 255, 0.1);
 
                 <div class="">
                     <div class="">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="clock" class="lucide lucide-clock w-4 h-4 text-muted-foreground"><path d="M12 6v6l4 2"></path><circle cx="12" cy="12" r="10"></circle></svg>
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            data-lucide="clock"
+                            class="lucide lucide-clock w-4 h-4 text-muted-foreground"
+                        >
+                            <path d="M12 6v6l4 2"></path>
+                            <circle cx="12" cy="12" r="10"></circle>
+                        </svg>
                         <div class="info-item">
                             <span class="info-label">Training Time</span>
                             <span class="info-value">{{ session.training_duration }}</span>
@@ -430,7 +438,34 @@ background: rgba(255, 255, 255, 0.1);
                     </div>
 
                     <div class="">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="cpu" class="lucide lucide-cpu w-4 h-4 text-muted-foreground"><path d="M12 20v2"></path><path d="M12 2v2"></path><path d="M17 20v2"></path><path d="M17 2v2"></path><path d="M2 12h2"></path><path d="M2 17h2"></path><path d="M2 7h2"></path><path d="M20 12h2"></path><path d="M20 17h2"></path><path d="M20 7h2"></path><path d="M7 20v2"></path><path d="M7 2v2"></path><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="8" y="8" width="8" height="8" rx="1"></rect></svg>
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            data-lucide="cpu"
+                            class="lucide lucide-cpu w-4 h-4 text-muted-foreground"
+                        >
+                            <path d="M12 20v2"></path>
+                            <path d="M12 2v2"></path>
+                            <path d="M17 20v2"></path>
+                            <path d="M17 2v2"></path>
+                            <path d="M2 12h2"></path>
+                            <path d="M2 17h2"></path>
+                            <path d="M2 7h2"></path>
+                            <path d="M20 12h2"></path>
+                            <path d="M20 17h2"></path>
+                            <path d="M20 7h2"></path>
+                            <path d="M7 20v2"></path>
+                            <path d="M7 2v2"></path>
+                            <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                            <rect x="8" y="8" width="8" height="8" rx="1"></rect>
+                        </svg>
                         <div class="info-item">
                             <span class="info-label">GPU</span>
                             <span class="info-value">{{ session.gpu_info }}</span>
@@ -438,7 +473,31 @@ background: rgba(255, 255, 255, 0.1);
                     </div>
 
                     <div class="">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="memory-stick" class="lucide lucide-memory-stick w-4 h-4 text-muted-foreground"><path d="M6 19v-3"></path><path d="M10 19v-3"></path><path d="M14 19v-3"></path><path d="M18 19v-3"></path><path d="M8 11V9"></path><path d="M16 11V9"></path><path d="M12 11V9"></path><path d="M2 15h20"></path><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v1.1a2 2 0 0 0 0 3.837V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5.1a2 2 0 0 0 0-3.837Z"></path></svg>
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            data-lucide="memory-stick"
+                            class="lucide lucide-memory-stick w-4 h-4 text-muted-foreground"
+                        >
+                            <path d="M6 19v-3"></path>
+                            <path d="M10 19v-3"></path>
+                            <path d="M14 19v-3"></path>
+                            <path d="M18 19v-3"></path>
+                            <path d="M8 11V9"></path>
+                            <path d="M16 11V9"></path>
+                            <path d="M12 11V9"></path>
+                            <path d="M2 15h20"></path>
+                            <path
+                                d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v1.1a2 2 0 0 0 0 3.837V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5.1a2 2 0 0 0 0-3.837Z"
+                            ></path>
+                        </svg>
                         <div class="info-item">
                             <span class="info-label">Memory</span>
                             <span class="info-value">{{ session.memory_info }}</span>
@@ -446,9 +505,28 @@ background: rgba(255, 255, 255, 0.1);
                     </div>
 
                     <div class="">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="hard-drive" class="lucide lucide-hard-drive w-4 h-4 text-muted-foreground"><line x1="22" x2="2" y1="12" y2="12"></line><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path><line x1="6" x2="6.01" y1="16" y2="16"></line><line x1="10" x2="10.01" y1="16" y2="16"></line></svg>
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            data-lucide="hard-drive"
+                            class="lucide lucide-hard-drive w-4 h-4 text-muted-foreground"
+                        >
+                            <line x1="22" x2="2" y1="12" y2="12"></line>
+                            <path
+                                d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"
+                            ></path>
+                            <line x1="6" x2="6.01" y1="16" y2="16"></line>
+                            <line x1="10" x2="10.01" y1="16" y2="16"></line>
+                        </svg>
                         <div class="info-item">
-                            <span class="info-label" style="align-items: start;">Dataset</span>
+                            <span class="info-label" style="align-items: start">Dataset</span>
                             <span class="info-value">{{ session.dataset_name }}</span>
                         </div>
                     </div>
@@ -461,18 +539,18 @@ background: rgba(255, 255, 255, 0.1);
             <div class="session-header">
                 <h2 class="session-title">Class Performance</h2>
             </div>
-            <div class="session-info" style="border:1px solid #2f3031;border-radius:10px; padding: 10px;">
+            <div class="session-info" style="border: 1px solid #2f3031; border-radius: 10px; padding: 10px">
                 <div class="">
                     {% for metric in class_metrics %}
-                    
-                    <div class="" style="margin-top: 20px;">
+
+                    <div class="" style="margin-top: 20px">
                         <div class="info-item">
                             <span class="info-value">{{ metric.class_name }}</span>
                             <span class="info-label">{{ metric.instances }} instances</span>
                         </div>
 
-                        <div class="" style="display: flex; gap: 1.5em;">
-                            <div class="" style="min-width: 10em;">
+                        <div class="" style="display: flex; gap: 1.5em">
+                            <div class="" style="min-width: 10em">
                                 <div class="info-item">
                                     <span class="info-label">Precision</span>
                                     <span class="info-value">{{ metric.precision|floatformat:1|mul:100 }}%</span>
@@ -482,7 +560,7 @@ background: rgba(255, 255, 255, 0.1);
                                 </div>
                             </div>
 
-                            <div class="" style="min-width: 10em;">
+                            <div class="" style="min-width: 10em">
                                 <div class="info-item">
                                     <span class="info-label">Recall</span>
                                     <span class="info-value">{{ metric.recall|floatformat:1|mul:100 }}%</span>
@@ -492,7 +570,7 @@ background: rgba(255, 255, 255, 0.1);
                                 </div>
                             </div>
 
-                            <div class="" style="min-width: 10em;">
+                            <div class="" style="min-width: 10em">
                                 <div class="info-item">
                                     <span class="info-label">F1-Score</span>
                                     <span class="info-value">{{ metric.f1_score|floatformat:1|mul:100 }}%</span>
@@ -516,7 +594,7 @@ background: rgba(255, 255, 255, 0.1);
             <div class="session-header">
                 <h2 class="session-title">Training & Validation Loss</h2>
             </div>
-            <div class="" style="border:1px solid #2f3031;border-radius:10px;">
+            <div class="" style="border: 1px solid #2f3031; border-radius: 10px">
                 <div id="loss-chart" style="height: 350px"></div>
             </div>
         </div>
@@ -526,12 +604,11 @@ background: rgba(255, 255, 255, 0.1);
             <div class="session-header">
                 <h2 class="session-title">Mean Average Precision (mAP)</h2>
             </div>
-            <div class="" style="border:1px solid #2f3031;border-radius:10px;">
+            <div class="" style="border: 1px solid #2f3031; border-radius: 10px">
                 <div id="map-chart" style="height: 350px"></div>
             </div>
         </div>
     </div>
-    
 </div>
 
 <script>

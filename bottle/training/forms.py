@@ -1,10 +1,8 @@
 # training/forms.py
 from django import forms
-
-# from django.core.validators import FileExtensionValidator
-# from django.core.exceptions import ValidationError
-# from .models import TrainingSession
-
+from django.core.validators import FileExtensionValidator
+from django.core.exceptions import ValidationError
+from .models import TrainingSession
 from datetime import datetime
 
 
@@ -216,6 +214,7 @@ class DataUploadForm(forms.Form):
         initial=20,  # 초기값세팅
         widget=forms.NumberInput(attrs={"class": "form-control"}),
     )
+    
     test_percent = forms.IntegerField(
         required=False,
         label="test %",

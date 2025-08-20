@@ -275,7 +275,7 @@
                     <span class="info-label">ID:</span>
                     <span class="info-value">{{ session.id }}</span>
                 </div>
-                
+
                 <div class="info-item">
                     <span class="info-label">데이터셋:</span>
                     <span class="info-value">{{ session.dataset_name }}</span>
@@ -338,26 +338,26 @@
 <script>
     function confirmDelete(sessionId) {
         if (confirm("정말로 이 훈련 세션을 삭제하시겠습니까?")) {
-        $.ajax({
-            url: '/training/delete/',
-            type: 'POST',
-            data: {
-                session_id: sessionId,
-                csrfmiddlewaretoken: '{{ csrf_token }}'
-            },
-            success: function(response) {
-                if (response.success) {
-                    alert("세션이 삭제되었습니다.");
-                    location.reload();  // 또는 해당 요소만 제거
-                } else {
-                    alert("삭제 실패: " + response.error);
-                }
-            },
-            error: function() {
-                alert("서버 오류로 삭제에 실패했습니다.");
-            }
-        });
-    }
+            $.ajax({
+                url: "/training/delete/",
+                type: "POST",
+                data: {
+                    session_id: sessionId,
+                    csrfmiddlewaretoken: "{{ csrf_token }}",
+                },
+                success: function (response) {
+                    if (response.success) {
+                        alert("세션이 삭제되었습니다.");
+                        location.reload(); // 또는 해당 요소만 제거
+                    } else {
+                        alert("삭제 실패: " + response.error);
+                    }
+                },
+                error: function () {
+                    alert("서버 오류로 삭제에 실패했습니다.");
+                },
+            });
+        }
     }
 </script>
 {% endblock %} {% endblock %}
