@@ -111,6 +111,12 @@
             let isSidebarOpen = window.innerWidth >= 768;
             let currentLanguage = 'ko';
             let activePage = 'dashboard';
+            const spaRoutes = {
+                learningList: { titleKey: 'learningList', src: '/training/sessions/' },
+                startLearning: { titleKey: 'startLearning', src: '/training/upload/' },
+                dashboard: { titleKey: 'dashboard', src: '/' },
+                sessionDashboard: { titleKey: 'sessionDashboard', src: '/training/session-dashboard/' },
+            };
             let charts = {};
 
             // API 데이터 관리
@@ -166,6 +172,7 @@
                     learningList: "Learning List",
                     startLearning: "Start Learning",
                     dashboard: "Dashboard",
+                    sessionDashboard: "Session Dashboard",
                     collapseMenu: "Collapse",
                     expandMenu: "Expand",
                     login: "Login",
@@ -193,6 +200,7 @@
                     learningList: "학습 목록",
                     startLearning: "학습 하기",
                     dashboard: "대시보드",
+                    sessionDashboard: "세션 대시보드",
                     collapseMenu: "메뉴 접기",
                     expandMenu: "메뉴 펼치기",
                     login: "로그인",
@@ -226,6 +234,7 @@
                 { id: 'learningList', label: 'learningList', icon: 'list' },
                 { id: 'startLearning', label: 'startLearning', icon: 'play-circle' },
             ];
+            // 참고: sessionDashboard는 내부 링크(/training/...detail, ...dashboard) 클릭 시에만 노출되는 가상 페이지입니다.
             
             const destroyCharts = () => {
                 Object.values(charts).forEach(chart => {
@@ -253,21 +262,24 @@
                             <i data-lucide="${item.icon}"></i>
                             <span class="ml-4 sidebar-text">${t(item.label)}</span>
                         `;
-                        
                         a.onclick = (e) => {
                             e.preventDefault();
-                            
                             if (item.id === 'learningList') {
-                                loadPage('/training/sessions/', t('learningList'), 'learningList');
+                                activePage = 'learningList';
+                                renderSidebar();
+                                const r = spaRoutes.learningList;
+                                loadPage(r.src, t(r.titleKey), 'learningList');
                                 return;
                             }
-                            
                             if (item.id === 'startLearning') {
-                                loadPage('/training/upload/', t('startLearning'), 'startLearning');
+                                activePage = 'startLearning';
+                                renderSidebar();
+                                const r = spaRoutes.startLearning;
+                                loadPage(r.src, t(r.titleKey), 'startLearning');
                                 return;
                             }
-
                             activePage = item.id;
+                            if (item.id === 'dashboard') resetToHome();
                             renderContent();
                             renderSidebar();
                             if (window.innerWidth < 768) {
@@ -621,7 +633,29 @@
                 renderContent();
             });
 
-            const loadPage = async (url, title, pageId = null) => {
+            // 내부 링크 가로채기: /training/ 경로는 항상 AJAX로 로드
+            mainContent.addEventListener('click', (e) => {
+                const a = e.target.closest('a');
+                if (!a) return;
+                const url = new URL(a.getAttribute('href', 2) || '', location.href);
+                // 외부/새창/다운로드 등은 무시
+                if (url.origin !== location.origin) return;
+                if (a.hasAttribute('download') || a.target === '_blank') return;
+                // /training/ 로 시작하면 SPA 로딩
+                if (url.pathname.startsWith('/training/')) {
+                    e.preventDefault();
+                    // 페이지 종류 추론
+                    let pageId = 'learningList';
+                    if (url.pathname.includes('/upload')) pageId = 'startLearning';
+                    else if (url.pathname.includes('dashboard') || url.pathname.includes('detail') || url.pathname.includes('session')) pageId = 'sessionDashboard';
+                    const titleKey = spaRoutes[pageId]?.titleKey || pageId;
+                    activePage = pageId;
+                    renderSidebar();
+                    loadPage(url.pathname + url.search, t(titleKey), pageId);
+                }
+            });
+
+            const loadPage = async (url, title, pageId = null, opts = { push: true }) => {
                 try {
                     mainContent.innerHTML = `
                         <div class="flex items-center justify-center h-full">
@@ -631,26 +665,48 @@
                             </div>
                         </div>
                     `;
-                    
-                    const response = await fetch(url, {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
+
+                    const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                    if (!response.ok) throw new Error('페이지를 로드할 수 없습니다.');
+
+                    const html = await response.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const bodyContent = doc.body.innerHTML;
+                    mainContent.innerHTML = bodyContent;
+
+                    // Keep the dashboard shell but reflect virtual route via query params
+                    if (pageId && opts.push) {
+                        const sp = new URLSearchParams(location.search);
+                        sp.set('page', pageId);
+                        sp.set('src', url);
+                        const newUrl = `${location.pathname}?${sp.toString()}`;
+                        window.history.pushState({ url, title, pageId }, title, newUrl);
+                    } else if (pageId && !opts.push) {
+                        const sp = new URLSearchParams(location.search);
+                        sp.set('page', pageId);
+                        sp.set('src', url);
+                        const newUrl = `${location.pathname}?${sp.toString()}`;
+                        window.history.replaceState({ url, title, pageId }, title, newUrl);
+                    }
+
+                    if (pageId) {
+                        activePage = pageId;
+                    }
+                    renderSidebar();
+                    pageTitle.textContent = title;
+
+                    // Re-run any inline scripts that were part of the fetched content
+                    const scripts = Array.from(mainContent.querySelectorAll('script'));
+                    for (const s of scripts) {
+                        const ns = document.createElement('script');
+                        if (s.src) {
+                            ns.src = s.src;
+                            ns.defer = true;
+                        } else {
+                            ns.textContent = s.textContent;
                         }
-                    });
-                    if (response.ok) {
-                        const html = await response.text();
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-                        const bodyContent = doc.body.innerHTML;
-                        mainContent.innerHTML = bodyContent;
-                        window.history.pushState({ url, title, pageId }, title, url);
-                        if (pageId) {
-                            activePage = pageId;
-                        }
-                        renderSidebar();
-                        pageTitle.textContent = title;
-                    } else {
-                        throw new Error('페이지를 로드할 수 없습니다.');
+                        s.replaceWith(ns);
                     }
                 } catch (error) {
                     console.error('페이지 로딩 오류:', error);
@@ -660,9 +716,7 @@
                                 <div class="text-red-500 text-6xl mb-4">⚠️</div>
                                 <h2 class="text-xl font-semibold mb-2">페이지 로딩 실패</h2>
                                 <p class="text-gray-600 dark:text-gray-400">${error.message}</p>
-                                <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                                    새로고침
-                                </button>
+                                <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">새로고침</button>
                             </div>
                         </div>
                     `;
@@ -670,31 +724,62 @@
             };
 
             window.addEventListener('popstate', (event) => {
-                if (event.state && event.state.url) {
-                    loadPage(event.state.url, event.state.title, event.state.pageId);
+                const state = event.state;
+                if (state && state.pageId && state.url) {
+                    loadPage(state.url, state.title || t(state.pageId), state.pageId, { push: false });
                 } else {
-                    activePage = 'dashboard';
-                    renderSidebar();
-                    renderContent();
+                    // No state → check query params (direct refresh bookmarks)
+                    const params = new URLSearchParams(location.search);
+                    const page = params.get('page');
+                    const src = params.get('src');
+                    if (page && src) {
+                        const titleKey = spaRoutes[page]?.titleKey || page;
+                        loadPage(src, t(titleKey), page, { push: false });
+                    } else {
+                        activePage = 'dashboard';
+                        renderSidebar();
+                        renderContent();
+                    }
                 }
             });
 
-            const handleInitialRoute = () => {
-                const currentPath = window.location.pathname;
-                const blockedPaths = [
-                    '/login/', '/login',
-                    '/training/upload/', '/training/upload',
-                    '/training/sessions/', '/training/sessions',
-                    '/training/', '/training',
-                    '/training/input/', '/training/input',
-                    '/training/output/', '/training/output',
-                    '/training/list/', '/training/list'
-                ];
-                
-                if (blockedPaths.includes(currentPath)) {
-                    window.history.replaceState({ url: '/', title: '대시보드', pageId: 'dashboard' }, '대시보드', '/');
-                    activePage = 'dashboard'; 
+            const handleInitialRoute = async () => {
+                const params = new URLSearchParams(location.search);
+                const page = params.get('page');
+                const src = params.get('src');
+                if (page && src) {
+                    const titleKey = spaRoutes[page]?.titleKey || page;
+                    activePage = page;
+                    pageTitle.textContent = t(titleKey);
+                    renderSidebar();
+                    await loadPage(src, t(titleKey), page, { push: false });
+                    return true;
                 }
+                // 쿼리 파라미터가 없고, 직접 /training/... 로 들어온 경우 처리
+                const path = location.pathname;
+                if (path.startsWith('/training/')) {
+                    let inferred = 'learningList';
+                    if (path.includes('/upload')) inferred = 'startLearning';
+                    else if (path.includes('dashboard') || path.includes('detail') || path.includes('session')) inferred = 'sessionDashboard';
+                    const titleKey = spaRoutes[inferred]?.titleKey || inferred;
+                    const srcUrl = path + location.search;
+                    // 셸 유지: 쿼리 파라미터로 치환
+                    const sp = new URLSearchParams();
+                    sp.set('page', inferred);
+                    sp.set('src', srcUrl);
+                    const newUrl = `${location.pathname}?${sp.toString()}`;
+                    window.history.replaceState({ url: srcUrl, title: t(titleKey), pageId: inferred }, t(titleKey), newUrl);
+                    activePage = inferred;
+                    pageTitle.textContent = t(titleKey);
+                    renderSidebar();
+                    await loadPage(srcUrl, t(titleKey), inferred, { push: false });
+                    return true;
+                }
+                return false;
+            };
+            const resetToHome = () => {
+                const cleanUrl = location.pathname;
+                window.history.pushState({ url: '/', title: t('dashboard'), pageId: 'dashboard' }, t('dashboard'), cleanUrl);
             };
 
             // 자동 새로고침
@@ -709,11 +794,15 @@
             setInterval(refreshDashboardData, 30000);
 
             // 초기화
-            const init = () => {
-                handleInitialRoute();
+            const init = async () => {
+                const handled = await handleInitialRoute();
                 updateHeaderText();
-                renderSidebar();
-                renderContent();
+                if (!handled) {
+                    // Default landing is dashboard only when no subpage requested
+                    activePage = 'dashboard';
+                    renderSidebar();
+                    renderContent();
+                }
             };
 
             init();
