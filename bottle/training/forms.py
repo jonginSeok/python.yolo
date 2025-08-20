@@ -107,9 +107,18 @@ class DataUploadForm(forms.Form):
     )
 
     # 훈련 설정
-    epochs = forms.IntegerField(
+    total_epochs = forms.IntegerField(
         required=True,
-        label="에포크",
+        label="총 에포크",
+        min_value=1,
+        max_value=1000,
+        initial=100,  # 초기값세팅
+        widget=forms.NumberInput(attrs={"class": "form-control"}),
+    )
+    
+    current_epoch = forms.IntegerField(
+        required=True,
+        label="현재 에포크",
         min_value=1,
         max_value=1000,
         initial=50,  # 초기값세팅
@@ -165,6 +174,14 @@ class DataUploadForm(forms.Form):
         widget=forms.Select(attrs={"class": "form-control"}),
     )
 
+
+    early_stopping = forms.BooleanField(
+        label="조기 종료 사용",
+        required=False,
+        initial=False,  # 초기값세팅
+        widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
+    )
+
     patience = forms.IntegerField(
         required=True,
         label="조기 종료 patience",
@@ -172,13 +189,6 @@ class DataUploadForm(forms.Form):
         max_value=100,
         initial=10,  # 초기값세팅
         widget=forms.NumberInput(attrs={"class": "form-control"}),
-    )
-
-    early_stopping = forms.BooleanField(
-        label="조기 종료 사용",
-        required=False,
-        initial=False,  # 초기값세팅
-        widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
     )
     
     augmentation = forms.BooleanField(

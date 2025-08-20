@@ -16,8 +16,7 @@ class Command(BaseCommand):
                 "gpu_info": "RTX 4090",
                 "memory_info": "24GB",
                 "total_epochs": 100,
-                # "current_epoch": 50,
-                "epochs": 50,
+                "current_epoch": 50,
             },
         )
 

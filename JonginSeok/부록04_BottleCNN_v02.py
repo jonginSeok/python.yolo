@@ -4,10 +4,10 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchvision import datasets, transforms
+from torchvision import transforms #, datasets
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
-from PIL import Image, ImageOps
+from PIL import Image #, ImageOps
 
 # 학습 루프
 BATCH_SIZE = 4
