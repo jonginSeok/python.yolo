@@ -1,5 +1,6 @@
 # training/forms.py
 from django import forms
+
 # from django.core.validators import FileExtensionValidator
 # from django.core.exceptions import ValidationError
 # from .models import TrainingSession
@@ -11,16 +12,6 @@ class DataUploadForm(forms.Form):
     """YOLO 훈련 데이터 업로드 폼"""
 
     # 기본 정보
-    # model_name = forms.CharField(
-    #     required=True,
-    #     label="모델명",
-    #     max_length=100,
-    #     initial="YOLOv11n",  # 초기값세팅 1.  속성 사용 (가장 일반적인 방법)
-    #     widget=forms.TextInput(
-    #         attrs={"class": "form-control", "placeholder": "YOLOv8n"}
-    #     ),
-    # )
-
     model_name = forms.ChoiceField(
         required=True,
         label="모델",
@@ -44,6 +35,7 @@ class DataUploadForm(forms.Form):
         required=True,
         label="상태",
         choices=[
+            # ('begin', '훈련 시작'),
             ("training", "훈련 중"),
             ("completed", "완료"),
             ("failed", "실패"),
@@ -75,14 +67,14 @@ class DataUploadForm(forms.Form):
             }
         ),
     )
-    
+
     memory_info = forms.CharField(
         required=True,
         max_length=50,
         label="메모리 정보",
         widget=forms.TextInput(
             attrs={
-                "class": "form-control", 
+                "class": "form-control",
                 "placeholder": "64GB",
                 "value": "64GB",  # 초기값세팅 3. 의 로 직접  지정
             }
@@ -115,7 +107,7 @@ class DataUploadForm(forms.Form):
         initial=100,  # 초기값세팅
         widget=forms.NumberInput(attrs={"class": "form-control"}),
     )
-    
+
     current_epoch = forms.IntegerField(
         required=True,
         label="현재 에포크",
@@ -174,7 +166,6 @@ class DataUploadForm(forms.Form):
         widget=forms.Select(attrs={"class": "form-control"}),
     )
 
-
     early_stopping = forms.BooleanField(
         label="조기 종료 사용",
         required=False,
@@ -190,7 +181,7 @@ class DataUploadForm(forms.Form):
         initial=10,  # 초기값세팅
         widget=forms.NumberInput(attrs={"class": "form-control"}),
     )
-    
+
     augmentation = forms.BooleanField(
         label="데이터 증강 사용",
         required=False,
@@ -203,11 +194,11 @@ class DataUploadForm(forms.Form):
         required=False,
         label="이미지 회전(각)",
         min_value=5,
-        max_value=180,
-        initial=40,  # 초기값세팅
+        max_value=159,
+        initial=100,  # 초기값세팅
         widget=forms.NumberInput(attrs={"class": "form-control"}),
     )
-    
+
     train_percent = forms.IntegerField(
         required=False,
         label="train %",
@@ -216,7 +207,7 @@ class DataUploadForm(forms.Form):
         initial=70,  # 초기값세팅
         widget=forms.NumberInput(attrs={"class": "form-control"}),
     )
-        
+
     valid_percent = forms.IntegerField(
         required=False,
         label="valid %",

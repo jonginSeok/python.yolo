@@ -7,25 +7,20 @@ from ultralytics import YOLO
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
-# from django.db import connection
-# from django.db.utils import OperationalError
 from django.db.models import Avg
 from django.contrib import messages
 from django.http import JsonResponse
 from django.utils.functional import SimpleLazyObject
 from django.views.decorators.http import require_POST
 from django.shortcuts import render, redirect, get_object_or_404
-# from config.settings import DATABASES
+
 import os
 import sys
 import zipfile
-# import django
 import json
 import plotly.utils
 import plotly.graph_objs as go
 import torch
-
-# CNN
 import torch.nn as nn
 import torch.optim as optim
 import yaml
@@ -37,13 +32,6 @@ import psycopg2
 
 # 방법 A: 코드 상단에 경로 추가
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
-
-# Django 환경 설정
-# os.environ.setdefault(
-#     "DJANGO_SETTINGS_MODULE", 
-#     "config.settings"  # 프로젝트 이름으로 변경
-# )
-# django.setup()
 
 
 def training_data_api(request, session_id):
@@ -358,7 +346,7 @@ def upload_dataset(request):
         form = DataUploadForm(request.POST, request.FILES)
 
         if form.is_valid():
-            # 훈련 세션 생성(training_trainingsession) / 위치고정
+            # 훈련 세션 생성(training_trainingsession)
             session = TrainingSession.objects.create(
                 model_name=form.cleaned_data["model_name"],
                 version=form.cleaned_data["version"],
@@ -387,13 +375,13 @@ def upload_dataset(request):
             # 파일 저장 및 처리
             zip_file = form.cleaned_data["zip_file"]
 
-            # 업로드 디렉토리 생성 / 위치고정
+            # 업로드 디렉토리 생성
             dataset_path = os.path.join(
                 "media", "datasets", str(session.id)
-            )  # media/datasets/34
+            )
             upload_dir = os.path.join(
                 dataset_path, form.cleaned_data["dataset_name"]
-            )  # media/datasets/34/bottle
+            )
             os.makedirs(upload_dir, exist_ok=True)
 
             # ZIP 파일 저장
@@ -421,12 +409,16 @@ def upload_dataset(request):
                         os.remove(zip_path)
                         return render(request, "training/upload.html", {"form": form})
 
-                    if not label_files:
-                        messages.error(
-                            request, "라벨 파일(.txt)이 ZIP에 포함되어 있지 않습니다."
-                        )
-                        os.remove(zip_path)
-                        return render(request, "training/upload.html", {"form": form})
+                    if session.model_name == "YOLOv11n":
+                        if not label_files:
+                            messages.error(
+                                request,
+                                "라벨 파일(.txt)이 ZIP에 포함되어 있지 않습니다.",
+                            )
+                            os.remove(zip_path)
+                            return render(
+                                request, "training/upload.html", {"form": form}
+                            )
 
                     # ZIP 파일 압축 해제
                     extract_dir = os.path.join(
@@ -439,36 +431,17 @@ def upload_dataset(request):
                 os.remove(zip_path)
                 return render(request, "training/upload.html", {"form": form})
 
-            # TrainingSession update
-            # 방법 1: 객체를 가져와서 수정 후 .save() 사용
-            # session = TrainingSession.objects.get(id=1)  # 원하는 객체 가져오기
-            # session.name = "Updated Name"               # 필드 수정
-            # session.duration = 90
-            # session.save()                              # 변경사항 저장
-            # 장점: 모델의 save() 메서드가 호출되므로 커스텀 로직이 실행됨
-            # 단점: 객체를 메모리에 로드해야 하므로 성능이 떨어질 수 있음
+            # 상태 변경 completed:완료 # 삭제금지
+            # TrainingSession.objects.update(
+            #     status="training",
+            #     updated_at=datetime.now(ZoneInfo("Asia/Seoul")),
+            #     updated_id="system",
+            # )
+            # 오류발생
+            # print(f"# model_name: {session.model_name}")
+            # AttributeError: 'int' object has no attribute 'model_name'
 
-            # 방법 2: QuerySet.update() 사용
-            TrainingSession.objects.filter(id=session.id).update(
-                dataset_path=dataset_path,
-                config={
-                    "total_epochs": form.cleaned_data["total_epochs"],
-                    "current_epoch": form.cleaned_data["current_epoch"],
-                    "batch_size": form.cleaned_data["batch_size"],
-                    "learning_rate": form.cleaned_data["learning_rate"],
-                    "image_size": form.cleaned_data["image_size"],
-                    "optimizer": form.cleaned_data["optimizer"],
-                    "augmentation": form.cleaned_data["augmentation"],
-                    "early_stopping": form.cleaned_data["early_stopping"],
-                    "patience": form.cleaned_data["patience"],
-                    "image_count": len(image_files),
-                    "label_count": len(label_files),
-                },
-            )
-            # 장점: SQL UPDATE를 직접 실행하므로 빠름
-            # 단점: save() 메서드나 pre_save/post_save 시그널이 호출되지 않음
-
-            # ClassMetric 담을 리스트 생성(training_classmetric)
+            # ClassMetric 담을 리스트 생성(training_classmetric) 시작
             class_names = []
             print(f"# model_name: {session.model_name}")
 
@@ -476,15 +449,16 @@ def upload_dataset(request):
             if session.model_name == "CNN":
                 class_names = request.POST.getlist(
                     "class_name"
-                )  # ClassMetric 모델에 클래스 이름 저장 /CNN
+                )
                 print(
                     f"# CNN Class_names len: {len(class_names)} Class Name:{class_names}"
                 )
 
             elif session.model_name == "YOLOv11n":
+
                 data_yaml_path = os.path.join(
                     extract_dir, "data.yaml"
-                )  # data.yaml 파일 읽어 저장 /YOLO
+                )
                 print(f"# YOLOv11n data_yaml_path: {data_yaml_path}")
 
                 # YOLO data.yaml 파일 읽기
@@ -511,9 +485,10 @@ def upload_dataset(request):
             # ClassMetric 한 번에 저장
             ClassMetric.objects.bulk_create(class_objects)
             # messages.success(request, f"데이터셋이 성공적으로 업로드되었습니다. 훈련 세션 ID: {session.id}",)
+            # ClassMetric 담을 리스트 생성(training_classmetric) 종료
 
             # 데이터 증강 시작
-
+            # load rotate_and_split_cnn_dataset 시작
             def rotate_and_split_cnn_dataset(
                 source_dir,
                 output_dir,
@@ -523,6 +498,9 @@ def upload_dataset(request):
                 label_map=None,
             ):
                 total_percent = train_percent + valid_percent + test_percent
+                print(
+                    f"# 00 total_percent:{total_percent} train_percent:{train_percent} valid_percent:{valid_percent} test_percent:{test_percent}"
+                )
                 assert (
                     total_percent == 100
                 ), f"비율 합이 100이 되어야 합니다. 현재: {total_percent}"
@@ -534,8 +512,11 @@ def upload_dataset(request):
                 # Step 1: 클래스별 이미지 수집
                 class_images = {}
                 for class_name in label_map.keys():
+                    print(f"# 11 source_dir:{source_dir} class_name:{class_name}")
                     class_path = os.path.join(source_dir, class_name)
-                    images = glob(os.path.join(class_path, "*.*"))  # 모든 확장자 포함
+                    images = glob.glob(
+                        os.path.join(class_path, "*.*")
+                    )  # 모든 확장자 포함
                     class_images[class_name] = images
 
                 # Step 2: train/valid/test 디렉토리 생성
@@ -566,36 +547,25 @@ def upload_dataset(request):
                             shutil.copy2(img_path, dest_path)
 
                 print("✅ 데이터셋 분할 및 정리가 완료되었습니다.")
+            # load rotate_and_split_cnn_dataset 종료
 
-            print(f"데이터 증강 시작: {session.augmentation}")
+            print(f"데이터 증강 시작 : {session.augmentation}")
             if session.augmentation:
 
                 print("데이터 증강 시작")
+                print(f"데이터 증강 model_name: {session.model_name}")
 
                 # CNN 과 YOLO 분기
                 if session.model_name == "CNN":
-                    print("CNN 데이터 증강 시작")
-                    
-                    
                     print("rotate_and_split_cnn_dataset Start ")
-                    
-                    # print(f"extract_dir:  {extract_dir} ")
-                    # print(f"upload_dir:  {upload_dir} ")
-
-                    # print(f"session.train_percent:  {session.train_percent} ")
-                    # print(f"session.valid_percent:  {session.valid_percent} ")
-                    # print(f"session.test_percent:  {session.test_percent} ")
-                    
-                    # bulk_create 이후 저장된 객체 조회
-                    # saved_objects = ClassMetric.objects.all()
-                    # session_id가 8인 객체들 조회
+                    # session_id로 객체들 조회
                     filtered_objects = ClassMetric.objects.filter(session_id=session.id)
 
                     # label_map 생성: label → id
                     label_map = {obj.class_name: obj.index for obj in filtered_objects}
-                    
+
                     print(f"label_map :  {label_map} ")
-                    
+
                     rotate_and_split_cnn_dataset(
                         source_dir=extract_dir,
                         output_dir=upload_dir,
@@ -604,22 +574,11 @@ def upload_dataset(request):
                         test_percent=session.test_percent,
                         label_map=label_map,
                     )
-                    
                     print("rotate_and_split_cnn_dataset End ")
 
                 elif session.model_name == "YOLOv11n":
-                    print("YOLO 데이터 증강 시작")
-                    
                     print("rotate_and_split_yolo_dataset Start ")
-                    
-                    # print(f"extract_dir:  {extract_dir} ")
-                    # print(f"upload_dir:  {upload_dir} ")
-                    # print(f"session.rotation_angle:  {session.rotation_angle} ")
-                    # print(f"session.train_percent:  {session.train_percent} ")
-                    # print(f"session.valid_percent:  {session.valid_percent} ")
-                    # print(f"session.test_percent:  {session.test_percent} ")
 
-                    # 사용 예시
                     rotate_and_split_yolo_dataset(
                         root_dir=extract_dir,
                         output_dir=upload_dir,
@@ -630,24 +589,25 @@ def upload_dataset(request):
                             session.test_percent,
                         ],
                     )
-                    
-                    data_yaml_path = upload_dir # 실행 yaml 파일 지정
+
+                    data_yaml_path = os.path.join(
+                        upload_dir, "data.yaml"
+                    )  # 실행 yaml 파일 지정
                     print(f"data_yaml_path:  {data_yaml_path} ")
                     print("rotate_and_split_yolo_dataset End ")
 
             else:
+                upload_dir = extract_dir
                 print("⚠️ 데이터 증강 없음")
 
             print(f"데이터 증강 종료: {session.augmentation}")
-
             # 데이터 증강 종료
 
-            print("여기서 실제 YOLO 훈련을 시작할 수 있습니다")
+            print("여기서부터 실제 YOLO/CNN 훈련을 시작할 수 있습니다")
 
             # CNN 과 YOLO 분기
             if "CNN" == session.model_name:
 
-                # CNN 모델 훈련 시작
                 print("CNN 모델 훈련 시작")
 
                 class DatasetWithSize(Dataset):
@@ -685,8 +645,14 @@ def upload_dataset(request):
 
                         if self.transform:
                             image = self.transform(image)
+                        # return image, size_features, label  # 이미지, 크기, 라벨 리턴
+                        return (
+                            image,
+                            size_features,
+                            torch.tensor(label, dtype=torch.long),
+                        )
 
-                        return image, size_features, label  # 이미지, 크기, 라벨 리턴
+                print("Class Names:", class_names)
 
                 # CNN
                 # 신경망을 정의할 때는 Batch 크기를 고려하지 않지만 Tensor 연산은 배치단위 병렬처리가 기본임
@@ -694,108 +660,121 @@ def upload_dataset(request):
                 # 개발자는 하나의 샘플을 기준으로 신경망 구조만 정의하면 되며,
                 # 여러 샘플을 병렬로 처리하는 역할은 프레임워크(Pytorch, TensorFlow)가 자동으로 수행한다.
                 class CNNWithSize(nn.Module):
-                    def __init__(self):
-                        super().__init__()  # 신경망을 선언할 때는 Batch 크기를 고려하지 않으며 Tensor연산은 배치단위 병렬처리를 지원함
+                    def __init__(self, image_size):
 
-                        self.conv = nn.Sequential(  # 3 channel, 16 filters, filter - size 3
+                        # 신경망을 선언할 때는 Batch 크기를 고려하지 않으며, Tensor연산은 배치단위 병렬처리를 지원
+                        super().__init__()
+
+                        self.conv = nn.Sequential(
                             nn.Conv2d(
                                 3, 16, 3, padding=1
-                            ),  # 224x224x3 -> 224x224x16, padding=1은 1픽셀 추가하여 출력크기 유지
+                            ),
                             nn.ReLU(),
                             nn.MaxPool2d(
                                 2
-                            ),  # -> 112x112x16, 이미지 크기를 1/2로 축소(국소적 특징 요약)
-                            # 112x112x16 -> 112x112x32
+                            ),
                             nn.Conv2d(16, 32, 3, padding=1),
                             nn.ReLU(),
-                            nn.MaxPool2d(2),  # -> 56x56x32
+                            nn.MaxPool2d(2),
+                            nn.Conv2d(32, 16, 3, padding=1),
+                            nn.ReLU(),
+                            nn.MaxPool2d(2),
                         )
 
-                        self.flat_size = 56 * 56 * 32
+                        with torch.no_grad():
+                            dummy_input = torch.zeros(
+                                1, 3, image_size, image_size
+                            )
+                            dummy_output = self.conv(dummy_input)
+                            self.flat_size = dummy_output.view(1, -1).size(1)
 
                         self.fc = nn.Sequential(
-                            # +4 for size info
-                            nn.Linear(self.flat_size + 4, 128),
+                            # +4는 for size info
+                            nn.Linear(
+                                self.flat_size + 4, 128
+                            ),
                             nn.ReLU(),
-                            nn.Linear(128, 2),
+                            # 최종 출력이 1이면 Sigmoid연결, 2이면 Softmax연결
+                            nn.Linear(128, len(class_names)),
                         )
 
-                    def forward(self, x, size_feats):  # 순전파(forward) 정의
-                        x = self.conv(x)  # x: (B, 56, 56, 32)
+                    # 순전파(forward) 정의
+                    def forward(self, x, size_feats):
+                        x = self.conv(x)
+                        # Flatten x: (B, 56*56*32) 1차원 데이터가 Batch 만큼 리턴됨. -1은 자동으로 설정
                         x = x.view(
                             x.size(0),
                             -1,
-                            # Flatten x: (B, 56*56*32) 1차원 데이터가 Batch 만큼 리턴됨. -1은 자동으로 설정
                         )
-                        x = torch.cat(
-                            [x, size_feats], dim=1
-                        )  # 각 배치에 이미지 사이즈 정보 추가. 2번째 차원에 추가
+                        # 각 배치에 이미지 사이즈 정보 추가. 2번째 차원에 추가
+                        x = torch.cat([x, size_feats], dim=1)
                         return self.fc(x)
 
                 # Letterbox 클래스 선언
                 class Letterbox:
-                    def __init__(self, size, color=(128, 128, 128)):  # LetterBox색 지정
+                    def __init__(
+                        self, size, color=(128, 128, 128)
+                    ):  # LetterBox색 지정(중간 회색)
                         self.size = size  # 정사각형 대상 사이즈 (ex: 224)
                         self.color = color  # 패딩 색 (회색)
 
                     def __call__(self, img):
                         # 원본 크기
                         iw, ih = img.size
-                        scale = min(
-                            self.size / iw, self.size / ih
-                        )  # 이미지 폭,높이 중 큰 것과 CNN입력 크기의 비 # scale :분모
-                        nw, nh = int(iw * scale), int(
-                            ih * scale
-                        )  # 이미지 폭,높이 중 큰 것을 CNN입력 크기에 맞춘다
+                        # 이미지 폭,높이 중 큰 것과 CNN입력 크기의 비 # scale :분모
+                        scale = min(self.size / iw, self.size / ih)
+                        # 이미지 폭,높이 중 큰 것을 CNN입력 크기에 맞춘다
+                        nw, nh = int(iw * scale), int(ih * scale)
                         # 리사이즈
-                        img = img.resize(
-                            (nw, nh), Image.BILINEAR
-                        )  # 이미지 크기를 CNN입력 크기로 변경 # BILINEAR:양선보강법
+                        # 이미지 크기를 CNN입력 크기로 변경 # BILINEAR:양선보강법
+                        img = img.resize((nw, nh), Image.BILINEAR)
                         # Image.BILINEAR:속도와 품질의 균형이 좋은 보강법. 특히 딥러닝용 이미지 전처리 등에서 자주 사용
                         # 패딩
-                        new_img = Image.new(
-                            "RGB", (self.size, self.size), self.color
-                        )  # CNN입력 크기의 빈 이미지 생성
-                        pad_left = (
-                            self.size - nw
-                        ) // 2  # 좌우 여백의 크기 # //: 정수 반환
-                        pad_top = (
-                            self.size - nh
-                        ) // 2  # 상하 여백의 크기 # 중간에 맞추기 위해
-                        new_img.paste(
-                            img, (pad_left, pad_top)
-                        )  # 빈 이미지에 실제 이미지를 붙여넣기
+                        # CNN입력 크기의 빈 이미지 생성
+                        new_img = Image.new("RGB", (self.size, self.size), self.color)
+                        # 좌우 여백의 크기 # //: 정수 반환
+                        pad_left = (self.size - nw) // 2
+                        # 상하 여백의 크기 # 중간에 맞추기 위해
+                        pad_top = (self.size - nh) // 2
+                        # 빈 이미지에 실제 이미지를 붙여넣기
+                        new_img.paste(img, (pad_left, pad_top))
                         return new_img
 
                 # Dataset 에 전달할 transform 생성(수동으로도 호출 가능함)
                 transform = transforms.Compose(
                     [
-                        Letterbox(224),  # 이미지 비율 유지
-                        # transforms.Resize((224, 224)),  # 이미지를 고정 크기로 설정
-                        transforms.ToTensor(),  # 이미지를 PyTorch 텐서로 변환
+                        # 이미지 비율 유지
+                        Letterbox(
+                            int(session.image_size)
+                        ),
+                        # 이미지를 PyTorch 텐서로 변환
+                        transforms.ToTensor(),
                         # 빠르고 안정적인 학습을 위한 정규화(0~1 -> -1~1), (x-0.5)/0.5
                         transforms.Normalize([0.5] * 3, [0.5] * 3),
                     ]
                 )
 
                 # 학습 루프
-                BATCH_SIZE = session.batch_size  # BATCH_SIZE = 32  # 배치 크기
-                EPOCHS = session.current_epoch  # EPOCHS = 10  # 에포크 수
-                LR = session.learning_rate  # LR = 0.001  # 학습률
+                BATCH_SIZE = int(session.batch_size)
+                EPOCHS = int(session.current_epoch)
+                LR = float(session.learning_rate)  # LR = 0.001  # 학습률
+
                 # GPU 사용 여부 확인
                 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+                print(f"CNN 모델 훈련 DEVICE: {DEVICE}")
 
+                print(f"CNN 모델 훈련 upload_dir: {upload_dir}")
                 data_path = (
                     upload_dir if upload_dir else "media/datasets/0"
-                )  # 에러 방지 "cuda" if torch.cuda.is_available() else "cpu"
-                label_map = {
-                    name: idx for idx, name in enumerate(class_names)
-                }  # {"BAD": 0, "GOOD": 1}  # class_names = ['BAD', 'GOOD']
+                )  # 에러 방지
+
+                label_map = {name: idx for idx, name in enumerate(class_names)}
+
                 train_dataset = DatasetWithSize(
                     data_path + "/train", label_map, transform=transform
                 )
                 valid_dataset = DatasetWithSize(
-                    data_path + "/val", label_map, transform=transform
+                    data_path + "/valid", label_map, transform=transform
                 )
                 # DataLoader 생성
                 train_loader = DataLoader(
@@ -804,11 +783,13 @@ def upload_dataset(request):
                 valid_loader = DataLoader(
                     valid_dataset, batch_size=BATCH_SIZE, shuffle=False
                 )
-                model = CNNWithSize().to(DEVICE)  # 모델 생성 및 GPU에 이동
+
+                model = CNNWithSize(int(session.image_size)).to(
+                    DEVICE
+                )  # 모델 생성 및 GPU에 이동
                 criterion = nn.CrossEntropyLoss()  # Softmax 포함
 
-                print("CNN 모델 훈련 시작")
-                print(f"CNN 모델 훈련 optimizer: {session.optimizer}")
+                print(f"CNN 모델 훈련 session.optimizer: {session.optimizer}")
                 optimizer_map = {
                     "SGD": lambda: optim.SGD(model.parameters(), lr=LR, momentum=0.9),
                     "Adam": lambda: optim.Adam(model.parameters(), lr=LR),
@@ -821,6 +802,8 @@ def upload_dataset(request):
                 }
 
                 optimizer = optimizer_map.get(session.optimizer, lambda: None)()
+                print(f"CNN 모델 훈련 optimizer: {optimizer}")
+
                 train_acc_list, val_acc_list = [], []
 
                 conn = psycopg2.connect(
@@ -830,13 +813,13 @@ def upload_dataset(request):
                     host="postgres.cxg2cwseemwh.ap-northeast-2.rds.amazonaws.com",
                     port="5432",
                 )
-                # conn = connection.ensure_connection()
                 cursor = conn.cursor()
 
                 for epoch in range(EPOCHS):
                     model.train()
                     correct, total, loss_total = 0, 0, 0
-                    for x, size_feats, y in train_loader:  # Batch 단위 로드
+                    # Batch 단위 로드
+                    for x, size_feats, y in train_loader:
                         # image, label, size_feats GPU에 이동
                         x, y, size_feats = (
                             x.to(DEVICE),
@@ -847,7 +830,7 @@ def upload_dataset(request):
                         # __call__() -> forward()
                         outputs = model(x, size_feats)
                         loss = criterion(outputs, y)
-                        loss.backward()
+                        loss.backward()  # 오류발생 2025.08.20
                         optimizer.step()
                         loss_total += loss.item()
                         correct += (outputs.argmax(1) == y).sum().item()
@@ -866,7 +849,6 @@ def upload_dataset(request):
                                 y.to(DEVICE),
                                 size_feats.to(DEVICE),
                             )
-                            # GPU에서 작동하는 모델이 리턴하는 값과 연산하는 대상 데이터도 GPU에 존재해야 한다
                             outputs = model(x, size_feats)
                             # GPU에서 리턴된 값과 연산하는 대상 데이터 y
                             correct += (outputs.argmax(1) == y).sum().item()
@@ -878,7 +860,6 @@ def upload_dataset(request):
                     print(
                         f"Epoch {epoch+1} | Loss: {loss_total:.4f} | Train Acc: {train_acc:.4f} | Val Acc: {val_acc:.4f}"
                     )
-
                     cursor.execute(
                         """
                     INSERT INTO training_trainingmetric (session_id, epoch, loss_total, train_acc, val_acc, timestamp ,created_at, created_id)
@@ -886,7 +867,7 @@ def upload_dataset(request):
                     """,
                         (
                             session.id,
-                            epoch,
+                            epoch + 1,
                             loss_total,
                             train_acc,
                             val_acc,
@@ -895,20 +876,22 @@ def upload_dataset(request):
                             str(request.user),
                         ),
                     )
-
                 conn.commit()  # 데이터베이스에 저장
                 conn.close()  # 데이터베이스 연결 종료
 
                 # 모델 저장 (학습 루프 끝난 후)
                 save_path = os.path.join(
-                    "media",
-                    "datasets",
-                    upload_dir,
-                    str(session.id),
+                    data_path,
                     "result",
-                    "cnn_with_size_letterbox.pth",
                 )
-                torch.save(model.state_dict(), save_path)
+                # 폴더가 없으면 생성
+                os.makedirs(save_path, exist_ok=True)
+                torch.save(
+                    model.state_dict(),
+                    os.path.join(
+                        save_path, str(session.id) + "_cnn_with_size_letterbox_.pth"
+                    ),
+                )
                 print(f"CNN Model saved to {save_path}")
 
             elif session.model_name == "YOLOv11n":
@@ -917,10 +900,10 @@ def upload_dataset(request):
 
                 print(
                     "True여야 GPU 사용 가능 :", torch.cuda.is_available()
-                )  # True여야 GPU 사용 가능
+                )
                 print(
                     f"사용 가능한 GPU({device}) 수:", torch.cuda.device_count()
-                )  # 사용 가능한 GPU 수
+                )
 
                 # Celery + Redis: 가장 강력하고 안정적인 방식
                 # result = start_training_async.delay(3, 7)  # 비동기 실행
@@ -929,12 +912,11 @@ def upload_dataset(request):
                 # 기존 모델 불러오기 (COCO 학습됨)
                 model = YOLO("yolo11n.pt")  # 각자의 경로 .to('cuda')
                 model.train(
-                    # bottle\media\datasets\5\bottle\data.yaml
-                    data=os.path.join( data_yaml_path, "data.yaml"),     # bottle\media\datasets\bottle\data.yaml
+                    data=os.path.join(data_yaml_path),
                     epochs=session.current_epoch,
-                    imgsz=session.image_size,  # GPU 메모리에 따라 640, 512, 416 등으로 조절 가능
-                    batch=session.batch_size,  # 메모리 문제로 배치 사이즈 줄임
-                    optimizer=session.optimizer,  # 옵티마이져
+                    imgsz=session.image_size,
+                    batch=session.batch_size,
+                    optimizer=session.optimizer,
                     lr0=float(session.learning_rate),
                     weight_decay=0.01,
                     project=os.path.join(
@@ -946,9 +928,9 @@ def upload_dataset(request):
                         session.patience if session.early_stopping else 0
                     ),  # 정확도(es_metric)가 10번을 넘기면 그만
                 )
-
-                # 결과파일 읽어들이기 ex) bottle\media\datasets\bottle\result\26\YOLOv11n\results.csv
-
+                
+                # 결과파일 읽어들이기 
+                # # ex) bottle\media\datasets\bottle\result\26\YOLOv11n\results.csv
                 df = pd.read_csv(
                     os.path.join(
                         upload_dir,
@@ -1008,18 +990,44 @@ def upload_dataset(request):
                 conn.commit()
                 conn.close()
 
-                # 상태 변경 completed:완료
-                session = TrainingSession.objects.update(
-                    status="completed",
-                    # updated_at=datetime.now(ZoneInfo("Asia/Seoul")),
-                    # updated_id="system",
-                )
+            # TrainingSession update
+            # 방법 1: 객체를 가져와서 수정 후 .save() 사용
+            # session = TrainingSession.objects.get(id=1)  # 원하는 객체 가져오기
+            # session.name = "Updated Name"               # 필드 수정
+            # session.duration = 90
+            # session.save()                              # 변경사항 저장
+            # 장점: 모델의 save() 메서드가 호출되므로 커스텀 로직이 실행됨
+            # 단점: 객체를 메모리에 로드해야 하므로 성능이 떨어질 수 있음
+
+            # 방법 2: QuerySet.update() 사용
+            TrainingSession.objects.filter(id=session.id).update(
+                dataset_path=dataset_path,
+                status="completed",
+                config={
+                    "total_epochs": form.cleaned_data["total_epochs"],
+                    "current_epoch": form.cleaned_data["current_epoch"],
+                    "batch_size": form.cleaned_data["batch_size"],
+                    "learning_rate": form.cleaned_data["learning_rate"],
+                    "image_size": form.cleaned_data["image_size"],
+                    "optimizer": form.cleaned_data["optimizer"],
+                    "augmentation": form.cleaned_data["augmentation"],
+                    "early_stopping": form.cleaned_data["early_stopping"],
+                    "patience": form.cleaned_data["patience"],
+                    "image_count": len(image_files),
+                    "label_count": len(label_files),
+                },
+                updated_at=datetime.now(ZoneInfo("Asia/Seoul")),
+                updated_id="system",
+            )
+            # 장점: SQL UPDATE를 직접 실행하므로 빠름
+            # 단점: save() 메서드나 pre_save/post_save 시그널이 호출되지 않음
 
             # return HttpResponse("훈련이 백그라운드에서 시작되었습니다.")
             return redirect("training:dashboard")
 
     else:
-        # 초기값세팅 2. 뷰에서 동적으로  설정. 상황에 따라 기본값을 바꿀 수 있어요 (예: 로그인한 사용자 이름 등).
+        # 초기값세팅 2. 뷰에서 동적으로  설정. 
+        # 상황에 따라 기본값을 바꿀 수 있어요 (예: 로그인한 사용자 이름 등).
         form = DataUploadForm()
 
     return render(request, "training/upload.html", {"form": form})
@@ -1040,8 +1048,6 @@ def to_native(value):
 
 
 # resolved_user = resolve_lazy(request.user)
-
-
 def resolve_lazy(obj):
     if isinstance(obj, SimpleLazyObject):
         return str(obj)  # 또는 obj.id, obj.username 등
