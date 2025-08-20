@@ -5,6 +5,7 @@ from django.utils import timezone
 
 class TrainingSession(models.Model):
     STATUS_CHOICES = [
+        # ('begin', '훈련 시작'),
         ('training', '훈련 중'),
         ('completed', '완료'),
         ('failed', '실패'),
