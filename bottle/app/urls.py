@@ -5,7 +5,8 @@ from . import views
 
 # /static
 urlpatterns = [
-    path("", views.main_view, name="main"),
+    path("", views.dashboard_view, name="dashboard"),
+    path("api/dashboard-data/", views.dashboard_data, name="dashboard_data"),
     
     # path("login/", views.login_view, name="login"),
     # path("logout/", LogoutView.as_view(), name="logout"),
@@ -15,5 +16,4 @@ urlpatterns = [
     # path('login/', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
     # # path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
     # path('logout/', auth_views.LogoutView.as_view(template_name='logout.html'), name='logout'),
-
 ]
