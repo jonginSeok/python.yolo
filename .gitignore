@@ -26,6 +26,11 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# 로그 파일 및 로그 폴더 무시
+logs/
+*.log
+
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.

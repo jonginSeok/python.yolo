@@ -108,19 +108,37 @@
     .session-card {
         background: rgba(255, 255, 255, 0.1);
         border-radius: 15px;
-        padding: 10px;
+        padding: 30px;
+        
+        /* Safari & WebKit */
+        -webkit-backdrop-filter: blur(10px);
+
+        /* Other modern browsers */
         backdrop-filter: blur(10px);
+
         border: 1px solid rgba(255, 255, 255, 0.2);
-        transition: all 0.3s ease;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+        /* Optional performance hint */
+        will-change: transform;
     }
 
     .session-card2 {
         background: rgba(255, 255, 255, 0.1);
         border-radius: 15px;
-        padding: 10px;
+        padding: 30px;
+        
+        /* Safari & WebKit */
+        -webkit-backdrop-filter: blur(10px);
+
+        /* Other modern browsers */
         backdrop-filter: blur(10px);
+
         border: 1px solid rgba(255, 255, 255, 0.2);
-        transition: all 0.3s ease;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+        /* Optional performance hint */
+        will-change: transform;
     }
 
     .session-card:hover {
@@ -266,6 +284,14 @@
         margin-bottom: 20px;
     }
 
+    .margin-top-15 { margin-top: 15px; }
+    .margin-top-20 { margin-top: 20px; }
+    .margin-top-30 { margin-top: 30px; }
+    .max-width-300 { max-width: 300px; }
+    .align-start { align-items: start; }
+    .disp-gap { display: flex; gap: 1.5em; }
+    .border-rad {border:1px solid #2f3031;border-radius:10px; padding: 10px;}
+
     @media (max-width: 768px) {
         .sessions-grid {
             grid-template-columns: 1fr;
@@ -294,7 +320,7 @@
     <!-- Key Metrics -->
     <div class="sessions-grid">
         <!-- Current mAP@0.5 -->
-        <div class="session-card" style="max-width: 300px;">
+        <div class="session-card max-width-300">
             <div class="session-info">
                 <h3 class="info-label">Current mAP@0.5</h3>
                 {% if map_change > 0 %}
@@ -312,7 +338,7 @@
         </div>
 
         <!-- Training Loss -->
-        <div class="session-card" style="max-width: 300px;">
+        <div class="session-card max-width-300">
             <div class="session-info">
                 <h3 class="info-label">Training Loss</h3>
                 {% if loss_change > 0 %}
@@ -329,7 +355,7 @@
         </div>
 
         <!-- Validation Loss -->
-        <div class="session-card" style="max-width: 300px;">
+        <div class="session-card max-width-300">
             <div class="session-info">
                 <h3 class="info-label">Validation Loss</h3>
                 {% if loss_change > 0 %}
@@ -346,7 +372,7 @@
         </div>
 
         <!-- Current Epoch -->
-        <div class="session-card" style="max-width: 300px;">
+        <div class="session-card max-width-300">
             <div class="session-info">
                 <h3 class="info-label">Current Epoch</h3>
             </div>
@@ -375,10 +401,10 @@
                 </p>
             </div>
 
-            <div class="session-info" style="border:1px solid #2f3031;border-radius:10px; padding: 10px;">
+            <div class="session-info border-rad">
                 {% if session.status == 'training' %}
                 <div class="">
-                    <div class="" style="margin-top: 20px;">
+                    <div class="margin-top-20">
                         <span class="">Training Progress</span>
                         <span class="">{{ session.progress_percentage|floatformat:0 }}%</span>
                     </div>
@@ -416,7 +442,7 @@
                     <div class="">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="hard-drive" class="lucide lucide-hard-drive w-4 h-4 text-muted-foreground"><line x1="22" x2="2" y1="12" y2="12"></line><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path><line x1="6" x2="6.01" y1="16" y2="16"></line><line x1="10" x2="10.01" y1="16" y2="16"></line></svg>
                         <div class="info-item">
-                            <span class="info-label" style="align-items: start;">Dataset</span>
+                            <span class="info-label align-start">Dataset</span>
                             <span class="info-value">{{ session.dataset_name }}</span>
                         </div>
                     </div>
@@ -429,7 +455,7 @@
             <div class="session-header">
                 <h2 class="session-title">Class Performance</h2>
             </div>
-            <div class="session-info" style="border:1px solid #2f3031;border-radius:10px; padding: 10px;">
+            <div class="session-info border-rad">
                 <div class="">
                     {% for metric in class_metrics %}
                     
@@ -439,7 +465,7 @@
                             <span class="info-label">{{ metric.instances }} instances</span>
                         </div>
 
-                        <div class="" style="display: flex; gap: 1.5em;">
+                        <div class="disp-gap">
                             <div class="" style="min-width: 10em;">
                                 <div class="info-item">
                                     <span class="info-label">Precision</span>
