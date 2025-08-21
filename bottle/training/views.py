@@ -14,6 +14,9 @@ from django.utils.functional import SimpleLazyObject
 from django.views.decorators.http import require_POST
 from django.shortcuts import render, redirect, get_object_or_404
 
+from pathlib import Path
+from django.conf import settings
+
 import os
 import sys
 import zipfile
@@ -383,9 +386,8 @@ def upload_dataset(request):
             zip_file = form.cleaned_data["zip_file"]
 
             # 업로드 디렉토리 생성
-            dataset_path = os.path.join("media", "datasets", str(session.id))
-            upload_dir = os.path.join(
-                dataset_path, form.cleaned_data["dataset_name"])
+            dataset_path = os.path.join(settings.MEDIA_ROOT, "datasets", str(session.id))
+            upload_dir = os.path.join(dataset_path, form.cleaned_data["dataset_name"])
             os.makedirs(upload_dir, exist_ok=True)
 
             # ZIP 파일 저장
@@ -601,6 +603,47 @@ def upload_dataset(request):
                     )  # 실행 yaml 파일 지정
                     print(f"data_yaml_path:  {data_yaml_path} ")
                     print("rotate_and_split_yolo_dataset End ")
+                    # --- Rewrite data.yaml with absolute POSIX paths for macOS/Linux/Windows compatibility ---
+                    try:
+                        abs_base = Path(upload_dir).resolve()
+                        train_images = (abs_base / "train" / "images").resolve()
+                        val_images = (abs_base / "valid" / "images").resolve()
+
+                        # Ensure directories exist (defensive)
+                        if not train_images.exists():
+                            print(f"[data.yaml] missing train images dir: {train_images}")
+                        if not val_images.exists():
+                            print(f"[data.yaml] missing val images dir: {val_images}")
+
+                        # class_names may be list or dict; normalize to list
+                        if isinstance(class_names, dict):
+                            try:
+                                # sort by numeric key if possible
+                                names_list = [v for k, v in sorted(class_names.items(), key=lambda kv: int(kv[0]))]
+                            except Exception:
+                                # fallback to insertion order
+                                names_list = list(class_names.values())
+                        elif isinstance(class_names, list):
+                            names_list = class_names
+                        else:
+                            names_list = []
+
+                        abs_yaml_path = Path(data_yaml_path).resolve()
+                        abs_yaml_path.parent.mkdir(parents=True, exist_ok=True)
+                        data_yaml_payload = {
+                            "path": abs_base.as_posix(),
+                            "train": train_images.as_posix(),
+                            "val": val_images.as_posix(),
+                            "names": {i: n for i, n in enumerate(names_list)},
+                        }
+                        with abs_yaml_path.open("w", encoding="utf-8") as yf:
+                            yaml.safe_dump(data_yaml_payload, yf, sort_keys=False, allow_unicode=True)
+                        # overwrite variable for downstream training call
+                        data_yaml_path = abs_yaml_path.as_posix()
+                        print(f"[data.yaml] rewritten with absolute paths:\n  train={data_yaml_payload['train']}\n  val={data_yaml_payload['val']}")
+                    except Exception as e:
+                        print(f"[data.yaml] rewrite error: {e}")
+                    # --- end rewrite ---
 
             else:
                 upload_dir = extract_dir
@@ -910,7 +953,7 @@ def upload_dataset(request):
                 # 기존 모델 불러오기 (COCO 학습됨)
                 model = YOLO("yolo11n.pt")  # 각자의 경로 .to('cuda')
                 model.train(
-                    data=os.path.join(data_yaml_path),
+                    data=str(Path(data_yaml_path).resolve().as_posix()),
                     epochs=session.current_epoch,
                     imgsz=session.image_size,
                     batch=session.batch_size,
