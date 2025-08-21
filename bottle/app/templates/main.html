@@ -634,6 +634,16 @@
                 currentLanguage = e.target.value;
                 updateHeaderText();
                 renderSidebar();
+
+                // Avoid re-rendering when we're on SPA subpages that may have their own scripts/state (e.g., upload/session pages)
+                const spaSubpages = ['learningList', 'startLearning', 'sessionDashboard'];
+                if (spaSubpages.includes(activePage)) {
+                    // Optional: if you want to refresh labels without nuking page state, you could dispatch a custom event here.
+                    // window.dispatchEvent(new CustomEvent('lang:changed', { detail: { lang: currentLanguage } }));
+                    return;
+                }
+
+                // Default behavior for dashboard shell pages
                 renderContent();
             });
 
@@ -659,6 +669,139 @@
                 }
             });
 
+            // Django CSRF 토큰 헬퍼 (쿠키/히든필드 모두 지원)
+            function getCSRFToken(form) {
+                // 1) 히든 인풋 우선
+                const input = form?.querySelector('input[name="csrfmiddlewaretoken"]');
+                if (input && input.value) return input.value;
+                // 2) 쿠키 조회
+                const name = 'csrftoken';
+                const cookieValue = document.cookie.split('; ').find(row => row.startsWith(name + '='))?.split('=')[1];
+                return cookieValue || '';
+            }
+            // 폼 제출 가로채기: 업로드 폼은 AJAX로 제출하여 SPA 상태 유지
+            mainContent.addEventListener('submit', async (e) => {
+                const form = e.target;
+                if (!(form instanceof HTMLFormElement)) return;
+                // 업로드 폼: id 매칭 OR 파일 인풋 존재 OR enctype이 multipart 인 경우 처리
+                const isUploadLike = form.id === 'uploadForm' || form.querySelector('input[type="file"]') || (form.enctype && form.enctype.toLowerCase().includes('multipart'));
+                if (!isUploadLike) return;
+
+                e.preventDefault();
+
+                // 업로드 엔드포인트 강건 해석: form.action 우선, 없거나 "/"로 해석되면 /training/upload/로 보정
+                let actionURL;
+                try {
+                    // form.action은 절대경로로 resolve됨. getAttribute('action')는 상대경로일 수 있음.
+                    const attr = form.getAttribute('action');
+                    actionURL = new URL((attr && attr.trim().length ? attr : (form.action || '')), location.origin);
+                } catch (_) {
+                    actionURL = new URL(location.pathname + location.search, location.origin);
+                }
+                // 업로드 화면인데 action이 "/"(루트)로 박히는 경우 보정
+                if ((actionURL.pathname === '/' || actionURL.pathname === '') && (activePage === 'startLearning' || actionURL.pathname.startsWith('/training'))) {
+                    actionURL = new URL('/training/upload/', location.origin);
+                }
+                const action = actionURL.pathname + actionURL.search;
+                console.debug('[upload] resolved action:', action);
+                const formData = new FormData(form);
+
+                // 버튼 로딩 상태
+                const submitBtn = form.querySelector('.btn-upload');
+                const originalBtnHTML = submitBtn ? submitBtn.innerHTML : null;
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 업로드/진행 중...';
+                }
+
+                try {
+                    const resp = await fetch(action, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': getCSRFToken(form)
+                        },
+                        body: formData,
+                        credentials: 'same-origin',
+                    });
+
+                    // 디버깅 로그
+                    console.debug('[upload] status:', resp.status, 'redirected:', resp.redirected, 'url:', resp.url);
+                    if (resp.status === 403) {
+                        console.error('[upload] 403 Forbidden (CSRF?)');
+                        const text = await resp.text().catch(() => '');
+                        console.debug('[upload] 403 body:', text);
+                        alert('업로드 권한 오류(403). 로그인/CSRF 토큰을 확인해 주세요.');
+                        return;
+                    }
+                    if (resp.status >= 400) {
+                        const text = await resp.text().catch(() => '');
+                        console.error('[upload] error body:', text);
+                    }
+
+                    // 서버가 리다이렉트하면 세션 대시보드로 로드
+                    if (resp.redirected) {
+                        const targetURL = new URL(resp.url, location.origin);
+                        const inferred = 'sessionDashboard';
+                        const titleKey = spaRoutes[inferred]?.titleKey || inferred;
+                        await loadPage(targetURL.pathname + targetURL.search, t(titleKey), inferred);
+                        return;
+                    }
+
+                    const contentType = resp.headers.get('content-type') || '';
+                    // JSON 응답 처리 (예: {"redirect_url": "...", "status": "ok"})
+                    if (contentType.includes('application/json')) {
+                        const data = await resp.json();
+                        if (data.redirect_url) {
+                            const inferred = data.page_id || 'sessionDashboard';
+                            const titleKey = spaRoutes[inferred]?.titleKey || inferred;
+                            await loadPage(data.redirect_url, t(titleKey), inferred);
+                            return;
+                        }
+                        else if (data.status === 'ok' && data.next_url) {
+                            const inferred = data.page_id || 'sessionDashboard';
+                            const titleKey = spaRoutes[inferred]?.titleKey || inferred;
+                            await loadPage(data.next_url, t(titleKey), inferred);
+                            return;
+                        }
+                        // 에러 메시지나 상태만 오는 경우: 일단 폼을 다시 그려서 에러표시를 보이게
+                    }
+
+                    // HTML을 돌려준 경우(유효성 에러 등): 본문만 교체하고 스크립트 재실행
+                    const html = await resp.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    mainContent.innerHTML = doc.body.innerHTML;
+
+                    // 본문 내 스크립트 재실행 (loadPage와 동일한 방식)
+                    const scripts = Array.from(mainContent.querySelectorAll('script'));
+                    for (const s of scripts) {
+                        const ns = document.createElement('script');
+
+                        if (s.src) {
+                            ['src', 'type', 'crossorigin', 'referrerpolicy', 'integrity', 'nonce'].forEach(attr => {
+                                if (s.hasAttribute(attr)) ns.setAttribute(attr, s.getAttribute(attr));
+                            });
+                        } else {
+                            ns.textContent = s.textContent;
+                            if (s.hasAttribute('type')) ns.setAttribute('type', s.getAttribute('type'));
+                            if (s.hasAttribute('nonce')) ns.setAttribute('nonce', s.getAttribute('nonce'));
+                        }
+
+                        ns.setAttribute('data-spa-exec', '1');
+                        s.replaceWith(ns);
+                    }
+                } catch (err) {
+                    console.error('업로드 오류:', err);
+                    alert('업로드 중 오류가 발생했습니다. 콘솔 로그를 확인해주세요.');
+                } finally {
+                    if (submitBtn && originalBtnHTML) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnHTML;
+                    }
+                }
+            });
+
             const loadPage = async (url, title, pageId = null, opts = { push: true }) => {
                 try {
                     mainContent.innerHTML = `
@@ -676,6 +819,41 @@
                     const html = await response.text();
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(html, 'text/html');
+
+                    // --- [SPA Loader B] Adopt & inject head resources from the fetched page (styles & external scripts) ---
+                    if (doc.head) {
+                        // Build a set of already-present head resource keys to avoid duplicates
+                        const existingKeys = new Set(
+                            Array.from(document.head.querySelectorAll('link[rel="stylesheet"], script[src]'))
+                                 .map(el => (el.tagName + ':' + (el.href || el.src)))
+                        );
+
+                        doc.head.querySelectorAll('link[rel="stylesheet"], script[src]').forEach(el => {
+                            const key = el.tagName + ':' + (el.href || el.src);
+                            if (existingKeys.has(key)) return; // skip duplicates
+
+                            const tag = el.tagName.toLowerCase();
+                            const clone = document.createElement(tag);
+
+                            if (tag === 'link') {
+                                // Copy attributes for stylesheets
+                                ['rel', 'href', 'media', 'as', 'type', 'crossorigin', 'referrerpolicy', 'integrity'].forEach(attr => {
+                                    if (el.hasAttribute(attr)) clone.setAttribute(attr, el.getAttribute(attr));
+                                });
+                            } else if (tag === 'script') {
+                                // Copy attributes for external scripts (do NOT force defer/async to preserve order)
+                                ['src', 'type', 'crossorigin', 'referrerpolicy', 'integrity', 'nonce'].forEach(attr => {
+                                    if (el.hasAttribute(attr)) clone.setAttribute(attr, el.getAttribute(attr));
+                                });
+                            }
+
+                            clone.setAttribute('data-spa-adopted', '1');
+                            document.head.appendChild(clone);
+                            existingKeys.add(key);
+                        });
+                    }
+                    // -----------------------------------------------------------------------------------------------
+
                     const bodyContent = doc.body.innerHTML;
                     mainContent.innerHTML = bodyContent;
 
@@ -704,12 +882,21 @@
                     const scripts = Array.from(mainContent.querySelectorAll('script'));
                     for (const s of scripts) {
                         const ns = document.createElement('script');
+
                         if (s.src) {
-                            ns.src = s.src;
-                            ns.defer = true;
+                            // External script: keep attributes as-is
+                            ['src', 'type', 'crossorigin', 'referrerpolicy', 'integrity', 'nonce'].forEach(attr => {
+                                if (s.hasAttribute(attr)) ns.setAttribute(attr, s.getAttribute(attr));
+                            });
                         } else {
+                            // Inline script: copy code and type (including modules)
                             ns.textContent = s.textContent;
+                            if (s.hasAttribute('type')) ns.setAttribute('type', s.getAttribute('type'));
+                            if (s.hasAttribute('nonce')) ns.setAttribute('nonce', s.getAttribute('nonce'));
                         }
+
+                        // Mark to avoid double execution scanning later if needed
+                        ns.setAttribute('data-spa-exec', '1');
                         s.replaceWith(ns);
                     }
                 } catch (error) {
