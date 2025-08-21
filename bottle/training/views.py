@@ -1,7 +1,5 @@
 from zoneinfo import ZoneInfo
-from datetime import datetime
-from .forms import DataUploadForm, DataSearchForm
-from .models import TrainingSession, ClassMetric, TrainingMetric
+from datetime import date, datetime
 from PIL import Image
 from ultralytics import YOLO
 from torchvision import transforms
@@ -13,9 +11,11 @@ from django.http import JsonResponse
 from django.utils.functional import SimpleLazyObject
 from django.views.decorators.http import require_POST
 from django.shortcuts import render, redirect, get_object_or_404
-
+from django.utils import timezone
 from pathlib import Path
 from django.conf import settings
+from .forms import DataUploadForm, DataSearchForm
+from .models import TrainingSession, ClassMetric, TrainingMetric
 
 import os
 import sys
@@ -219,7 +219,7 @@ def create_demo_loss_chart():
     train_losses = [0.8, 0.62, 0.48, 0.39, 0.34,
                     0.31, 0.28, 0.26, 0.24, 0.23, 0.22]
     val_losses = [0.75, 0.58, 0.45, 0.37, 0.32,
-                  0.29, 0.27, 0.25, 0.24, 0.23, 0.22]
+                    0.29, 0.27, 0.25, 0.24, 0.23, 0.22]
 
     trace1 = go.Scatter(
         x=epochs,
@@ -293,6 +293,7 @@ def dashboard(request):
     try:
         latest_session = TrainingSession.objects.latest("created_at")
         latest_metrics = latest_session.metrics.last()
+        
         class_metrics = latest_session.class_metrics.all()
 
         # 차트 데이터 생성
@@ -1092,21 +1093,35 @@ def training_sessions_list(request):
 
         try:
             if form.is_valid():
-
+                model = form.cleaned_data.get('model_name')
                 id = form.cleaned_data.get('session_id')
-                start = form.cleaned_data.get('start_time')
-                end = form.cleaned_data.get('end_time')
+                start = form.cleaned_data.get('start_date')
+                end = form.cleaned_data.get('end_date')
 
-                print(f"요기 33 id:{id} start:{start} end:{end}")
+                # 날짜 객체라면 datetime으로 변환
+                if isinstance(start, date) and not isinstance(start, datetime):
+                    start = datetime.combine(start, datetime.min.time())
+
+                if isinstance(end, date) and not isinstance(end, datetime):
+                    end = datetime.combine(end, datetime.max.time())
+
+                # 이후 타임존 보정
+                if start and timezone.is_naive(start):
+                    start = timezone.make_aware(start)
+                if end and timezone.is_naive(end):
+                    end = timezone.make_aware(end)
+
+                print(f"[훈련 세션 목록] 조회조건 model_name:{model} id:{id} start:{start} end:{end}")
 
                 if start and end:
-                    sessions = sessions.filter(
-                        session_time__range=(start, end))
+                    sessions = sessions.filter(start_time__range=(start, end))
                 elif start:
-                    sessions = sessions.filter(session_time__gte=start)
+                    sessions = sessions.filter(start_time__gte=start)
                 elif end:
-                    sessions = sessions.filter(session_time__lte=end)
+                    sessions = sessions.filter(end_time__lte=end)
 
+                if model:
+                    sessions = sessions.filter(model_name=model)
                 if id:
                     sessions = sessions.filter(id=id)
 
@@ -1195,8 +1210,7 @@ def rotate_and_split_yolo_dataset(root_dir, output_dir, rotation_angle, rate_img
 
                 rotated = img.rotate(
                     rotation, resample=Image.BICUBIC, expand=True)
-                white_bg = Image.new("RGBA", rotated.size,
-                                     (255, 255, 255, 255))
+                white_bg = Image.new("RGBA", rotated.size, (255, 255, 255, 255))
                 merged = Image.alpha_composite(white_bg, rotated)
 
                 center_x, center_y = merged.size[0] // 2, merged.size[1] // 2

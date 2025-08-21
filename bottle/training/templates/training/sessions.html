@@ -252,10 +252,10 @@
             text-align: center;
         }
     }
-    .upload-container { margin: 0 auto; padding: 0px; color: black; background-color:black  } /* rgb(17 24 39 / var(--tw-bg-opacity, 1)); max-width: 800px; */
+    .upload-container { margin: 0 auto; padding: 0px; color: black; background-color:rgb(17 24 39 / var(--tw-bg-opacity, 1));  } /* rgb(17 24 39 / var(--tw-bg-opacity, 1)); max-width: 800px; */
     .upload-card {background: rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 30px; /* Safari & WebKit */ -webkit-backdrop-filter: blur(10px); /* Other modern browsers */ backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); /* Optional performance hint */ will-change: transform; }
     .form-section { margin-bottom: 30px; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.1); }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; }
     .form-label { color: #e5e7eb; font-weight: 500; margin-bottom: 5px; } /* display: block; */ 
     .form-control { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white; padding: 10px 15px; width: 100%; margin-bottom: 10px; }
     .form-control:focus { background: rgba(255, 255, 255, 0.15); border-color: #3b82f6; outline: none; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3); }
@@ -263,6 +263,8 @@
     .btn-div { text-align: center; margin-top: 30px;}
     .btn-upload { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; padding: 12px 30px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; width: 100%; font-size: 16px; }
     .btn-upload:hover { background: linear-gradient(135deg, #1d4ed8, #1e3a8a); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4); }
+    .margin-top-15 { margin-top: 15px; }
+    .margin-top-30 { margin-top: 30px; }
 </style>
 {% endblock %} {% block content %}
 <div class="sessions-container">
@@ -273,8 +275,6 @@
         </div>
     </div>
     
-
-    {% if sessions %}
     <form method="post" id="searchForm" class="">
         {% csrf_token %}
         <div class="upload-container">
@@ -283,21 +283,27 @@
                 <div class="form-section">
                     <div class="form-row">
                         <div>
+                            <label class="form-label">{{ form.model_name.label_tag }}</label>
+                            {{ form.model_name }} {% if form.model_name.errors %}
+                            <div class="error">{{ form.model_name.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div>
                             <label class="form-label">{{ form.session_id.label_tag }}</label>
                             {{ form.session_id }} {% if form.session_id.errors %}
                             <div class="error">{{ form.session_id.errors }}</div>
                             {% endif %}
                         </div>
                         <div>
-                            <label class="form-label">{{ form.start_time.label_tag }}</label>
-                            {{ form.start_time }} {% if form.start_time.errors %}
-                            <div class="error">{{ form.start_time.errors }}</div>
+                            <label class="form-label">{{ form.start_date.label_tag }}</label>
+                            {{ form.start_date }} {% if form.start_date.errors %}
+                            <div class="error">{{ form.start_date.errors }}</div>
                             {% endif %}
                         </div>
                         <div>
-                            <label class="form-label">{{ form.end_time.label_tag }}</label>
-                            {{ form.end_time }} {% if form.end_time.errors %}
-                            <div class="error">{{ form.end_time.errors }}</div>
+                            <label class="form-label">{{ form.end_date.label_tag }}</label>
+                            {{ form.end_date }} {% if form.end_date.errors %}
+                            <div class="error">{{ form.end_date.errors }}</div>
                             {% endif %}
                         </div>
                     </div>
@@ -309,8 +315,8 @@
         </div>
         
     </form>
-
-    <div class="sessions-grid">
+    {% if sessions %}
+    <div class="sessions-grid margin-top-30">
         {% for session in sessions %}
         <div class="session-card">
             <div class="session-header">
@@ -348,7 +354,9 @@
                 <div class="info-item" style="margin-top: 10px">
                     <span class="info-label">설명:</span>
                 </div>
-                <div style="color: rgba(255, 255, 255, 0.9); font-size: 0.9em; margin-top: 5px">{{ session.description }}</div>
+                <div style="color: rgba(255, 255, 255, 0.9); font-size: 0.9em; margin-top: 5px">
+                    &nbsp;&nbsp;&nbsp;&nbsp;
+                    {{ session.description }}</div>
                 {% endif %}
             </div>
 
@@ -373,11 +381,11 @@
         <div class="empty-icon">
             <i class="fas fa-inbox"></i>
         </div>
-        <h3 style="color: white; margin-bottom: 10px">훈련 세션이 없습니다</h3>
-        <p>새로운 YOLO 모델 훈련을 시작해보세요.</p>
+        <h3 style="color: white; margin-bottom: 10px">조회된 훈련 세션이 없습니다</h3>
+        <!-- <p>새로운 YOLO 모델 훈련을 시작해보세요.</p>
         <div style="margin-top: 30px">
             <a href="{% url 'training:upload_dataset' %}" class="btn-primary"> <i class="fas fa-rocket"></i> 첫 번째 훈련 시작하기 </a>
-        </div>
+        </div> -->
     </div>
     {% endif %}
 </div>

@@ -38,9 +38,9 @@ class TrainingSession(models.Model):
     start_time = models.DateTimeField(default=timezone.now, verbose_name="시작 시간")
     end_time = models.DateTimeField(null=True, blank=True, verbose_name="종료 시간")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성 시간")
-    created_id = models.CharField(max_length=500, verbose_name="생성자 id")
+    created_id = models.CharField(max_length=500, verbose_name="생성자ID")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="수정 시간")
-    updated_id = models.CharField(max_length=500, verbose_name="수정자 id")
+    updated_id = models.CharField(max_length=500, verbose_name="수정자ID")
 
     def __str__(self):
         return f"{self.model_name} v{self.version}"
@@ -81,9 +81,9 @@ class TrainingMetric(models.Model):
     recall = models.FloatField(default=0.0, verbose_name="재현율")
     timestamp = models.DateTimeField(auto_now_add=True, verbose_name="시간")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성 시간")
-    created_id = models.CharField(max_length=500, verbose_name="생성자 id")
+    created_id = models.CharField(max_length=500, verbose_name="생성자ID")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="수정 시간")
-    updated_id = models.CharField(max_length=500, verbose_name="수정자 id")
+    updated_id = models.CharField(max_length=500, verbose_name="수정자ID")
 
     class Meta:
         ordering = ["epoch"]
@@ -104,9 +104,9 @@ class ClassMetric(models.Model):
     f1_score = models.FloatField(verbose_name="F1 점수")
     instances = models.IntegerField(verbose_name="인스턴스 수")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성 시간")
-    created_id = models.CharField(max_length=500, verbose_name="생성자 id")
+    created_id = models.CharField(max_length=500, verbose_name="생성자ID")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="수정 시간")
-    updated_id = models.CharField(max_length=500, verbose_name="수정자 id")
+    updated_id = models.CharField(max_length=500, verbose_name="수정자ID")
 
     class Meta:
         unique_together = ["session", "class_name"]

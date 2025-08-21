@@ -281,7 +281,17 @@ class DataUploadForm(forms.Form):
 
 class DataSearchForm(forms.Form):
     """YOLO 훈련 데이터 업로드 폼"""
-    # 훈련 설정
+    
+    model_name = forms.ChoiceField(
+        required=True,
+        label="모델",
+        choices=[
+            ("CNN", "CNN"),
+            ("YOLOv11n", "YOLO v11n"),
+        ],
+        initial="YOLOv11n",  # 초기값세팅
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
     session_id = forms.IntegerField(
         required=False,
         label="세션ID",
@@ -294,27 +304,25 @@ class DataSearchForm(forms.Form):
         })
     )
 
-    start_time = forms.DateTimeField(
+    start_date = forms.DateField(
         required=False,
-        label="시작 시간",
+        label="시작 일자",
         # initial=datetime.now() - timedelta(days=7),  # 7일 전으로 초기값 설정
-        widget=forms.DateTimeInput(
-            attrs={"class": "form-control", "type": "datetime-local"}
+        # initial=date.today,
+        widget=forms.DateInput(
+            attrs={"class": "form-control", "type": "date"}
         ),
     )
 
-    end_time = forms.DateTimeField(
+    end_date = forms.DateField(
         required=False,
-        label="종료 시간",
+        label="종료 일자",
         # initial=datetime.now,
-        widget=forms.DateTimeInput(
-            attrs={"class": "form-control", "type": "datetime-local"}
+        # initial=date.today,
+        widget=forms.DateInput(
+            attrs={"class": "form-control", "type": "date"}
         ),
     )
 
-    # 초기값세팅 4.  메서드에서 동적 설정
-    # • 	뷰에서 으로 생성하면 가 기본값으로 들어갑니다.
-    # • 	더 복잡한 로직이 필요한 경우 유용해요.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # self.fields["memory_info"].initial = "64GB"  # 초기값세팅
