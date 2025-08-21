@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YOLO 객체 탐지 대시보드</title>
+    <title>YOLO 객체 탐지 대시보드 - 실제 DB 연동</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -88,7 +88,7 @@
                     <button id="sidebar-open-btn" class="md:hidden mr-4 p-2 rounded-md hover:bg-gray-700">
                         <i data-lucide="menu"></i>
                     </button>
-                    <h1 id="page-title" class="text-xl font-semibold text-white">대시보드</h1>
+                    <h1 id="page-title" class="text-xl font-semibold text-white">실시간 DB 대시보드</h1>
                 </div>
                 <div class="flex items-center gap-6">
                     <form id="logout-form" method="post" action="/accounts/logout/">
@@ -111,42 +111,57 @@
             let isSidebarOpen = window.innerWidth >= 768;
             let currentLanguage = 'ko';
             let activePage = 'dashboard';
+            const spaRoutes = {
+                learningList: { titleKey: 'learningList', src: '/training/sessions/' },
+                startLearning: { titleKey: 'startLearning', src: '/training/upload/' },
+                dashboard: { titleKey: 'dashboard', src: '/' },
+                sessionDashboard: { titleKey: 'sessionDashboard', src: '/training/session-dashboard/' },
+            };
             let charts = {};
 
-            // API 데이터 관리
+            // 실제 DB 데이터만 사용 (더미 데이터 완전 제거)
             let dashboardData = { detections: [] };
 
-            // API에서 데이터를 가져오는 함수
-            const fetchDashboardData = async () => {
+            // 실제 API에서 DB 데이터를 가져오는 함수
+            const fetchRealDashboardData = async () => {
                 try {
-                    console.log('API 데이터 요청 중...');
-                    const response = await fetch('/api/dashboard-data/');
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    const data = await response.json();
-                    console.log('API 데이터 수신 성공:', data);
-                    return data;
-                } catch (error) {
-                    console.error('API 데이터 로드 실패:', error);
-                    return {
-                        model_performance: [
-                            { model: 'bad-broken-large', count: 620, accuracy: 82 },
-                            { model: 'bad-broken-small', count: 630, accuracy: 81 },
-                            { model: 'bad-contamination', count: 610, accuracy: 80 },
-                            { model: 'bottle-good', count: 600, accuracy: 83 }
-                        ],
-                        status_breakdown: {
-                            'bad-broken-large': 35,
-                            'bad-broken-small': 30,
-                            'bad-contamination': 35
+                    console.log('🔄 실제 PostgreSQL DB 데이터 요청 중...');
+                    
+                    const response = await fetch('/api/dashboard-data/', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
                         },
-                        time_breakdown: {
-                            '오전': 40,
-                            '오후': 35,
-                            '밤': 25
-                        }
-                    };
+                        credentials: 'same-origin'
+                    });
+                    
+                    console.log('📡 API 응답 상태:', response.status, response.statusText);
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error(`❌ API 오류 (${response.status}):`, errorText);
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}\n상세: ${errorText}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('✅ 실제 DB 데이터 수신 성공:', data);
+                    
+                    // 데이터 무결성 검증
+                    if (!data.success) {
+                        throw new Error(`API 실패 응답: ${data.error || '알 수 없는 오류'}`);
+                    }
+                    
+                    if (!data.data_source || data.data_source !== 'real_database') {
+                        console.warn('⚠️ 데이터 소스가 실제 DB가 아닐 수 있음:', data.data_source);
+                    }
+                    
+                    return data;
+                    
+                } catch (error) {
+                    console.error('💥 실제 DB 데이터 로드 완전 실패:', error);
+                    // 더미 데이터 없음 - 실제 오류만 던짐
+                    throw new Error(`실제 데이터베이스 연결 실패: ${error.message}`);
                 }
             };
 
@@ -165,54 +180,56 @@
                 en: {
                     learningList: "Learning List",
                     startLearning: "Start Learning",
-                    dashboard: "Dashboard",
+                    dashboard: "Real-time DB Dashboard",
+                    sessionDashboard: "Session Dashboard",
                     collapseMenu: "Collapse",
                     expandMenu: "Expand",
                     login: "Login",
-                    keyMetrics: "Key Metrics",
+                    keyMetrics: "Key Metrics (Real DB)",
                     precision: "Precision (P)",
                     recall: "Recall (R)",
                     map50: "mAP@0.5",
                     map95: "mAP@0.5:0.95",
                     avgConfidence: "Accuracy",
-                    detectionsAndConfidence: "YOLO Model Performance",
-                    detectionCount: "Detection Count",
-                    top3Classes: "Top 3 Classes",
-                    detectionsByTime: "Detections by Time",
+                    modelPerformance: "YOLO Model Performance (Real Data)",
+                    detectionCount: "Epoch Count",
+                    top3Sessions: "Top 3 Training Sessions",
+                    detectionsByTime: "Training by Time",
                     morning: "Morning",
                     afternoon: "Afternoon",
                     night: "Night",
-                    recentDetections: "Recent Detections",
-                    imageID: "Image ID",
-                    searchByImageID: "Search by Image ID...",
-                    class: "Class",
+                    recentTraining: "Recent Training Metrics",
+                    sessionID: "Session ID",
+                    searchBySession: "Search by Session ID...",
+                    epoch: "Epoch",
                     confidence: "Accuracy",
                     underConstruction: "This page is under construction.",
                 },
                 ko: {
                     learningList: "학습 목록",
                     startLearning: "학습 하기",
-                    dashboard: "대시보드",
+                    dashboard: "실시간 DB 대시보드",
+                    sessionDashboard: "세션 대시보드",
                     collapseMenu: "메뉴 접기",
                     expandMenu: "메뉴 펼치기",
                     login: "로그인",
-                    keyMetrics: "핵심 지표",
+                    keyMetrics: "핵심 지표 (실제 DB)",
                     precision: "Precision (P)",
                     recall: "Recall (R)",
                     map50: "mAP@0.5",
                     map95: "mAP@0.5:0.95",
                     avgConfidence: "정확도",
-                    detectionsAndConfidence: "YOLO 모델 성능",
-                    detectionCount: "탐지 수",
-                    top3Classes: "상위 3개 클래스",
-                    detectionsByTime: "시간대별 탐지",
+                    modelPerformance: "YOLO 모델 성능 (실제 데이터)",
+                    detectionCount: "에포크 수",
+                    top3Sessions: "상위 3개 학습 세션",
+                    detectionsByTime: "시간대별 학습",
                     morning: "오전",
                     afternoon: "오후",
                     night: "밤",
-                    recentDetections: "최근 탐지 내역",
-                    imageID: "이미지 ID",
-                    searchByImageID: "이미지 ID로 검색...",
-                    class: "클래스",
+                    recentTraining: "최근 학습 메트릭",
+                    sessionID: "세션 ID",
+                    searchBySession: "세션 ID로 검색...",
+                    epoch: "에포크",
                     confidence: "정확도",
                     underConstruction: "이 페이지는 준비 중입니다.",
                 }
@@ -221,7 +238,7 @@
             const t = (key) => translations[currentLanguage][key] || key;
 
             const menuItems = [
-                { id: 'dashboard', label: 'dashboard', icon: 'bar-chart-2' },
+                { id: 'dashboard', label: 'dashboard', icon: 'database' },
                 { type: 'divider' },
                 { id: 'learningList', label: 'learningList', icon: 'list' },
                 { id: 'startLearning', label: 'startLearning', icon: 'play-circle' },
@@ -253,21 +270,24 @@
                             <i data-lucide="${item.icon}"></i>
                             <span class="ml-4 sidebar-text">${t(item.label)}</span>
                         `;
-                        
                         a.onclick = (e) => {
                             e.preventDefault();
-                            
                             if (item.id === 'learningList') {
-                                loadPage('/training/sessions/', t('learningList'), 'learningList');
+                                activePage = 'learningList';
+                                renderSidebar();
+                                const r = spaRoutes.learningList;
+                                loadPage(r.src, t(r.titleKey), 'learningList');
                                 return;
                             }
-                            
                             if (item.id === 'startLearning') {
-                                loadPage('/training/upload/', t('startLearning'), 'startLearning');
+                                activePage = 'startLearning';
+                                renderSidebar();
+                                const r = spaRoutes.startLearning;
+                                loadPage(r.src, t(r.titleKey), 'startLearning');
                                 return;
                             }
-
                             activePage = item.id;
+                            if (item.id === 'dashboard') resetToHome();
                             renderContent();
                             renderSidebar();
                             if (window.innerWidth < 768) {
@@ -285,252 +305,316 @@
                 updateSidebarState();
             };
 
-            const renderDetectionsTable = (searchTerm = '') => {
-                const tableBody = document.getElementById('detections-table-body');
+            const renderTrainingTable = (searchTerm = '') => {
+                const tableBody = document.getElementById('training-table-body');
                 if (!tableBody) return;
                 tableBody.innerHTML = '';
 
-                const filteredDetections = dashboardData.detections.filter(d => 
-                    d.image_id.toLowerCase().includes(searchTerm.toLowerCase())
+                const filteredData = dashboardData.detections.filter(d => 
+                    d.image_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    d.detection_id.toLowerCase().includes(searchTerm.toLowerCase())
                 );
 
-                const detectionsToShow = filteredDetections.slice(0, 5);
+                const dataToShow = filteredData.slice(0, 10);
                 
-                if (detectionsToShow.length === 0) {
+                if (dataToShow.length === 0) {
                     const row = document.createElement('tr');
                     const cell = document.createElement('td');
                     cell.colSpan = 7;
                     cell.className = 'text-center py-4 text-gray-500';
-                    cell.textContent = 'No results found.';
+                    cell.textContent = '검색 결과가 없습니다.';
                     row.appendChild(cell);
                     tableBody.appendChild(row);
                     return;
                 }
 
-                detectionsToShow.forEach(d => {
+                dataToShow.forEach(d => {
                     const row = document.createElement('tr');
                     row.className = 'border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600';
                     const confidenceFormatted = (d.confidence * 100).toFixed(1) + '%';
-                    const precision = (d.confidence * 0.9 + Math.random() * 0.1).toFixed(3);
-                    const recall = (d.confidence * 0.85 + Math.random() * 0.1).toFixed(3);
-                    const map50 = (d.confidence * 0.92 + Math.random() * 0.08).toFixed(3);
-                    const map95 = (d.confidence * 0.70 + Math.random() * 0.1).toFixed(3);
+                    
                     row.innerHTML = `
+                        <td class="px-6 py-4 font-mono text-sm">${d.detection_id}</td>
                         <td class="px-6 py-4">${d.image_id}</td>
-                        <td class="px-6 py-4">${d.class}</td>
-                        <td class="px-6 py-4 font-medium ${d.confidence > 0.9 ? 'text-green-500' : 'text-yellow-500'}">${confidenceFormatted}</td>
-                        <td class="px-6 py-4">${precision}</td>
-                        <td class="px-6 py-4">${recall}</td>
-                        <td class="px-6 py-4">${map50}</td>
-                        <td class="px-6 py-4">${map95}</td>
+                        <td class="px-6 py-4 text-sm">${d.class}</td>
+                        <td class="px-6 py-4 font-medium ${d.confidence > 0.8 ? 'text-green-500' : d.confidence > 0.6 ? 'text-yellow-500' : 'text-red-500'}">${confidenceFormatted}</td>
+                        <td class="px-6 py-4">${d.precision}</td>
+                        <td class="px-6 py-4">${d.recall}</td>
+                        <td class="px-6 py-4">${d.map50}</td>
+                        <td class="px-6 py-4">${d.map95}</td>
                     `;
                     tableBody.appendChild(row);
                 });
             };
 
-            const renderDashboard = async () => {
+            const renderRealDataDashboard = async () => {
                 destroyCharts();
                 
-                // API에서 실제 데이터 가져오기
-                const apiData = await fetchDashboardData();
-                
-                // API 데이터를 기반으로 통계 계산
-                let classStats = {};
-                let detectionsByTime = { morning: 0, afternoon: 0, night: 0 };
-                
-                if (apiData.model_performance) {
-                    apiData.model_performance.forEach(item => {
-                        classStats[item.model] = {
-                            count: item.count,
-                            confidenceSum: item.accuracy * item.count / 100
-                        };
-                    });
-                }
-                
-                if (apiData.time_breakdown) {
-                    detectionsByTime = {
-                        morning: apiData.time_breakdown['오전'] || 0,
-                        afternoon: apiData.time_breakdown['오후'] || 0,
-                        night: apiData.time_breakdown['밤'] || 0
-                    };
-                }
-                
-                // 탐지 데이터 생성
-                const modelNames = Object.keys(classStats);
-                if (modelNames.length > 0) {
-                    dashboardData.detections = Array.from({ length: 100 }, (_, i) => {
-                        const model = modelNames[i % modelNames.length];
-                        return {
-                            detection_id: `D${1001 + i}`,
-                            image_id: `IMG${Math.floor(i / 5) + 1}`,
-                            class: model,
-                            confidence: Math.random() * (0.98 - 0.65) + 0.65,
-                            timestamp: new Date(Date.now() - i * 60000).toISOString(),
-                        };
-                    });
-                } else {
-                    dashboardData.detections = Array.from({ length: 100 }, (_, i) => {
-                        const classes = ['bad-broken-large', 'bad-broken-small', 'bad-contamination', 'bottle-good'];
-                        return {
-                            detection_id: `D${1001 + i}`,
-                            image_id: `IMG${Math.floor(i / 5) + 1}`,
-                            class: classes[i % classes.length],
-                            confidence: Math.random() * (0.98 - 0.65) + 0.65,
-                            timestamp: new Date(Date.now() - i * 60000).toISOString(),
-                        };
-                    });
-                }
-                
-                // 메트릭 계산
-                const precision = apiData.model_performance && apiData.model_performance.length > 0 ? 
-                    (apiData.model_performance.reduce((sum, item) => sum + item.accuracy, 0) / apiData.model_performance.length / 100).toFixed(3) :
-                    (Math.random() * (0.95 - 0.85) + 0.85).toFixed(3);
-                
-                const recall = (parseFloat(precision) * 0.92).toFixed(3);
-                const map50 = (parseFloat(precision) * 0.94).toFixed(3);
-                const map95 = (parseFloat(precision) * 0.70).toFixed(3);
+                try {
+                    // 실제 데이터 로딩 표시
+                    mainContent.innerHTML = `
+                        <div class="flex items-center justify-center h-96">
+                            <div class="text-center">
+                                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                                <p class="text-gray-600 dark:text-gray-400">PostgreSQL에서 실제 데이터 로딩 중...</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">training_trainingmetric 테이블 조회</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // 실제 API 데이터 가져오기 (더미 데이터 없음)
+                    const realData = await fetchRealDashboardData();
+                    
+                    console.log('🎯 실제 DB에서 받은 데이터:', realData);
+                    
+                    // 실제 API 데이터 구조 사용
+                    const modelPerformance = realData.model_performance || [];
+                    const timeBreakdown = realData.time_breakdown || {};
+                    const statusBreakdown = realData.status_breakdown || {};
+                    const recentDetections = realData.recent_detections || [];
+                    const summaryMetrics = realData.summary_metrics || {};
+                    
+                    // 실제 데이터를 대시보드 데이터로 설정
+                    dashboardData.detections = recentDetections;
+                    
+                    // 실제 메트릭 값들 사용
+                    const precision = summaryMetrics.avg_precision || 0;
+                    const recall = summaryMetrics.avg_recall || 0;
+                    const map50 = summaryMetrics.avg_map50 || 0;
+                    const map95 = summaryMetrics.avg_map95 || 0;
+                    
+                    // 실제 차트 데이터 준비
+                    const classLabels = modelPerformance.map(item => item.model);
+                    const detectionCounts = modelPerformance.map(item => item.count);
+                    const avgConfidencePerClass = modelPerformance.map(item => item.accuracy);
 
-                // 차트 데이터 준비
-                const sortedClasses = Object.keys(classStats);
-                const classLabels = sortedClasses.length > 0 ? sortedClasses : ['bad-broken-large', 'bad-broken-small', 'bad-contamination', 'bottle-good'];
-                const detectionCounts = classLabels.map(cls => classStats[cls]?.count || Math.floor(Math.random() * 100) + 500);
-                const avgConfidencePerClass = classLabels.map(cls => 
-                    classStats[cls] ? (classStats[cls].confidenceSum / classStats[cls].count) * 100 : 75 + Math.random() * 20
-                );
+                    // 대시보드 HTML 렌더링 (실제 데이터 기반)
+                    mainContent.innerHTML = `
+                        <div class="space-y-6">
+                            <!-- 실제 DB 연결 상태 표시 -->
+                            <div class="bg-green-100 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-lg p-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div class="w-3 h-3 bg-green-500 rounded-full mr-3 animate-pulse"></div>
+                                        <span class="text-green-800 dark:text-green-200">
+                                            실시간 PostgreSQL 연결됨 (총 ${realData.total_detections || 0}건)
+                                        </span>
+                                    </div>
+                                    <div class="text-sm text-green-600 dark:text-green-400">
+                                        데이터 소스: ${realData.data_source} | 업데이트: ${new Date(realData.timestamp).toLocaleTimeString()}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 실제 메트릭 표시 -->
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md">
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 px-2">${t('keyMetrics')}</h3>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                    <div class="text-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 border border-blue-200 dark:border-blue-800">
+                                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">${t('precision')}</p>
+                                        <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">${precision.toFixed(3)}</p>
+                                        <p class="text-xs text-gray-400">실제 DB 평균</p>
+                                    </div>
+                                    <div class="text-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 border border-green-200 dark:border-green-800">
+                                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">${t('recall')}</p>
+                                        <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">${recall.toFixed(3)}</p>
+                                        <p class="text-xs text-gray-400">실제 DB 평균</p>
+                                    </div>
+                                    <div class="text-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 border border-purple-200 dark:border-purple-800">
+                                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">${t('map50')}</p>
+                                        <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">${map50.toFixed(3)}</p>
+                                        <p class="text-xs text-gray-400">실제 DB 평균</p>
+                                    </div>
+                                    <div class="text-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 border border-orange-200 dark:border-orange-800">
+                                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">${t('map95')}</p>
+                                        <p class="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-1">${map95.toFixed(3)}</p>
+                                        <p class="text-xs text-gray-400">실제 DB 평균</p>
+                                    </div>
+                                </div>
+                            </div>
 
-                mainContent.innerHTML = `
-                    <div class="space-y-6">
-                        <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 px-2">${t('keyMetrics')}</h3>
-                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                <div class="text-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">${t('precision')}</p>
-                                    <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">${precision}</p>
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                <div class="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">${t('modelPerformance')}</h3>
+                                    <div class="h-96"><canvas id="comboChart"></canvas></div>
                                 </div>
-                                <div class="text-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">${t('recall')}</p>
-                                    <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">${recall}</p>
+                                <div class="space-y-6">
+                                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">${t('top3Sessions')}</h3>
+                                        <div class="h-40"><canvas id="doughnutChart1"></canvas></div>
+                                    </div>
+                                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">${t('detectionsByTime')}</h3>
+                                        <div class="h-40"><canvas id="doughnutChart2"></canvas></div>
+                                    </div>
                                 </div>
-                                <div class="text-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">${t('map50')}</p>
-                                    <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">${map50}</p>
+                            </div>
+                            
+                            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                                 <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${t('recentTraining')}</h3>
+                                    <div class="relative">
+                                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4"></i>
+                                        <input type="text" id="training-search" placeholder="${t('searchBySession')}" class="pl-10 pr-4 py-2 w-full sm:w-64 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm">
+                                    </div>
                                 </div>
-                                <div class="text-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">${t('map95')}</p>
-                                    <p class="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-1">${map95}</p>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-sm text-left">
+                                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                                            <tr>
+                                                <th scope="col" class="px-6 py-3">ID</th>
+                                                <th scope="col" class="px-6 py-3">${t('sessionID')}</th>
+                                                <th scope="col" class="px-6 py-3">${t('epoch')}</th>
+                                                <th scope="col" class="px-6 py-3">${t('confidence')}</th>
+                                                <th scope="col" class="px-6 py-3">${t('precision')}</th>
+                                                <th scope="col" class="px-6 py-3">${t('recall')}</th>
+                                                <th scope="col" class="px-6 py-3">${t('map50')}</th>
+                                                <th scope="col" class="px-6 py-3">${t('map95')}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="training-table-body">
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
+                    `;
+                    
+                    renderTrainingTable();
 
-                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <div class="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">${t('detectionsAndConfidence')}</h3>
-                                <div class="h-96"><canvas id="comboChart"></canvas></div>
-                            </div>
-                            <div class="space-y-6">
-                                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">${t('top3Classes')}</h3>
-                                    <div class="h-40"><canvas id="doughnutChart1"></canvas></div>
-                                </div>
-                                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">${t('detectionsByTime')}</h3>
-                                    <div class="h-40"><canvas id="doughnutChart2"></canvas></div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                             <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${t('recentDetections')}</h3>
-                                <div class="relative">
-                                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4"></i>
-                                    <input type="text" id="detection-search" placeholder="${t('searchByImageID')}" class="pl-10 pr-4 py-2 w-full sm:w-64 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm">
-                                </div>
-                            </div>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-sm text-left">
-                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                                        <tr>
-                                            <th scope="col" class="px-6 py-3">${t('imageID')}</th>
-                                            <th scope="col" class="px-6 py-3">${t('class')}</th>
-                                            <th scope="col" class="px-6 py-3">${t('confidence')}</th>
-                                            <th scope="col" class="px-6 py-3">${t('precision')}</th>
-                                            <th scope="col" class="px-6 py-3">${t('recall')}</th>
-                                            <th scope="col" class="px-6 py-3">${t('map50')}</th>
-                                            <th scope="col" class="px-6 py-3">${t('map95')}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="detections-table-body">
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                renderDetectionsTable();
+                    const searchInput = document.getElementById('training-search');
+                    searchInput.addEventListener('input', (e) => {
+                        renderTrainingTable(e.target.value);
+                    });
 
-                const searchInput = document.getElementById('detection-search');
-                searchInput.addEventListener('input', (e) => {
-                    renderDetectionsTable(e.target.value);
-                });
+                    // 실제 데이터로 차트 생성
+                    if (classLabels.length > 0) {
+                        const textColor = '#e5e7eb'; 
+                        const gridColor = 'rgba(255, 255, 255, 0.1)'; 
 
-                const textColor = '#e5e7eb'; 
-                const gridColor = 'rgba(255, 255, 255, 0.1)'; 
-                const formattedClassLabels = classLabels.map(label => label.split('_'));
-
-                charts.combo = new Chart(document.getElementById('comboChart'), {
-                    type: 'bar',
-                    data: {
-                        labels: formattedClassLabels,
-                        datasets: [
-                            {
-                                label: t('detectionCount'),
-                                data: detectionCounts,
-                                backgroundColor: 'rgba(30, 136, 229, 0.6)',
-                                borderColor: 'rgba(30, 136, 229, 1)',
-                                order: 1,
-                                yAxisID: 'y'
+                        charts.combo = new Chart(document.getElementById('comboChart'), {
+                            type: 'bar',
+                            data: {
+                                labels: classLabels,
+                                datasets: [
+                                    {
+                                        label: t('detectionCount'),
+                                        data: detectionCounts,
+                                        backgroundColor: 'rgba(30, 136, 229, 0.6)',
+                                        borderColor: 'rgba(30, 136, 229, 1)',
+                                        order: 1,
+                                        yAxisID: 'y'
+                                    },
+                                    {
+                                        label: t('avgConfidence'),
+                                        data: avgConfidencePerClass,
+                                        type: 'line',
+                                        borderColor: '#16a34a',
+                                        backgroundColor: '#16a34a',
+                                        tension: 0.3,
+                                        order: 0,
+                                        yAxisID: 'y1'
+                                    }
+                                ]
                             },
-                            {
-                                label: t('avgConfidence'),
-                                data: avgConfidencePerClass,
-                                type: 'line',
-                                borderColor: '#16a34a',
-                                backgroundColor: '#16a34a',
-                                tension: 0.3,
-                                order: 0,
-                                yAxisID: 'y1'
+                            options: {
+                                responsive: true, maintainAspectRatio: false,
+                                plugins: { 
+                                    legend: { labels: { color: textColor } },
+                                    title: { display: true, text: '실제 DB 데이터', color: textColor }
+                                },
+                                scales: {
+                                    x: { ticks: { color: textColor, maxRotation: 45 }, grid: { color: gridColor } },
+                                    y: { type: 'linear', position: 'left', title: { display: true, text: t('detectionCount'), color: textColor }, ticks: { color: textColor }, grid: { color: gridColor } },
+                                    y1: { type: 'linear', position: 'right', title: { display: true, text: t('avgConfidence') + ' (%)', color: textColor }, min: 0, max: 100, ticks: { color: textColor }, grid: { drawOnChartArea: false } }
+                                }
                             }
-                        ]
-                    },
-                    options: {
-                        responsive: true, maintainAspectRatio: false,
-                        plugins: { legend: { labels: { color: textColor } } },
-                        scales: {
-                            x: { ticks: { color: textColor, maxRotation: 0, minRotation: 0 }, grid: { color: gridColor } },
-                            y: { type: 'linear', position: 'left', title: { display: true, text: t('detectionCount'), color: textColor }, ticks: { color: textColor }, grid: { color: gridColor } },
-                            y1: { type: 'linear', position: 'right', title: { display: true, text: t('avgConfidence') + ' (%)', color: textColor }, min: 60, max: 100, ticks: { color: textColor }, grid: { drawOnChartArea: false } }
-                        }
+                        });
+
+                        const doughnutOptions = { 
+                            responsive: true, 
+                            maintainAspectRatio: false, 
+                            cutout: '60%', 
+                            plugins: { 
+                                legend: { position: 'right', labels: { color: textColor, boxWidth: 12, padding: 15 } },
+                                title: { display: true, text: '실제 데이터', color: textColor }
+                            } 
+                        };
+                        
+                        charts.doughnut1 = new Chart(document.getElementById('doughnutChart1'), {
+                            type: 'doughnut',
+                            data: { 
+                                labels: classLabels.slice(0, 3), 
+                                datasets: [{ 
+                                    data: detectionCounts.slice(0, 3), 
+                                    backgroundColor: ['#1e88e5', '#42a5f5', '#90caf9'], 
+                                    borderWidth: 0 
+                                }] 
+                            },
+                            options: doughnutOptions
+                        });
+
+                        charts.doughnut2 = new Chart(document.getElementById('doughnutChart2'), {
+                            type: 'doughnut',
+                            data: { 
+                                labels: [t('morning'), t('afternoon'), t('night')], 
+                                datasets: [{ 
+                                    data: [
+                                        timeBreakdown['오전'] || 0,
+                                        timeBreakdown['오후'] || 0,
+                                        timeBreakdown['밤'] || 0
+                                    ], 
+                                    backgroundColor: ['#f59e0b', '#ea580c', '#1e3a8a'], 
+                                    borderWidth: 0 
+                                }] 
+                            },
+                            options: doughnutOptions
+                        });
+                    } else {
+                        // 데이터가 없을 때 명확한 메시지
+                        console.warn('⚠️ 차트 데이터가 없습니다. 실제 DB에 데이터가 있는지 확인하세요.');
                     }
-                });
 
-                const doughnutOptions = { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'right', labels: { color: textColor, boxWidth: 12, padding: 15 } } } };
-                
-                charts.doughnut1 = new Chart(document.getElementById('doughnutChart1'), {
-                    type: 'doughnut',
-                    data: { labels: classLabels.slice(0, 3), datasets: [{ data: detectionCounts.slice(0, 3), backgroundColor: ['#1e88e5', '#42a5f5', '#90caf9'], borderWidth: 0 }] },
-                    options: doughnutOptions
-                });
-
-                charts.doughnut2 = new Chart(document.getElementById('doughnutChart2'), {
-                    type: 'doughnut',
-                    data: { labels: [t('morning'), t('afternoon'), t('night')], datasets: [{ data: Object.values(detectionsByTime), backgroundColor: ['#f59e0b', '#ea580c', '#1e3a8a'], borderWidth: 0 }] },
-                    options: doughnutOptions
-                });
-
-                lucide.createIcons();
-                console.log('대시보드 렌더링 완료');
+                    lucide.createIcons();
+                    console.log('✅ 실제 DB 데이터로 대시보드 렌더링 완료');
+                    
+                } catch (error) {
+                    console.error('💥 실제 DB 대시보드 렌더링 완전 실패:', error);
+                    
+                    // 실제 오류 상태만 표시 (더미 데이터 없음)
+                    mainContent.innerHTML = `
+                        <div class="bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg p-6">
+                            <div class="flex items-center mb-4">
+                                <div class="w-6 h-6 bg-red-500 rounded-full mr-3 flex items-center justify-center">
+                                    <span class="text-white text-sm">!</span>
+                                </div>
+                                <h3 class="text-red-800 dark:text-red-200 font-semibold">실제 PostgreSQL DB 연결 실패</h3>
+                            </div>
+                            <p class="text-red-700 dark:text-red-300 mb-4 font-mono text-sm">${error.message}</p>
+                            <div class="bg-red-50 dark:bg-red-900/10 rounded p-4 mb-4">
+                                <h4 class="font-semibold text-red-800 dark:text-red-200 mb-2">디버깅 정보:</h4>
+                                <div class="space-y-2 text-sm text-red-600 dark:text-red-400">
+                                    <p>• API 엔드포인트: <code class="bg-red-200 dark:bg-red-800 px-1 rounded">/api/dashboard-data/</code></p>
+                                    <p>• 예상 테이블: <code class="bg-red-200 dark:bg-red-800 px-1 rounded">training_trainingmetric</code></p>
+                                    <p>• Django 서버 상태: 실행 중인지 확인</p>
+                                    <p>• PostgreSQL 연결: RDS 엔드포인트 접근 가능한지 확인</p>
+                                    <p>• 방화벽: 5432 포트 개방 확인</p>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap gap-3">
+                                <button onclick="location.reload()" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                                    🔄 새로고침
+                                </button>
+                                <a href="/api/dashboard-data/" target="_blank" class="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                                    🔍 API 직접 확인
+                                </a>
+                                <button onclick="console.log('브라우저 개발자 도구 > Network 탭에서 API 요청 확인')" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">
+                                    🛠️ 네트워크 확인
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
             };
 
             const renderGenericPage = () => {
@@ -559,7 +643,7 @@
                 pageTitle.textContent = t(pageData.label);
                 
                 if (activePage === 'dashboard') {
-                    renderDashboard();
+                    renderRealDataDashboard();
                 } else {
                     renderGenericPage();
                 }
@@ -621,7 +705,26 @@
                 renderContent();
             });
 
-            const loadPage = async (url, title, pageId = null) => {
+            // 내부 링크 가로채기: /training/ 경로는 항상 AJAX로 로드
+            mainContent.addEventListener('click', (e) => {
+                const a = e.target.closest('a');
+                if (!a) return;
+                const url = new URL(a.getAttribute('href', 2) || '', location.href);
+                if (url.origin !== location.origin) return;
+                if (a.hasAttribute('download') || a.target === '_blank') return;
+                if (url.pathname.startsWith('/training/')) {
+                    e.preventDefault();
+                    let pageId = 'learningList';
+                    if (url.pathname.includes('/upload')) pageId = 'startLearning';
+                    else if (url.pathname.includes('dashboard') || url.pathname.includes('detail') || url.pathname.includes('session')) pageId = 'sessionDashboard';
+                    const titleKey = spaRoutes[pageId]?.titleKey || pageId;
+                    activePage = pageId;
+                    renderSidebar();
+                    loadPage(url.pathname + url.search, t(titleKey), pageId);
+                }
+            });
+
+            const loadPage = async (url, title, pageId = null, opts = { push: true }) => {
                 try {
                     mainContent.innerHTML = `
                         <div class="flex items-center justify-center h-full">
@@ -631,26 +734,46 @@
                             </div>
                         </div>
                     `;
-                    
-                    const response = await fetch(url, {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
+
+                    const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                    if (!response.ok) throw new Error('페이지를 로드할 수 없습니다.');
+
+                    const html = await response.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const bodyContent = doc.body.innerHTML;
+                    mainContent.innerHTML = bodyContent;
+
+                    if (pageId && opts.push) {
+                        const sp = new URLSearchParams(location.search);
+                        sp.set('page', pageId);
+                        sp.set('src', url);
+                        const newUrl = `${location.pathname}?${sp.toString()}`;
+                        window.history.pushState({ url, title, pageId }, title, newUrl);
+                    } else if (pageId && !opts.push) {
+                        const sp = new URLSearchParams(location.search);
+                        sp.set('page', pageId);
+                        sp.set('src', url);
+                        const newUrl = `${location.pathname}?${sp.toString()}`;
+                        window.history.replaceState({ url, title, pageId }, title, newUrl);
+                    }
+
+                    if (pageId) {
+                        activePage = pageId;
+                    }
+                    renderSidebar();
+                    pageTitle.textContent = title;
+
+                    const scripts = Array.from(mainContent.querySelectorAll('script'));
+                    for (const s of scripts) {
+                        const ns = document.createElement('script');
+                        if (s.src) {
+                            ns.src = s.src;
+                            ns.defer = true;
+                        } else {
+                            ns.textContent = s.textContent;
                         }
-                    });
-                    if (response.ok) {
-                        const html = await response.text();
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-                        const bodyContent = doc.body.innerHTML;
-                        mainContent.innerHTML = bodyContent;
-                        window.history.pushState({ url, title, pageId }, title, url);
-                        if (pageId) {
-                            activePage = pageId;
-                        }
-                        renderSidebar();
-                        pageTitle.textContent = title;
-                    } else {
-                        throw new Error('페이지를 로드할 수 없습니다.');
+                        s.replaceWith(ns);
                     }
                 } catch (error) {
                     console.error('페이지 로딩 오류:', error);
@@ -660,9 +783,7 @@
                                 <div class="text-red-500 text-6xl mb-4">⚠️</div>
                                 <h2 class="text-xl font-semibold mb-2">페이지 로딩 실패</h2>
                                 <p class="text-gray-600 dark:text-gray-400">${error.message}</p>
-                                <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                                    새로고침
-                                </button>
+                                <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">새로고침</button>
                             </div>
                         </div>
                     `;
@@ -670,50 +791,85 @@
             };
 
             window.addEventListener('popstate', (event) => {
-                if (event.state && event.state.url) {
-                    loadPage(event.state.url, event.state.title, event.state.pageId);
+                const state = event.state;
+                if (state && state.pageId && state.url) {
+                    loadPage(state.url, state.title || t(state.pageId), state.pageId, { push: false });
                 } else {
+                    const params = new URLSearchParams(location.search);
+                    const page = params.get('page');
+                    const src = params.get('src');
+                    if (page && src) {
+                        const titleKey = spaRoutes[page]?.titleKey || page;
+                        loadPage(src, t(titleKey), page, { push: false });
+                    } else {
+                        activePage = 'dashboard';
+                        renderSidebar();
+                        renderContent();
+                    }
+                }
+            });
+
+            const handleInitialRoute = async () => {
+                const params = new URLSearchParams(location.search);
+                const page = params.get('page');
+                const src = params.get('src');
+                if (page && src) {
+                    const titleKey = spaRoutes[page]?.titleKey || page;
+                    activePage = page;
+                    pageTitle.textContent = t(titleKey);
+                    renderSidebar();
+                    await loadPage(src, t(titleKey), page, { push: false });
+                    return true;
+                }
+                const path = location.pathname;
+                if (path.startsWith('/training/')) {
+                    let inferred = 'learningList';
+                    if (path.includes('/upload')) inferred = 'startLearning';
+                    else if (path.includes('dashboard') || path.includes('detail') || path.includes('session')) inferred = 'sessionDashboard';
+                    const titleKey = spaRoutes[inferred]?.titleKey || inferred;
+                    const srcUrl = path + location.search;
+                    const sp = new URLSearchParams();
+                    sp.set('page', inferred);
+                    sp.set('src', srcUrl);
+                    const newUrl = `${location.pathname}?${sp.toString()}`;
+                    window.history.replaceState({ url: srcUrl, title: t(titleKey), pageId: inferred }, t(titleKey), newUrl);
+                    activePage = inferred;
+                    pageTitle.textContent = t(titleKey);
+                    renderSidebar();
+                    await loadPage(srcUrl, t(titleKey), inferred, { push: false });
+                    return true;
+                }
+                return false;
+            };
+            const resetToHome = () => {
+                const cleanUrl = location.pathname;
+                window.history.pushState({ url: '/', title: t('dashboard'), pageId: 'dashboard' }, t('dashboard'), cleanUrl);
+            };
+
+            // 실제 DB 데이터 자동 새로고침 (30초마다)
+            const refreshRealDashboardData = async () => {
+                if (activePage === 'dashboard') {
+                    console.log('🔄 실제 DB 데이터 자동 새로고침 중...');
+                    try {
+                        await renderRealDataDashboard();
+                        console.log('✅ 실제 DB 데이터 자동 새로고침 완료');
+                    } catch (error) {
+                        console.error('❌ 자동 새로고침 실패:', error);
+                    }
+                }
+            };
+
+            setInterval(refreshRealDashboardData, 30000);
+
+            // 초기화
+            const init = async () => {
+                const handled = await handleInitialRoute();
+                updateHeaderText();
+                if (!handled) {
                     activePage = 'dashboard';
                     renderSidebar();
                     renderContent();
                 }
-            });
-
-            const handleInitialRoute = () => {
-                const currentPath = window.location.pathname;
-                const blockedPaths = [
-                    '/login/', '/login',
-                    '/training/upload/', '/training/upload',
-                    '/training/sessions/', '/training/sessions',
-                    '/training/', '/training',
-                    '/training/input/', '/training/input',
-                    '/training/output/', '/training/output',
-                    '/training/list/', '/training/list'
-                ];
-                
-                if (blockedPaths.includes(currentPath)) {
-                    window.history.replaceState({ url: '/', title: '대시보드', pageId: 'dashboard' }, '대시보드', '/');
-                    activePage = 'dashboard'; 
-                }
-            };
-
-            // 자동 새로고침
-            const refreshDashboardData = async () => {
-                if (activePage === 'dashboard') {
-                    console.log('대시보드 데이터 새로고침 중...');
-                    await renderDashboard();
-                    console.log('대시보드 데이터가 새로고침되었습니다.');
-                }
-            };
-
-            setInterval(refreshDashboardData, 30000);
-
-            // 초기화
-            const init = () => {
-                handleInitialRoute();
-                updateHeaderText();
-                renderSidebar();
-                renderContent();
             };
 
             init();

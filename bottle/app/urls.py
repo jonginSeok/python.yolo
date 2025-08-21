@@ -1,19 +1,29 @@
-# from django.contrib.auth import views as auth_views
+# 1. 앱 레벨 urls.py (현재 수정하고 있는 파일)
 from django.urls import path
 from . import views
-# from django.contrib.auth.views import LogoutView
 
-# /static
 urlpatterns = [
-    path("", views.dashboard_view, name="dashboard"),
-    path("api/dashboard-data/", views.dashboard_data, name="dashboard_data"),
+    # 메인 대시보드 페이지
+    path('', views.dashboard_view, name='dashboard'),
     
-    # path("login/", views.login_view, name="login"),
-    # path("logout/", LogoutView.as_view(), name="logout"),
+    # API 엔드포인트  
+    path('api/dashboard-data/', views.dashboard_data_api, name='dashboard_data_api'),
     
-    # path("logout/", LogoutView.as_view(template_name="logout.html"), name="logout"),
-    
-    # path('login/', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
-    # # path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
-    # path('logout/', auth_views.LogoutView.as_view(template_name='logout.html'), name='logout'),
+    # 다른 앱별 URL들이 있다면 여기에 추가
+    # path('training/', views.training_view, name='training'),
 ]
+
+# =====================================
+
+# 2. 프로젝트 메인 urls.py (프로젝트명/urls.py)
+"""
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('accounts/', include('django.contrib.auth.urls')),
+    path('training/', include('training.urls')),  # training 앱이 별도로 있다면
+    path('', include('your_app_name.urls')),  # 현재 앱의 URLs 포함
+]
+"""
