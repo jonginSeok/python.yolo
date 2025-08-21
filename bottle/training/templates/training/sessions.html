@@ -252,10 +252,10 @@
             text-align: center;
         }
     }
-    .upload-container { margin: 0 auto; padding: 20px; color: black; background-color:black  } /* rgb(17 24 39 / var(--tw-bg-opacity, 1)); max-width: 800px; */
+    .upload-container { margin: 0 auto; padding: 0px; color: black; background-color:black  } /* rgb(17 24 39 / var(--tw-bg-opacity, 1)); max-width: 800px; */
     .upload-card {background: rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 30px; /* Safari & WebKit */ -webkit-backdrop-filter: blur(10px); /* Other modern browsers */ backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); /* Optional performance hint */ will-change: transform; }
     .form-section { margin-bottom: 30px; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.1); }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
     .form-label { color: #e5e7eb; font-weight: 500; margin-bottom: 5px; } /* display: block; */ 
     .form-control { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: white; padding: 10px 15px; width: 100%; margin-bottom: 10px; }
     .form-control:focus { background: rgba(255, 255, 255, 0.15); border-color: #3b82f6; outline: none; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3); }
@@ -283,6 +283,12 @@
                 <div class="form-section">
                     <div class="form-row">
                         <div>
+                            <label class="form-label">{{ form.session_id.label_tag }}</label>
+                            {{ form.session_id }} {% if form.session_id.errors %}
+                            <div class="error">{{ form.session_id.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div>
                             <label class="form-label">{{ form.start_time.label_tag }}</label>
                             {{ form.start_time }} {% if form.start_time.errors %}
                             <div class="error">{{ form.start_time.errors }}</div>
@@ -294,17 +300,10 @@
                             <div class="error">{{ form.end_time.errors }}</div>
                             {% endif %}
                         </div>
-                        <div>
-                            <label class="form-label">{{ form.session_id.label_tag }}</label>
-                            {{ form.session_id }} {% if form.session_id.errors %}
-                            <div class="error">{{ form.session_id.errors }}</div>
-                            {% endif %}
-                        </div>
                     </div>
                 </div>
                 <div class="btn-div">
                     <button type="submit" class="btn-upload"><i class="fas fa-rocket"></i> 훈련 조회하기</button>
-
                 </div>
             </div>
         </div>

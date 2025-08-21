@@ -1086,16 +1086,18 @@ def training_sessions_list(request):
     """훈련 세션 목록"""
     # submit 하여 POST 방식으로 호출
     if request.method == "POST":
-        print("요기 11111111")
-        form = DataSearchForm(request.GET or None)
+
+        form = DataSearchForm(request.POST or None)
         sessions = TrainingSession.objects.all()
 
-        print("요기 22222222")
         try:
             if form.is_valid():
+
+                id = form.cleaned_data.get('session_id')
                 start = form.cleaned_data.get('start_time')
                 end = form.cleaned_data.get('end_time')
-                session_id = form.cleaned_data.get('session_id')
+
+                print(f"요기 33 id:{id} start:{start} end:{end}")
 
                 if start and end:
                     sessions = sessions.filter(
@@ -1105,8 +1107,8 @@ def training_sessions_list(request):
                 elif end:
                     sessions = sessions.filter(session_time__lte=end)
 
-                if session_id:
-                    sessions = sessions.filter(id=session_id)
+                if id:
+                    sessions = sessions.filter(id=id)
 
             # return JsonResponse({"success": True})
         except TrainingSession.DoesNotExist:
@@ -1115,7 +1117,7 @@ def training_sessions_list(request):
         # return redirect("training:sessions")
         return render(request, 'training/sessions.html', {
             'form': form,
-            'sessions': sessions,
+            'sessions': sessions.order_by("-created_at"),
         })
 
     else:
