@@ -13,6 +13,10 @@ from django.http import JsonResponse
 from django.utils.functional import SimpleLazyObject
 from django.views.decorators.http import require_POST
 from django.shortcuts import render, redirect, get_object_or_404
+from django.conf import settings
+from django.core.mail import send_mail
+from django.utils import timezone
+from .models import TrainingSession
 
 from pathlib import Path
 from django.conf import settings
@@ -250,6 +254,7 @@ def create_demo_loss_chart():
     return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
 
+
 def create_demo_map_chart():
     """데모 mAP 차트"""
     epochs = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
@@ -285,6 +290,49 @@ def create_demo_map_chart():
 
     fig = go.Figure(data=[trace1, trace2], layout=layout)
     return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+
+
+# 훈련 종료 이메일 알림 함수 (재사용 가능)
+def send_training_finished_email(session_id: int, success: bool = True, extra_msg: str = ""):
+    """
+    훈련 종료 시 사용자에게 이메일 알림을 보낸다.
+    session.notify_email 이 없으면 아무 것도 하지 않음.
+    """
+    try:
+        session = TrainingSession.objects.get(id=session_id)
+    except TrainingSession.DoesNotExist:
+        print(f"[notify] session not found: {session_id}")
+        return
+    # 이메일 주소가 없으면 스킵
+    if not getattr(session, "notify_email", None):
+        print(f"[notify] no notify_email for session {session_id}, skip")
+        return
+    subject = "[YOLO] 훈련 완료" if success else "[YOLO] 훈련 실패"
+    lines = [
+        f"모델: {session.model_name} (v{session.version})",
+        f"상태: {'성공' if success else '실패'}",
+    ]
+    if session.dataset_name:
+        lines.append(f"데이터셋: {session.dataset_name}")
+    if extra_msg:
+        lines.append(f"메시지: {extra_msg}")
+    # 시간 정보(있을 경우)
+    if getattr(session, 'start_time', None):
+        lines.append(f"시작: {session.start_time}")
+    if getattr(session, 'end_time', None):
+        lines.append(f"종료: {session.end_time}")
+    message = "\n".join(lines)
+    try:
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+            recipient_list=[session.notify_email],
+            fail_silently=False,
+        )
+        print(f"[notify] sent email to {session.notify_email} for session {session_id}")
+    except Exception as e:
+        print(f"[notify] email send error for session {session_id}: {e}")
 
 
 def dashboard(request):
@@ -378,6 +426,8 @@ def upload_dataset(request):
                 valid_percent=form.cleaned_data["valid_percent"],
                 test_percent=form.cleaned_data["test_percent"],
                 description=form.cleaned_data["description"],
+                notify_method="email",
+                notify_email=request.POST.get("notify_email_addr") or None,
                 created_id=request.user,
                 updated_id=request.user,
             )
@@ -937,6 +987,8 @@ def upload_dataset(request):
                     ),
                 )
                 print(f"CNN Model saved to {save_path}")
+                # 이메일 알림 (성공)
+                send_training_finished_email(session.id, success=True)
 
             elif session.model_name == "YOLOv11n":
 
@@ -1030,6 +1082,8 @@ def upload_dataset(request):
 
                 conn.commit()
                 conn.close()
+                # 이메일 알림 (성공)
+                send_training_finished_email(session.id, success=True)
 
             # TrainingSession update
             # 방법 1: 객체를 가져와서 수정 후 .save() 사용
@@ -1044,6 +1098,8 @@ def upload_dataset(request):
             TrainingSession.objects.filter(id=session.id).update(
                 dataset_path=dataset_path,
                 status="completed",
+                notify_method="email",
+                notify_email=request.POST.get("notify_email_addr"),
                 config={
                     "total_epochs": form.cleaned_data["total_epochs"],
                     "current_epoch": form.cleaned_data["current_epoch"],

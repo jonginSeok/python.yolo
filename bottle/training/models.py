@@ -41,6 +41,9 @@ class TrainingSession(models.Model):
     created_id = models.CharField(max_length=500, verbose_name="생성자 id")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="수정 시간")
     updated_id = models.CharField(max_length=500, verbose_name="수정자 id")
+    # 알림
+    notify_method = models.CharField(max_length=10, default="email")  # 고정
+    notify_email = models.EmailField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.model_name} v{self.version}"

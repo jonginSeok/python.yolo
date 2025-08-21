@@ -352,11 +352,42 @@ python.CNN.zip/
                 {% endif %}
             </div>
 
+            <!-- 알림 설정 패널 (이메일 전용) -->
+            <div id="notifyPanel" class="form-section disp-none" style="margin-top:16px;">
+                <div class="section-title">
+                    <i class="fas fa-bell"></i>
+                    알림 설정
+                </div>
+                <div class="form-row">
+                    <div>
+                        <label class="form-label">알림 방식</label>
+                        <div class="form-check">
+                            <input type="radio" name="notify_method" id="notify_email" value="email" class="form-check-input" checked>
+                            <label class="form-check-label" for="notify_email">이메일</label>
+                        </div>
+                    </div>
+                    <div>
+                        <div id="notify_email_wrap">
+                            <label class="form-label" for="notify_email_addr">이메일 주소</label>
+                            <input type="email" id="notify_email_addr" name="notify_email_addr" class="form-control" placeholder="you@example.com">
+                            <div class="help-text">SMTP로 알림을 보냅니다. (훈련 종료 시 메일 발송)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- 버튼 섹션 -->
             <div class="btn-div">
-                <a href="{% url 'training:dashboard' %}" class="btn-secondary"> <i class="fas fa-arrow-left"></i> 대시보드로 돌아가기 </a>
-            </br></br>
-                <button type="submit" class="btn-upload"><i class="fas fa-rocket"></i> 훈련 시작하기</button>
+                <a href="{% url 'training:dashboard' %}" class="btn-secondary">
+                    <i class="fas fa-arrow-left"></i> 대시보드로 돌아가기
+                </a>
+                </br></br>
+                <button type="button" id="btnNotify" class="btn-secondary" title="훈련 종료 알림 설정 열기">
+                    <i class="fas fa-bell"></i> 훈련 종료시 알림 받기
+                </button>
+                <button type="submit" id="btnStart" class="btn-upload">
+                    <i class="fas fa-rocket"></i> 훈련 시작하기
+                </button>
             </div>
         </form>
     </div>
@@ -378,6 +409,34 @@ $(function () {
     const $uploadArea      = $('.file-upload-area');
     const $inputs          = $('input[name]');
     let classIndex         = 1; // 기본 0번부터 시작
+
+    // 🔔 알림 관련
+    const $btnStart      = $('#btnStart');
+    const $btnNotify     = $('#btnNotify');
+    const $notifyPanel   = $('#notifyPanel');
+    const $emailInput    = $('#notify_email_addr');
+
+    // 알림 UI(이메일 전용)
+    const $notifyEmail   = $('#notify_email');
+    const $wrapEmail     = $('#notify_email_wrap');
+    // 이메일 고정 표기
+    $wrapEmail.removeClass('disp-none');
+
+    // 패널이 닫혀있으면 이메일 인풋은 검증 제외
+    if ($notifyPanel.hasClass('disp-none')) {
+        $emailInput.prop('disabled', true).prop('required', false);
+    }
+
+    // 패널 토글
+    $btnNotify.on('click', function () {
+        $notifyPanel.toggleClass('disp-none');
+        const opened = !$notifyPanel.hasClass('disp-none');
+        if (opened) {
+            $emailInput.prop('disabled', false).prop('required', true).trigger('focus');
+        } else {
+            $emailInput.prop('required', false).prop('disabled', true);
+        }
+    });
 
     /** 🛠 클래스 입력 필드 생성 */
     function addClassField() {
@@ -513,8 +572,19 @@ $(function () {
             .on('blur', () => { if (!$input.val()) $input.attr('placeholder', original); });
     });
 
-    // 폼 제출 시 로딩 표시
-    $('#uploadForm').on('submit', function () {
+    // 폼 제출 시: 패널 상태에 따라 이메일 검증/제외 처리
+    $('#uploadForm').off('submit').on('submit', function (e) {
+        const opened = !$notifyPanel.hasClass('disp-none');
+        if (opened) {
+            if (!$emailInput.val() || !$emailInput[0].checkValidity()) {
+                e.preventDefault();
+                $emailInput[0].reportValidity?.();
+                $emailInput.trigger('focus');
+                return;
+            }
+        } else {
+            $emailInput.prop('required', false).prop('disabled', true);
+        }
         $(this).find('.btn-upload')
             .html('<i class="fas fa-spinner fa-spin"></i> 업로드/진행 중...')
             .prop('disabled', true);
