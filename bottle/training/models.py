@@ -52,7 +52,7 @@ class TrainingSession(models.Model):
         return min((self.current_epoch / self.total_epochs) * 100, 100)
 
     @property
-    def training_duration(self):
+    def training_duration(self): # 학습소요시간
         if self.end_time:
             duration = self.end_time - self.start_time
         else:

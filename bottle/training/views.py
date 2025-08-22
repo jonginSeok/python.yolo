@@ -6,6 +6,8 @@ from torchvision import transforms
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 from django.db.models import Avg
+from django.db import connection
+from django.db.utils import OperationalError
 from django.contrib import messages
 from django.http import JsonResponse
 from django.utils.functional import SimpleLazyObject
@@ -33,6 +35,11 @@ import shutil
 import pandas as pd
 import psycopg2
 
+
+# Django 환경 설정
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+django.setup()
+
 # 방법 A: 코드 상단에 경로 추가
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
@@ -53,19 +60,24 @@ def training_data_api(request, session_id):
             "memory_info": session.memory_info,
             "total_epochs": session.total_epochs,
             "current_epoch": session.current_epoch,
+            "batch_size": session.batch_size,
             "learning_rate": session.learning_rate,
             "image_size": session.image_size,
             "optimizer": session.optimizer,
-            "augmentation": session.augmentation,
             "early_stopping": session.early_stopping,
             "patience": session.patience,
+            "augmentation": session.augmentation,
+            "rotation_angle": session.rotation_angle,
+            "train_percent": session.train_percent,
+            "valid_percent": session.valid_percent,
+            "test_percent": session.test_percent,
             "description": session.description,
             "dataset_path": session.dataset_path,
             "config": session.config,
             "start_time": session.start_time,
             "end_time": session.end_time,
             "progress": session.progress_percentage,
-            "training_time": session.training_duration,
+            "training_time": session.training_duration,  # 학습소요시간
         },
         "metrics": [
             {
@@ -790,13 +802,14 @@ def upload_dataset(request):
 
                 train_acc_list, val_acc_list = [], []
 
-                conn = psycopg2.connect(
-                    dbname="postgres",
-                    user="postgres",
-                    password="yolo11ai",
-                    host="postgres.cxg2cwseemwh.ap-northeast-2.rds.amazonaws.com",
-                    port="5432",
-                )
+                # conn = psycopg2.connect(
+                #     dbname="postgres",
+                #     user="postgres",
+                #     password="yolo11ai",
+                #     host="postgres.cxg2cwseemwh.ap-northeast-2.rds.amazonaws.com",
+                #     port="5432",
+                # )
+                conn = connection.ensure_connection()
                 cursor = conn.cursor()
 
                 for epoch in range(EPOCHS):
@@ -928,14 +941,14 @@ def upload_dataset(request):
 
                 print(f"모델 훈련 결과: all_data size:{size}")  # 디버깅용 출력
 
-                conn = psycopg2.connect(
-                    dbname="postgres",
-                    user="postgres",
-                    password="yolo11ai",
-                    host="postgres.cxg2cwseemwh.ap-northeast-2.rds.amazonaws.com",
-                    port="5432",
-                )
-                # conn = connection.ensure_connection()
+                # conn = psycopg2.connect(
+                #     dbname="postgres",
+                #     user="postgres",
+                #     password="yolo11ai",
+                #     host="postgres.cxg2cwseemwh.ap-northeast-2.rds.amazonaws.com",
+                #     port="5432",
+                # )
+                conn = connection.ensure_connection()
                 cursor = conn.cursor()
 
                 for i in range(size):
@@ -993,6 +1006,7 @@ def upload_dataset(request):
                     "augmentation": form.cleaned_data["augmentation"],
                     "early_stopping": form.cleaned_data["early_stopping"],
                     "patience": form.cleaned_data["patience"],
+                    "end_time": datetime.now(ZoneInfo("Asia/Seoul")),
                     "image_count": len(image_files),
                     "label_count": len(label_files),
                 },
@@ -1081,17 +1095,17 @@ def training_data_api(request, session_id):
     # 차트 데이터 생성
     loss_chart = create_loss_chart(session)
     map_chart = create_map_chart(session)
-    
+
     # 성능 개선 계산 (이전 10개 에포크와 비교)
     metrics_count = session.metrics.count()
 
     if metrics_count > 10:
-        recent_avg = session.metrics.order_by("-epoch")[:5].aggregate(
-            Avg("map50")
-        )["map50__avg"]
-        old_avg = session.metrics.order_by("-epoch")[5:10].aggregate(
-            Avg("map50")
-        )["map50__avg"]
+        recent_avg = session.metrics.order_by("-epoch")[:5].aggregate(Avg("map50"))[
+            "map50__avg"
+        ]
+        old_avg = session.metrics.order_by("-epoch")[5:10].aggregate(Avg("map50"))[
+            "map50__avg"
+        ]
         map_change = ((recent_avg - old_avg) / old_avg * 100) if old_avg else 0
     else:
         map_change = 0
@@ -1101,9 +1115,9 @@ def training_data_api(request, session_id):
         recent_loss = session.metrics.order_by("-epoch")[:3].aggregate(
             Avg("train_loss")
         )["train_loss__avg"]
-        old_loss = session.metrics.order_by("-epoch")[3:6].aggregate(
-            Avg("train_loss")
-        )["train_loss__avg"]
+        old_loss = session.metrics.order_by("-epoch")[3:6].aggregate(Avg("train_loss"))[
+            "train_loss__avg"
+        ]
         loss_change = ((old_loss - recent_loss) / old_loss * 100) if old_loss else 0
     else:
         loss_change = 0
