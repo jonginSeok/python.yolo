@@ -8,5 +8,5 @@ urlpatterns = [
     path("dashboard/", views.dashboard, name="dashboard"),
     path("sessions/", views.training_sessions_list, name="sessions_list"),
     path("delete/", views.delete_session, name="delete_session"),
-    path("api/<int:session_id>/", views.training_data_api, name="training_data_api"),
+    path("session/<int:session_id>/", views.training_data_api, name="training_data_api"),
 ]

@@ -29,16 +29,16 @@
         outline: none;
         border-color: #007bff; /* 포커스 시 테두리 색상 */
         box-shadow: 0 0 5px rgba(0, 123, 255, 0.5); /* 포커스 시 그림자 */
-        background-color: #e6f0ff; /* 포커스 시 배경색 */
+        background-color: rgba(255, 255, 255, 0.2); /* #e6f0ff포커스 시 배경색 */
     }
     select option {
-        background-color: black; /*  #000 #ffffff  rgba(255, 255, 255, 0.1) 드롭다운 옵션 배경 */
-        color: #e6f0ff; /* #000000 옵션 텍스트 색상 */
+        background-color: rgba(255, 255, 255, 0.2); /*  #000 #ffffff  rgba(255, 255, 255, 0.1) 드롭다운 옵션 배경 */
+        color: black; /* #e6f0ff #000000 옵션 텍스트 색상 */
         padding: 8px;
     }
     select option:hover {
         background-color: rgba(255, 255, 255, 0.2); /* #f0f0f0 드롭다운 옵션 호버 배경 */
-        color: #e6f0ff; /* #000000 옵션 텍스트 색상 */
+        color: black; /* #000000 옵션 텍스트 색상 */
     }
     select option:checked {
         background-color: rgba(24, 23, 23, 0.336); /* rgba(255, 255, 255, 0.3) #e6f0ff 선택된 옵션 배경 */
@@ -370,7 +370,7 @@
             {% endif %}
 
             <div class="session-actions">
-                <a href="{% url 'training:dashboard' %}" class="btn-small btn-view"> <i class="fas fa-eye"></i> 상세보기 </a>
+                <a href="{% url 'training:training_data_api' session.id %}" class="btn-small btn-view"> <i class="fas fa-eye"></i> 상세보기 </a>
                 <a href="#" class="btn-small btn-delete" onclick="confirmDelete({{ session.id }})"> <i class="fas fa-trash"></i> 삭제 </a>
             </div>
         </div>
