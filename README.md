@@ -1,3 +1,5 @@
+수정본
+
        # YOLO Training Dashboard - Django 템플릿
 
  YOLO/CNN Training 을 위한 Django 웹 애플리케이션입니다.
