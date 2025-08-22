@@ -1,7 +1,5 @@
 from zoneinfo import ZoneInfo
-from datetime import datetime
-from .forms import DataUploadForm
-from .models import TrainingSession, ClassMetric, TrainingMetric
+from datetime import date, datetime
 from PIL import Image
 from ultralytics import YOLO
 from torchvision import transforms
@@ -13,9 +11,15 @@ from django.http import JsonResponse
 from django.utils.functional import SimpleLazyObject
 from django.views.decorators.http import require_POST
 from django.shortcuts import render, redirect, get_object_or_404
+from django.conf import settings
+from django.core.mail import send_mail
+from django.utils import timezone
+from .models import TrainingSession
 
 from pathlib import Path
 from django.conf import settings
+from .forms import DataUploadForm, DataSearchForm
+from .models import TrainingSession, ClassMetric, TrainingMetric
 
 import os
 import sys
@@ -219,7 +223,7 @@ def create_demo_loss_chart():
     train_losses = [0.8, 0.62, 0.48, 0.39, 0.34,
                     0.31, 0.28, 0.26, 0.24, 0.23, 0.22]
     val_losses = [0.75, 0.58, 0.45, 0.37, 0.32,
-                  0.29, 0.27, 0.25, 0.24, 0.23, 0.22]
+                    0.29, 0.27, 0.25, 0.24, 0.23, 0.22]
 
     trace1 = go.Scatter(
         x=epochs,
@@ -248,6 +252,7 @@ def create_demo_loss_chart():
 
     fig = go.Figure(data=[trace1, trace2], layout=layout)
     return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+
 
 
 def create_demo_map_chart():
@@ -287,12 +292,56 @@ def create_demo_map_chart():
     return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
 
+# 훈련 종료 이메일 알림 함수 (재사용 가능)
+def send_training_finished_email(session_id: int, success: bool = True, extra_msg: str = ""):
+    """
+    훈련 종료 시 사용자에게 이메일 알림을 보낸다.
+    session.notify_email 이 없으면 아무 것도 하지 않음.
+    """
+    try:
+        session = TrainingSession.objects.get(id=session_id)
+    except TrainingSession.DoesNotExist:
+        print(f"[notify] session not found: {session_id}")
+        return
+    # 이메일 주소가 없으면 스킵
+    if not getattr(session, "notify_email", None):
+        print(f"[notify] no notify_email for session {session_id}, skip")
+        return
+    subject = "[YOLO] 훈련 완료" if success else "[YOLO] 훈련 실패"
+    lines = [
+        f"모델: {session.model_name} (v{session.version})",
+        f"상태: {'성공' if success else '실패'}",
+    ]
+    if session.dataset_name:
+        lines.append(f"데이터셋: {session.dataset_name}")
+    if extra_msg:
+        lines.append(f"메시지: {extra_msg}")
+    # 시간 정보(있을 경우)
+    if getattr(session, 'start_time', None):
+        lines.append(f"시작: {session.start_time}")
+    if getattr(session, 'end_time', None):
+        lines.append(f"종료: {session.end_time}")
+    message = "\n".join(lines)
+    try:
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+            recipient_list=[session.notify_email],
+            fail_silently=False,
+        )
+        print(f"[notify] sent email to {session.notify_email} for session {session_id}")
+    except Exception as e:
+        print(f"[notify] email send error for session {session_id}: {e}")
+
+
 def dashboard(request):
     """메인 대시보드 뷰"""
     # 최신 훈련 세션 가져오기
     try:
         latest_session = TrainingSession.objects.latest("created_at")
         latest_metrics = latest_session.metrics.last()
+        
         class_metrics = latest_session.class_metrics.all()
 
         # 차트 데이터 생성
@@ -378,6 +427,8 @@ def upload_dataset(request):
                 valid_percent=form.cleaned_data["valid_percent"],
                 test_percent=form.cleaned_data["test_percent"],
                 description=form.cleaned_data["description"],
+                notify_method="email",
+                notify_email=request.POST.get("notify_email_addr") or None,
                 created_id=request.user,
                 updated_id=request.user,
             )
@@ -386,8 +437,10 @@ def upload_dataset(request):
             zip_file = form.cleaned_data["zip_file"]
 
             # 업로드 디렉토리 생성
-            dataset_path = os.path.join(settings.MEDIA_ROOT, "datasets", str(session.id))
-            upload_dir = os.path.join(dataset_path, form.cleaned_data["dataset_name"])
+            dataset_path = os.path.join(
+                settings.MEDIA_ROOT, "datasets", str(session.id))
+            upload_dir = os.path.join(
+                dataset_path, form.cleaned_data["dataset_name"])
             os.makedirs(upload_dir, exist_ok=True)
 
             # ZIP 파일 저장
@@ -606,20 +659,24 @@ def upload_dataset(request):
                     # --- Rewrite data.yaml with absolute POSIX paths for macOS/Linux/Windows compatibility ---
                     try:
                         abs_base = Path(upload_dir).resolve()
-                        train_images = (abs_base / "train" / "images").resolve()
+                        train_images = (abs_base / "train" /
+                                        "images").resolve()
                         val_images = (abs_base / "valid" / "images").resolve()
 
                         # Ensure directories exist (defensive)
                         if not train_images.exists():
-                            print(f"[data.yaml] missing train images dir: {train_images}")
+                            print(
+                                f"[data.yaml] missing train images dir: {train_images}")
                         if not val_images.exists():
-                            print(f"[data.yaml] missing val images dir: {val_images}")
+                            print(
+                                f"[data.yaml] missing val images dir: {val_images}")
 
                         # class_names may be list or dict; normalize to list
                         if isinstance(class_names, dict):
                             try:
                                 # sort by numeric key if possible
-                                names_list = [v for k, v in sorted(class_names.items(), key=lambda kv: int(kv[0]))]
+                                names_list = [v for k, v in sorted(
+                                    class_names.items(), key=lambda kv: int(kv[0]))]
                             except Exception:
                                 # fallback to insertion order
                                 names_list = list(class_names.values())
@@ -637,10 +694,12 @@ def upload_dataset(request):
                             "names": {i: n for i, n in enumerate(names_list)},
                         }
                         with abs_yaml_path.open("w", encoding="utf-8") as yf:
-                            yaml.safe_dump(data_yaml_payload, yf, sort_keys=False, allow_unicode=True)
+                            yaml.safe_dump(data_yaml_payload, yf,
+                                           sort_keys=False, allow_unicode=True)
                         # overwrite variable for downstream training call
                         data_yaml_path = abs_yaml_path.as_posix()
-                        print(f"[data.yaml] rewritten with absolute paths:\n  train={data_yaml_payload['train']}\n  val={data_yaml_payload['val']}")
+                        print(
+                            f"[data.yaml] rewritten with absolute paths:\n  train={data_yaml_payload['train']}\n  val={data_yaml_payload['val']}")
                     except Exception as e:
                         print(f"[data.yaml] rewrite error: {e}")
                     # --- end rewrite ---
@@ -937,6 +996,8 @@ def upload_dataset(request):
                     ),
                 )
                 print(f"CNN Model saved to {save_path}")
+                # 이메일 알림 (성공)
+                send_training_finished_email(session.id, success=True)
 
             elif session.model_name == "YOLOv11n":
 
@@ -1030,6 +1091,8 @@ def upload_dataset(request):
 
                 conn.commit()
                 conn.close()
+                # 이메일 알림 (성공)
+                send_training_finished_email(session.id, success=True)
 
             # TrainingSession update
             # 방법 1: 객체를 가져와서 수정 후 .save() 사용
@@ -1044,6 +1107,8 @@ def upload_dataset(request):
             TrainingSession.objects.filter(id=session.id).update(
                 dataset_path=dataset_path,
                 status="completed",
+                notify_method="email",
+                notify_email=request.POST.get("notify_email_addr"),
                 config={
                     "total_epochs": form.cleaned_data["total_epochs"],
                     "current_epoch": form.cleaned_data["current_epoch"],
@@ -1076,9 +1141,61 @@ def upload_dataset(request):
 
 def training_sessions_list(request):
     """훈련 세션 목록"""
-    sessions = TrainingSession.objects.all().order_by("-created_at")
-    context = {"sessions": sessions}
-    return render(request, "training/sessions.html", context)
+    # submit 하여 POST 방식으로 호출
+    if request.method == "POST":
+
+        form = DataSearchForm(request.POST or None)
+        sessions = TrainingSession.objects.all()
+
+        try:
+            if form.is_valid():
+                model = form.cleaned_data.get('model_name')
+                id = form.cleaned_data.get('session_id')
+                start = form.cleaned_data.get('start_date')
+                end = form.cleaned_data.get('end_date')
+
+                # 날짜 객체라면 datetime으로 변환
+                if isinstance(start, date) and not isinstance(start, datetime):
+                    start = datetime.combine(start, datetime.min.time())
+
+                if isinstance(end, date) and not isinstance(end, datetime):
+                    end = datetime.combine(end, datetime.max.time())
+
+                # 이후 타임존 보정
+                if start and timezone.is_naive(start):
+                    start = timezone.make_aware(start)
+                if end and timezone.is_naive(end):
+                    end = timezone.make_aware(end)
+
+                print(f"[훈련 세션 목록] 조회조건 model_name:{model} id:{id} start:{start} end:{end}")
+
+                if start and end:
+                    sessions = sessions.filter(start_time__range=(start, end))
+                elif start:
+                    sessions = sessions.filter(start_time__gte=start)
+                elif end:
+                    sessions = sessions.filter(end_time__lte=end)
+
+                if model:
+                    sessions = sessions.filter(model_name=model)
+                if id:
+                    sessions = sessions.filter(id=id)
+
+            # return JsonResponse({"success": True})
+        except TrainingSession.DoesNotExist:
+            return JsonResponse({"success": False, "error": "세션을 찾을 수 없습니다."})
+
+        # return redirect("training:sessions")
+        return render(request, 'training/sessions.html', {
+            'form': form,
+            'sessions': sessions.order_by("-created_at"),
+        })
+
+    else:
+        form = DataSearchForm()
+        sessions = TrainingSession.objects.all().order_by("-created_at")
+        context = {"sessions": sessions, "form": form}
+        return render(request, "training/sessions.html", context)
 
 
 # train_loss = to_native(last_row["train/box_loss"])
@@ -1149,8 +1266,7 @@ def rotate_and_split_yolo_dataset(root_dir, output_dir, rotation_angle, rate_img
 
                 rotated = img.rotate(
                     rotation, resample=Image.BICUBIC, expand=True)
-                white_bg = Image.new("RGBA", rotated.size,
-                                     (255, 255, 255, 255))
+                white_bg = Image.new("RGBA", rotated.size, (255, 255, 255, 255))
                 merged = Image.alpha_composite(white_bg, rotated)
 
                 center_x, center_y = merged.size[0] // 2, merged.size[1] // 2

@@ -1,6 +1,7 @@
 {% load static %} {% load custom_filters %} {% block title %}훈련 세션 결과{% endblock %}
 <!-- Plotly.js -->
 <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
 {% block extra_css %}
 <style>
     body {
@@ -326,7 +327,7 @@
                 {% endif %}
             </div>
             <div class="session-info">
-                <span class="session-title">{% if latest_metrics %}{{ latest_metrics.map50|floatformat:1|mul:100 }}{% else %}00.0{% endif %}</span>
+                <span class="session-title">{% if metrics %}{{ metrics.map50|floatformat:1|mul:100 }}{% else %}00.0{% endif %}</span>
                 <span class="info-value">%</span>
             </div>
             <p class="session-info">Mean Average Precision at IoU 0.5</p>
@@ -344,7 +345,7 @@
                 {% endif %}
             </div>
             <div class="session-info">
-                <span class="session-title">{% if latest_metrics %}{{ latest_metrics.train_loss|floatformat:3 }}{% else %}0.220{% endif %}</span>
+                <span class="session-title">{% if metrics %}{{ metrics.train_loss|floatformat:3 }}{% else %}0.220{% endif %}</span>
             </div>
             <p class="session-info">Current training loss value</p>
         </div>
@@ -361,7 +362,7 @@
                 {% endif %}
             </div>
             <div class="session-info">
-                <span class="session-title">{% if latest_metrics %}{{ latest_metrics.val_loss|floatformat:3 }}{% else %}0.000{% endif %}</span>
+                <span class="session-title">{% if metrics %}{{ metrics.val_loss|floatformat:3 }}{% else %}0.000{% endif %}</span>
             </div>
             <p class="session-info">Current validation loss value</p>
         </div>
