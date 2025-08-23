@@ -1,6 +1,23 @@
+import os
+import sys
+import zipfile
+import json
+import glob
+import yaml
+import random
+import shutil
+import psycopg2
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import plotly.utils
+import plotly.graph_objs as go
+import pandas as pd
+
 from zoneinfo import ZoneInfo
 from datetime import date, datetime
 from PIL import Image
+from pathlib import Path
 from ultralytics import YOLO
 from torchvision import transforms
 from torch.utils.data import DataLoader
@@ -16,26 +33,9 @@ from django.core.mail import send_mail
 from django.utils import timezone
 from .models import TrainingSession
 
-from pathlib import Path
-from django.conf import settings
 from .forms import DataUploadForm, DataSearchForm
 from .models import TrainingSession, ClassMetric, TrainingMetric
 
-import os
-import sys
-import zipfile
-import json
-import plotly.utils
-import plotly.graph_objs as go
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import yaml
-import random
-import glob
-import shutil
-import pandas as pd
-import psycopg2
 
 # 방법 A: 코드 상단에 경로 추가
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
@@ -251,7 +251,6 @@ def create_demo_loss_chart():
     return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
 
-
 def create_demo_map_chart():
     """데모 mAP 차트"""
     epochs = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
@@ -288,7 +287,9 @@ def create_demo_map_chart():
 
 
 # 훈련 종료 이메일 알림 함수 (재사용 가능)
-def send_training_finished_email(session_id: int, success: bool = True, extra_msg: str = ""):
+def send_training_finished_email(
+    session_id: int, success: bool = True, extra_msg: str = ""
+):
     """
     훈련 종료 시 사용자에게 이메일 알림을 보낸다.
     session.notify_email 이 없으면 아무 것도 하지 않음.
@@ -312,9 +313,9 @@ def send_training_finished_email(session_id: int, success: bool = True, extra_ms
     if extra_msg:
         lines.append(f"메시지: {extra_msg}")
     # 시간 정보(있을 경우)
-    if getattr(session, 'start_time', None):
+    if getattr(session, "start_time", None):
         lines.append(f"시작: {session.start_time}")
-    if getattr(session, 'end_time', None):
+    if getattr(session, "end_time", None):
         lines.append(f"종료: {session.end_time}")
     message = "\n".join(lines)
     try:
@@ -333,6 +334,7 @@ def send_training_finished_email(session_id: int, success: bool = True, extra_ms
 # 학습 세션 입력 데이터 전송
 def upload_dataset(request):
     """데이터셋 업로드 페이지"""
+    
     # submit 하여 POST 방식으로 호출
     if request.method == "POST":
         form = DataUploadForm(request.POST, request.FILES)
@@ -342,7 +344,7 @@ def upload_dataset(request):
             session = TrainingSession.objects.create(
                 model_name=form.cleaned_data["model_name"],
                 version=form.cleaned_data["version"],
-                status=form.cleaned_data["status"],  # "pending",
+                status=form.cleaned_data["status"],
                 dataset_name=form.cleaned_data["dataset_name"],
                 gpu_info=form.cleaned_data["gpu_info"],
                 memory_info=form.cleaned_data["memory_info"],
@@ -370,9 +372,8 @@ def upload_dataset(request):
             zip_file = form.cleaned_data["zip_file"]
 
             # 업로드 디렉토리 생성
-            dataset_path = os.path.join(
-                settings.MEDIA_ROOT, "datasets", str(session.id)
-            )
+            dataset_path = os.path.join(settings.MEDIA_ROOT, "datasets", str(session.id))
+            
             upload_dir = os.path.join(dataset_path, form.cleaned_data["dataset_name"])
             os.makedirs(upload_dir, exist_ok=True)
 
@@ -387,35 +388,22 @@ def upload_dataset(request):
                 with zipfile.ZipFile(zip_path, "r") as zip_ref:
                     file_list = zip_ref.namelist()
                     # 이미지와 라벨 파일 확인
-                    image_files = [
-                        f
-                        for f in file_list
-                        if f.lower().endswith((".jpg", ".jpeg", ".png", ".bmp"))
-                    ]
+                    image_files = [f for f in file_list if f.lower().endswith((".jpg", ".jpeg", ".png", ".bmp"))]
                     label_files = [f for f in file_list if f.lower().endswith(".txt")]
 
                     if not image_files:
-                        messages.error(
-                            request, "이미지 파일이 ZIP에 포함되어 있지 않습니다."
-                        )
+                        messages.error(request, "이미지 파일이 ZIP에 포함되어 있지 않습니다.")
                         os.remove(zip_path)
                         return render(request, "training/upload.html", {"form": form})
 
                     if session.model_name == "YOLOv11n":
                         if not label_files:
-                            messages.error(
-                                request,
-                                "라벨 파일(.txt)이 ZIP에 포함되어 있지 않습니다.",
-                            )
+                            messages.error(request, "라벨 파일(.txt)이 ZIP에 포함되어 있지 않습니다.")
                             os.remove(zip_path)
-                            return render(
-                                request, "training/upload.html", {"form": form}
-                            )
+                            return render(request, "training/upload.html", {"form": form})
 
                     # ZIP 파일 압축 해제
-                    extract_dir = os.path.join(
-                        upload_dir, "extracted"
-                    )  # media/datasets/34/bottle/extracted
+                    extract_dir = os.path.join(upload_dir, "extracted")
                     zip_ref.extractall(extract_dir)
 
             except zipfile.BadZipFile:
@@ -440,9 +428,7 @@ def upload_dataset(request):
             # model_name 에 따른 ClassMetric 모델의 class_names 데이터 생성
             if session.model_name == "CNN":
                 class_names = request.POST.getlist("class_name")
-                print(
-                    f"# CNN Class_names len: {len(class_names)} Class Name:{class_names}"
-                )
+                print(f"# CNN Class_names len: {len(class_names)} Class Name:{class_names}")
 
             elif session.model_name == "YOLOv11n":
 
@@ -486,12 +472,8 @@ def upload_dataset(request):
                 label_map=None,
             ):
                 total_percent = train_percent + valid_percent + test_percent
-                print(
-                    f"# 00 total_percent:{total_percent} train_percent:{train_percent} valid_percent:{valid_percent} test_percent:{test_percent}"
-                )
-                assert (
-                    total_percent == 100
-                ), f"비율 합이 100이 되어야 합니다. 현재: {total_percent}"
+                print(f"# percent total:{total_percent} train:{train_percent} valid:{valid_percent} test:{test_percent}")
+                assert (total_percent == 100), f"비율 합이 100이 되어야 합니다. 현재: {total_percent}"
 
                 train_ratio = train_percent / 100
                 valid_ratio = valid_percent / 100
@@ -502,9 +484,7 @@ def upload_dataset(request):
                 for class_name in label_map.keys():
                     print(f"# 11 source_dir:{source_dir} class_name:{class_name}")
                     class_path = os.path.join(source_dir, class_name)
-                    images = glob.glob(
-                        os.path.join(class_path, "*.*")
-                    )  # 모든 확장자 포함
+                    images = glob.glob(os.path.join(class_path, "*.*"))  # 모든 확장자 포함
                     class_images[class_name] = images
 
                 # Step 2: train/valid/test 디렉토리 생성
@@ -529,9 +509,7 @@ def upload_dataset(request):
                     for split, split_images in split_map.items():
                         for img_path in split_images:
                             filename = os.path.basename(img_path)
-                            dest_path = os.path.join(
-                                output_dir, split, class_name, filename
-                            )
+                            dest_path = os.path.join(output_dir, split, class_name, filename)
                             shutil.copy2(img_path, dest_path)
 
                 print("✅ 데이터셋 분할 및 정리가 완료되었습니다.")
@@ -552,7 +530,6 @@ def upload_dataset(request):
 
                     # label_map 생성: label → id
                     label_map = {obj.class_name: obj.index for obj in filtered_objects}
-
                     print(f"label_map :  {label_map} ")
 
                     rotate_and_split_cnn_dataset(
@@ -579,12 +556,11 @@ def upload_dataset(request):
                         ],
                     )
 
-                    data_yaml_path = os.path.join(
-                        upload_dir, "data.yaml"
-                    )  # 실행 yaml 파일 지정
+                    data_yaml_path = os.path.join(upload_dir, "data.yaml")  # 실행 yaml 파일 지정
                     print(f"data_yaml_path:  {data_yaml_path} ")
                     print("rotate_and_split_yolo_dataset End ")
                     # --- Rewrite data.yaml with absolute POSIX paths for macOS/Linux/Windows compatibility ---
+                    
                     try:
                         abs_base = Path(upload_dir).resolve()
                         train_images = (abs_base / "train" / "images").resolve()
@@ -592,9 +568,7 @@ def upload_dataset(request):
 
                         # Ensure directories exist (defensive)
                         if not train_images.exists():
-                            print(
-                                f"[data.yaml] missing train images dir: {train_images}"
-                            )
+                            print(f"[data.yaml] missing train images dir: {train_images}")
                         if not val_images.exists():
                             print(f"[data.yaml] missing val images dir: {val_images}")
 
@@ -633,9 +607,8 @@ def upload_dataset(request):
                             )
                         # overwrite variable for downstream training call
                         data_yaml_path = abs_yaml_path.as_posix()
-                        print(
-                            f"[data.yaml] rewritten with absolute paths:\n  train={data_yaml_payload['train']}\n  val={data_yaml_payload['val']}"
-                        )
+                        print(f"[data.yaml] rewritten with absolute paths:\n")
+                        print(f" train={data_yaml_payload['train']}\n  val={data_yaml_payload['val']}")
                     except Exception as e:
                         print(f"[data.yaml] rewrite error: {e}")
                     # --- end rewrite ---
@@ -653,7 +626,6 @@ def upload_dataset(request):
             if "CNN" == session.model_name:
 
                 print("CNN 모델 훈련 시작")
-
                 class DatasetWithSize(Dataset):
                     def __init__(self, root_dir, label_map, transform=None):
                         self.samples = []  # 파일 경로와 라벨을 짝지어 리스트에 저장
@@ -661,16 +633,11 @@ def upload_dataset(request):
                         self.label_map = label_map
 
                         # samples 리스트에 이미지파일 경로와 라벨을 모두 저장
-                        for (
-                            class_name,
-                            label,
-                        ) in label_map.items():  # ex: {'cat': 0, 'dog': 1}
+                        for (class_name, label,) in label_map.items():
                             class_path = os.path.join(root_dir, class_name)
                             for fname in os.listdir(class_path):
                                 if fname.lower().endswith((".jpg", ".png")):
-                                    self.samples.append(
-                                        (os.path.join(class_path, fname), label)
-                                    )  # (이미지 파일 경로, 0/1)
+                                    self.samples.append((os.path.join(class_path, fname), label))  # (이미지 파일 경로, 0/1)
 
                     def __len__(self):
                         return len(self.samples)
@@ -683,18 +650,12 @@ def upload_dataset(request):
                         orig_w, orig_h = image.size
                         area = orig_w * orig_h
                         aspect_ratio = orig_w / orig_h
-                        size_features = torch.tensor(
-                            [orig_w, orig_h, area, aspect_ratio], dtype=torch.float32
-                        )
+                        size_features = torch.tensor([orig_w, orig_h, area, aspect_ratio], dtype=torch.float32)
 
                         if self.transform:
                             image = self.transform(image)
                         # return image, size_features, label  # 이미지, 크기, 라벨 리턴
-                        return (
-                            image,
-                            size_features,
-                            torch.tensor(label, dtype=torch.long),
-                        )
+                        return (image, size_features, torch.tensor(label, dtype=torch.long))
 
                 print("Class Names:", class_names)
 
@@ -738,10 +699,7 @@ def upload_dataset(request):
                     def forward(self, x, size_feats):
                         x = self.conv(x)
                         # Flatten x: (B, 56*56*32) 1차원 데이터가 Batch 만큼 리턴됨. -1은 자동으로 설정
-                        x = x.view(
-                            x.size(0),
-                            -1,
-                        )
+                        x = x.view(x.size(0), -1,)
                         # 각 배치에 이미지 사이즈 정보 추가. 2번째 차원에 추가
                         x = torch.cat([x, size_feats], dim=1)
                         return self.fc(x)
@@ -798,41 +756,27 @@ def upload_dataset(request):
                 print(f"CNN 모델 훈련 DEVICE: {DEVICE}")
 
                 print(f"CNN 모델 훈련 upload_dir: {upload_dir}")
-                data_path = (
-                    upload_dir if upload_dir else "media/datasets/0"
-                )  # 에러 방지
+                data_path = (upload_dir if upload_dir else "media/datasets/0")  # 에러 방지
 
                 label_map = {name: idx for idx, name in enumerate(class_names)}
 
-                train_dataset = DatasetWithSize(
-                    data_path + "/train", label_map, transform=transform
-                )
-                valid_dataset = DatasetWithSize(
-                    data_path + "/valid", label_map, transform=transform
-                )
+                train_dataset = DatasetWithSize(data_path + "/train", label_map, transform=transform)
+                valid_dataset = DatasetWithSize(data_path + "/valid", label_map, transform=transform)
+                
                 # DataLoader 생성
-                train_loader = DataLoader(
-                    train_dataset, batch_size=BATCH_SIZE, shuffle=True
-                )
-                valid_loader = DataLoader(
-                    valid_dataset, batch_size=BATCH_SIZE, shuffle=False
-                )
+                train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+                valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-                model = CNNWithSize(int(session.image_size)).to(
-                    DEVICE
-                )  # 모델 생성 및 GPU에 이동
+                model = CNNWithSize(int(session.image_size)).to(DEVICE)  # 모델 생성 및 GPU에 이동
                 criterion = nn.CrossEntropyLoss()  # Softmax 포함
 
                 print(f"CNN 모델 훈련 session.optimizer: {session.optimizer}")
+                
                 optimizer_map = {
                     "SGD": lambda: optim.SGD(model.parameters(), lr=LR, momentum=0.9),
                     "Adam": lambda: optim.Adam(model.parameters(), lr=LR),
-                    "AdamW": lambda: optim.AdamW(
-                        model.parameters(), lr=LR, weight_decay=0.01
-                    ),
-                    "RMSprop": lambda: optim.RMSprop(
-                        model.parameters(), lr=LR, alpha=0.99
-                    ),
+                    "AdamW": lambda: optim.AdamW(model.parameters(), lr=LR, weight_decay=0.01),
+                    "RMSprop": lambda: optim.RMSprop(model.parameters(), lr=LR, alpha=0.99),
                 }
 
                 optimizer = optimizer_map.get(session.optimizer, lambda: None)()
@@ -852,6 +796,7 @@ def upload_dataset(request):
                 for epoch in range(EPOCHS):
                     model.train()
                     correct, total, loss_total = 0, 0, 0
+                    
                     # Batch 단위 로드
                     for x, size_feats, y in train_loader:
                         # image, label, size_feats GPU에 이동
@@ -861,6 +806,7 @@ def upload_dataset(request):
                             size_feats.to(DEVICE),
                         )
                         optimizer.zero_grad()
+                        
                         # __call__() -> forward()
                         outputs = model(x, size_feats)
                         loss = criterion(outputs, y)
@@ -891,9 +837,7 @@ def upload_dataset(request):
                     val_acc = correct / total
                     val_acc_list.append(val_acc)
 
-                    print(
-                        f"Epoch {epoch+1} | Loss: {loss_total:.4f} | Train Acc: {train_acc:.4f} | Val Acc: {val_acc:.4f}"
-                    )
+                    print(f"Epoch {epoch+1} | Loss: {loss_total:.4f} | Train Acc: {train_acc:.4f} | Val Acc: {val_acc:.4f}")
                     cursor.execute(
                         """
                     INSERT INTO training_trainingmetric (session_id, epoch, loss_total, train_acc, val_acc, timestamp ,created_at, created_id)
@@ -914,23 +858,16 @@ def upload_dataset(request):
                 conn.close()  # 데이터베이스 연결 종료
 
                 # 모델 저장 (학습 루프 끝난 후)
-                save_path = os.path.join(
-                    data_path,
-                    "result",
-                )
+                save_path = os.path.join(data_path,"result",)
                 # 폴더가 없으면 생성
                 os.makedirs(save_path, exist_ok=True)
-                torch.save(
-                    model.state_dict(),
-                    os.path.join(
-                        save_path, str(session.id) + "_cnn_with_size_letterbox_.pth"
-                    ),
-                )
+                torch.save(model.state_dict(), os.path.join(save_path, str(session.id) + "_cnn_with_size_letterbox_.pth"),)
                 print(f"CNN Model saved to {save_path}")
+                
                 # 이메일 알림 (성공)
                 send_training_finished_email(session.id, success=True)
 
-            elif session.model_name == "YOLOv11n":
+            elif "YOLOv11n" == session.model_name:
 
                 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -951,27 +888,15 @@ def upload_dataset(request):
                     optimizer=session.optimizer,
                     lr0=float(session.learning_rate),
                     weight_decay=0.01,
-                    project=os.path.join(
-                        upload_dir, "result", str(session.id)
-                    ),  # 저장 경로
+                    project=os.path.join(upload_dir, "result", str(session.id)),  # 저장 경로
                     name=session.model_name,  # yolo이름
                     verbose=True,  # 학습 과정 출력
-                    patience=(
-                        session.patience if session.early_stopping else 0
-                    ),  # 정확도(es_metric)가 10번을 넘기면 그만
+                    patience=(session.patience if session.early_stopping else 0),  # 정확도(es_metric)가 10번을 넘기면 그만
                 )
 
                 # 결과파일 읽어들이기
                 # # ex) bottle\media\datasets\bottle\result\26\YOLOv11n\results.csv
-                df = pd.read_csv(
-                    os.path.join(
-                        upload_dir,
-                        "result",
-                        str(session.id),
-                        session.model_name,
-                        "results.csv",
-                    )
-                )
+                df = pd.read_csv(os.path.join(upload_dir, "result", str(session.id), session.model_name, "results.csv",))
 
                 # 모든 데이터를 저장 (예: 변수로)
                 all_data = df.to_dict(orient="list")  # 열 기준으로 리스트로 저장
@@ -1021,6 +946,7 @@ def upload_dataset(request):
 
                 conn.commit()
                 conn.close()
+                
                 # 이메일 알림 (성공)
                 send_training_finished_email(session.id, success=True)
 
@@ -1051,6 +977,7 @@ def upload_dataset(request):
                     "patience": form.cleaned_data["patience"],
                     "image_count": len(image_files),
                     "label_count": len(label_files),
+                    "end_time": datetime.now(ZoneInfo("Asia/Seoul")),
                 },
                 updated_at=datetime.now(ZoneInfo("Asia/Seoul")),
                 updated_id="system",
@@ -1062,7 +989,8 @@ def upload_dataset(request):
             return redirect("training:dashboard")
 
     else:
-        # 초기값세팅 2. 뷰에서 동적으로  설정.
+        # 초기값세팅 
+        # 2. 뷰에서 동적으로  설정.
         # 상황에 따라 기본값을 바꿀 수 있어요 (예: 로그인한 사용자 이름 등).
         form = DataUploadForm()
 
@@ -1071,8 +999,9 @@ def upload_dataset(request):
 
 def dashboard(request):
     """메인 대시보드 뷰"""
-    # 최신 훈련 세션 가져오기
+    
     try:
+        # 최신 훈련 세션 가져오기
         latest_session = TrainingSession.objects.latest("created_at")
         latest_metrics = latest_session.metrics.last()
 
@@ -1086,24 +1015,16 @@ def dashboard(request):
         metrics_count = latest_session.metrics.count()
 
         if metrics_count > 10:
-            recent_avg = latest_session.metrics.order_by("-epoch")[:5].aggregate(
-                Avg("map50")
-            )["map50__avg"]
-            old_avg = latest_session.metrics.order_by("-epoch")[5:10].aggregate(
-                Avg("map50")
-            )["map50__avg"]
+            recent_avg = latest_session.metrics.order_by("-epoch")[:5].aggregate(Avg("map50"))["map50__avg"]
+            old_avg = latest_session.metrics.order_by("-epoch")[5:10].aggregate(Avg("map50"))["map50__avg"]
             map_change = ((recent_avg - old_avg) / old_avg * 100) if old_avg else 0
         else:
             map_change = 0
 
         # 손실 변화 계산
         if metrics_count > 5:
-            recent_loss = latest_session.metrics.order_by("-epoch")[:3].aggregate(
-                Avg("train_loss")
-            )["train_loss__avg"]
-            old_loss = latest_session.metrics.order_by("-epoch")[3:6].aggregate(
-                Avg("train_loss")
-            )["train_loss__avg"]
+            recent_loss = latest_session.metrics.order_by("-epoch")[:3].aggregate(Avg("train_loss"))["train_loss__avg"]
+            old_loss = latest_session.metrics.order_by("-epoch")[3:6].aggregate(Avg("train_loss"))["train_loss__avg"]
             loss_change = ((old_loss - recent_loss) / old_loss * 100) if old_loss else 0
         else:
             loss_change = 0
@@ -1137,29 +1058,21 @@ def training_data_api(request, session_id):
     # 차트 데이터 생성
     loss_chart = create_loss_chart(session)
     map_chart = create_map_chart(session)
-    
+
     # 성능 개선 계산 (이전 10개 에포크와 비교)
     metrics_count = session.metrics.count()
 
     if metrics_count > 10:
-        recent_avg = session.metrics.order_by("-epoch")[:5].aggregate(
-            Avg("map50")
-        )["map50__avg"]
-        old_avg = session.metrics.order_by("-epoch")[5:10].aggregate(
-            Avg("map50")
-        )["map50__avg"]
+        recent_avg = session.metrics.order_by("-epoch")[:5].aggregate(Avg("map50"))["map50__avg"]
+        old_avg = session.metrics.order_by("-epoch")[5:10].aggregate(Avg("map50"))["map50__avg"]
         map_change = ((recent_avg - old_avg) / old_avg * 100) if old_avg else 0
     else:
         map_change = 0
 
     # 손실 변화 계산
     if metrics_count > 5:
-        recent_loss = session.metrics.order_by("-epoch")[:3].aggregate(
-            Avg("train_loss")
-        )["train_loss__avg"]
-        old_loss = session.metrics.order_by("-epoch")[3:6].aggregate(
-            Avg("train_loss")
-        )["train_loss__avg"]
+        recent_loss = session.metrics.order_by("-epoch")[:3].aggregate(Avg("train_loss"))["train_loss__avg"]
+        old_loss = session.metrics.order_by("-epoch")[3:6].aggregate(Avg("train_loss"))["train_loss__avg"]
         loss_change = ((old_loss - recent_loss) / old_loss * 100) if old_loss else 0
     else:
         loss_change = 0
@@ -1246,9 +1159,7 @@ def training_sessions_list(request):
                 if end and timezone.is_naive(end):
                     end = timezone.make_aware(end)
 
-                print(
-                    f"[훈련 세션 목록] 조회조건 model_name:{model} id:{id} start:{start} end:{end}"
-                )
+                print(f"[훈련 세션 목록] 조회조건 model_name:{model} id:{id} start:{start} end:{end}")
 
                 if start and end:
                     sessions = sessions.filter(start_time__range=(start, end))

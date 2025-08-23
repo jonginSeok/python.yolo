@@ -26,8 +26,7 @@ class DataUploadForm(forms.Form):
         label="버전",
         max_length=20,
         initial="0.0.1",  # 초기값세팅
-        widget=forms.TextInput(
-            attrs={"class": "form-control", "placeholder": "0.0.1"}),
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "0.0.1"}),
     )
 
     status = forms.ChoiceField(
@@ -85,8 +84,7 @@ class DataUploadForm(forms.Form):
         required=True,
         label="데이터셋 ZIP 파일",
         help_text="이미지와 라벨 파일이 포함된 ZIP 파일을 업로드하세요",
-        widget=forms.FileInput(
-            attrs={"class": "form-control", "accept": ".zip"}),
+        widget=forms.FileInput(attrs={"class": "form-control", "accept": ".zip"}),
     )
 
     class_name = forms.CharField(
@@ -122,7 +120,7 @@ class DataUploadForm(forms.Form):
         label="배치 크기",
         min_value=1,
         max_value=64,
-        initial=4,  # 초기값세팅
+        initial=16,  # 초기값세팅
         widget=forms.NumberInput(attrs={"class": "form-control"}),
     )
 
@@ -132,8 +130,7 @@ class DataUploadForm(forms.Form):
         min_value=0.01,
         max_value=1.0,
         initial=0.01,  # 초기값세팅
-        widget=forms.NumberInput(
-            attrs={"class": "form-control", "step": "0.01"}),
+        widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
     )
 
     # image_size = forms.IntegerField(
@@ -149,7 +146,7 @@ class DataUploadForm(forms.Form):
             (800, "800"),
             (1024, "1024"),
         ],
-        initial=128,  # 초기값세팅
+        initial=640,  # 초기값세팅
         widget=forms.Select(attrs={"class": "form-control"}),
     )
 
@@ -257,16 +254,6 @@ class DataUploadForm(forms.Form):
             }
         ),
     )
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
 
     # 초기값세팅 4.  메서드에서 동적 설정
     # • 	뷰에서 으로 생성하면 가 기본값으로 들어갑니다.
@@ -291,7 +278,7 @@ class DataUploadForm(forms.Form):
 
 class DataSearchForm(forms.Form):
     """YOLO 훈련 데이터 업로드 폼"""
-    
+
     model_name = forms.ChoiceField(
         required=True,
         label="모델",
@@ -308,10 +295,12 @@ class DataSearchForm(forms.Form):
         min_value=1,
         # max_value=1000,
         # initial=100,  # 초기값세팅
-        widget=forms.NumberInput(attrs={
-            "class": "form-control",
-            "placeholder": "훈련에 대한 세션ID를 입력하세요",
-        })
+        widget=forms.NumberInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "훈련에 대한 세션ID를 입력하세요",
+            }
+        ),
     )
 
     start_date = forms.DateField(
@@ -319,9 +308,7 @@ class DataSearchForm(forms.Form):
         label="시작 일자",
         # initial=datetime.now() - timedelta(days=7),  # 7일 전으로 초기값 설정
         # initial=date.today,
-        widget=forms.DateInput(
-            attrs={"class": "form-control", "type": "date"}
-        ),
+        widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}),
     )
 
     end_date = forms.DateField(
@@ -329,9 +316,7 @@ class DataSearchForm(forms.Form):
         label="종료 일자",
         # initial=datetime.now,
         # initial=date.today,
-        widget=forms.DateInput(
-            attrs={"class": "form-control", "type": "date"}
-        ),
+        widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}),
     )
 
     def __init__(self, *args, **kwargs):
