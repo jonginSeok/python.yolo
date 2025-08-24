@@ -37,13 +37,12 @@ class TrainingSession(models.Model):
     config = models.CharField(max_length=16000, verbose_name="설정정보 ")
     start_time = models.DateTimeField(default=timezone.now, verbose_name="시작 시간")
     end_time = models.DateTimeField(null=True, blank=True, verbose_name="종료 시간")
+    # 알림
+    notify_method = models.CharField(max_length=10, default="email", verbose_name="알림구분")
+    notify_email = models.EmailField(blank=True, null=True, verbose_name="알림이메일")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성 시간")
     created_id = models.CharField(max_length=500, verbose_name="생성자ID")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="수정 시간")
-    updated_id = models.CharField(max_length=500, verbose_name="수정자 id")
-    # 알림
-    notify_method = models.CharField(max_length=10, default="email")  # 고정
-    notify_email = models.EmailField(blank=True, null=True)
     updated_id = models.CharField(max_length=500, verbose_name="수정자ID")
 
     def __str__(self):

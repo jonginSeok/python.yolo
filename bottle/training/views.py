@@ -374,14 +374,25 @@ def upload_dataset(request):
                 created_id=request.user,
                 updated_id=request.user,
             )
+            
+            # 상태 변경 training:훈련
+            # TrainingSession update
+            # 방법 1: 객체를 가져와서 수정 후 .save() 사용
+            session = TrainingSession.objects.get(id=session.id) # 원하는 객체 가져오기
+            session.status="training"                    # 필드 수정
+            session.save()                               # 변경사항 저장
+            # 장점: 모델의 save() 메서드가 호출되므로 커스텀 로직이 실행됨
+            # 단점: 객체를 메모리에 로드해야 하므로 성능이 떨어질 수 있음
 
+            # ******************************************************************
             # 파일 저장 및 처리
+            # ******************************************************************
             zip_file = form.cleaned_data["zip_file"]
 
             # 업로드 디렉토리 생성
             dataset_path = os.path.join(settings.MEDIA_ROOT, "datasets", str(session.id))
 
-            upload_dir = os.path.join(dataset_path, form.cleaned_data["dataset_name"])
+            upload_dir = os.path.join(dataset_path, session.dataset_name)
             os.makedirs(upload_dir, exist_ok=True)
 
             # ZIP 파일 저장
@@ -421,26 +432,20 @@ def upload_dataset(request):
                 messages.error(request, "올바르지 않은 ZIP 파일입니다.")
                 os.remove(zip_path)
                 return render(request, "training/upload.html", {"form": form})
+            # ******************************************************************
+            # 파일 저장 및 처리
+            # ******************************************************************
 
-            # 상태 변경 completed:완료
-            # TrainingSession.objects.update(
-            #     status="training",
-            #     updated_at=datetime.now(ZoneInfo("Asia/Seoul")),
-            #     updated_id="system",
-            # )
-
-            # 오류발생
-            # print(f"✅ model_name: {session.model_name}")
-            # AttributeError: 'int' object has no attribute 'model_name'
-
+            # ******************************************************************
             # ClassMetric 담을 리스트 생성(training_classmetric) 시작
+            # ******************************************************************
             class_names = []
             print(f"✅ 모델 명: {session.model_name}")
 
             # model_name 에 따른 ClassMetric 모델의 class_names 데이터 생성
             if "cnn" == session.model_name:
                 class_names = request.POST.getlist("class_name")
-                print(f"✅ CNN 클래스 길이: {len(class_names)} 클래스 명:{class_names}")
+                # print(f"✅ CNN 클래스 길이: {len(class_names)} 클래스 명:{class_names}")
 
             elif "yolo11n" == session.model_name:
 
@@ -465,15 +470,24 @@ def upload_dataset(request):
                     index=i,  # 0부터 시작하는 인덱스
                     class_name=name,
                     created_id=request.user,
+                    updated_at=None,
+                    # updated_id=None,
                 )
                 for i, name in enumerate(class_names)
             ]
             # ClassMetric 한 번에 저장
             ClassMetric.objects.bulk_create(class_objects)
             
+            # precision,recall,f1_score,instances
+            
+            # ******************************************************************
             # ClassMetric 담을 리스트 생성(training_classmetric) 종료
+            # ******************************************************************
 
-            # 데이터 증강 시작
+            # ******************************************************************
+            # *************************** 증강 시작 ****************************
+            # ******************************************************************
+
             # ******************************************************************
             # ************ load rotate_and_split_cnn_dataset 시작 **************
             # ******************************************************************
@@ -532,13 +546,8 @@ def upload_dataset(request):
             # ************ load rotate_and_split_cnn_dataset 종료 **************
             # ******************************************************************
 
-            # ******************************************************************
-            # *************************** 증강 시작 ****************************
-            # ******************************************************************
-            print("✅ 회전 및 분할 CNN 데이터 증강 시작")
             print(f"✅ 회전 및 분할 CNN 데이터 증강 시작 : {session.augmentation}")
             if session.augmentation:
-                
                 print(f"✅ 회전 및 분할 CNN 데이터 증강 모델명: {session.model_name}")
                 
                 if "cnn" == session.model_name:
@@ -620,10 +629,13 @@ def upload_dataset(request):
                     except Exception as e:
                         print(f"✅ [data.yaml] rewrite error: {e}")
 
+                # 압축해제 폴더 삭제
+                # shutil.rmtree(os.path.join(extract_dir), ignore_errors=True)
+
             else:
                 upload_dir = extract_dir
-                print("⚠️ 데이터 증강 없음")
-            print(f"✅ 데이터 증강 종료: {session.augmentation}")
+                print("⚠️ 회전 및 분할 CNN 데이터 증강 없음")
+            print("✅ 데이터 증강 종료")
             # ******************************************************************
             # *************************** 증강 종료 ****************************
             # ******************************************************************
@@ -670,8 +682,6 @@ def upload_dataset(request):
                             image = self.transform(image)
 
                         return (image,size_features,torch.tensor(label, dtype=torch.long),)
-
-                print("✅ Class Names:", class_names)
 
                 # CNN
                 # 신경망을 정의할 때는 Batch 크기를 고려하지 않지만 Tensor 연산은 배치단위 병렬처리가 기본임
@@ -780,7 +790,7 @@ def upload_dataset(request):
                 }
 
                 optimizer = optimizer_map.get(session.optimizer, lambda: None)()
-                print(f"CNN 모델 훈련 optimizer: {optimizer}")
+                print(f"✅ CNN 모델 훈련 optimizer: {optimizer}")
 
                 train_acc_list, val_acc_list = [], []
 
@@ -932,14 +942,7 @@ def upload_dataset(request):
             # *************************** 실행 종료 ***************************
             # ******************************************************************
 
-            # TrainingSession update
-            # 방법 1: 객체를 가져와서 수정 후 .save() 사용
-            # session = TrainingSession.objects.get(id=1)  # 원하는 객체 가져오기
-            # session.name = "Updated Name"               # 필드 수정
-            # session.duration = 90
-            # session.save()                              # 변경사항 저장
-            # 장점: 모델의 save() 메서드가 호출되므로 커스텀 로직이 실행됨
-            # 단점: 객체를 메모리에 로드해야 하므로 성능이 떨어질 수 있음
+
 
             # 방법 2: QuerySet.update() 사용
             TrainingSession.objects.filter(id=session.id).update(
@@ -948,19 +951,20 @@ def upload_dataset(request):
                 notify_method="email",
                 notify_email=request.POST.get("notify_email_addr"),
                 config={
-                    "total_epochs": form.cleaned_data["total_epochs"],
-                    "current_epoch": form.cleaned_data["current_epoch"],
-                    "batch_size": form.cleaned_data["batch_size"],
-                    "learning_rate": form.cleaned_data["learning_rate"],
-                    "image_size": form.cleaned_data["image_size"],
-                    "optimizer": form.cleaned_data["optimizer"],
-                    "augmentation": form.cleaned_data["augmentation"],
-                    "early_stopping": form.cleaned_data["early_stopping"],
-                    "patience": form.cleaned_data["patience"],
+                    "total_epochs": session.total_epochs,
+                    "current_epoch": session.current_epoch,
+                    "batch_size": session.batch_size,
+                    "learning_rate": session.learning_rate,
+                    "image_size": session.image_size,
+                    "optimizer": session.optimizer,
+                    "augmentation": session.augmentation,
+                    "early_stopping": session.early_stopping,
+                    "patience": session.patience,
                     "image_count": len(image_files),
                     "label_count": len(label_files),
                     "end_time": datetime.now(ZoneInfo("Asia/Seoul")),
                 },
+                end_time=datetime.now(ZoneInfo("Asia/Seoul")),
                 updated_at=datetime.now(ZoneInfo("Asia/Seoul")),
                 updated_id=str(request.user),
             )
@@ -969,6 +973,7 @@ def upload_dataset(request):
 
             # 압축해제 폴더 삭제
             # shutil.rmtree(os.path.join(extract_dir), ignore_errors=True)
+            
             # messages.success(request, f"데이터셋이 성공적으로 업로드되었습니다. 훈련 세션 ID: {session.id}",)
             # return HttpResponse("훈련이 백그라운드에서 시작되었습니다.")
             return redirect("training:dashboard")

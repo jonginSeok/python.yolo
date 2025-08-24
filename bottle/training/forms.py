@@ -16,7 +16,6 @@ class DataUploadForm(forms.Form):
         choices=[
             ("cnn", "CNN"),
             ("yolo11n", "YOLO v11n"),
-            
         ],
         initial="cnn",  # 초기값세팅
         widget=forms.Select(attrs={"class": "form-control"}),
@@ -281,13 +280,14 @@ class DataSearchForm(forms.Form):
     """YOLO 훈련 데이터 업로드 폼"""
 
     model_name = forms.ChoiceField(
-        required=True,
+        required=False,
         label="모델",
         choices=[
+            ("", "전체"),
             ("CNN", "CNN"),
             ("YOLOv11n", "YOLO v11n"),
         ],
-        initial="YOLOv11n",  # 초기값세팅
+        initial="",  # 초기값세팅
         widget=forms.Select(attrs={"class": "form-control"}),
     )
     session_id = forms.IntegerField(

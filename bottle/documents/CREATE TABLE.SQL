@@ -71,6 +71,8 @@ CREATE TABLE
         valid_percent integer NULL,
         test_percent integer NULL,
         description TEXT, -- # 설명
+        notify_method VARCHAR(10) DEFAULT 'email',
+        notify_email VARCHAR(300) NULL,
         dataset_path VARCHAR(6000), -- 데이터셋 경로 
         config TEXT, -- 설정정보 
         start_time TIMESTAMP
@@ -215,6 +217,10 @@ COMMENT ON COLUMN public.training_trainingsession.valid_percent IS 'valid %';
 COMMENT ON COLUMN public.training_trainingsession.test_percent IS 'test %';
 
 COMMENT ON COLUMN public.training_trainingsession.description IS '설명';
+
+COMMENT ON COLUMN public.training_trainingsession.notify_method IS '알림구분';
+
+COMMENT ON COLUMN public.training_trainingsession.notify_email IS '알림이메일';
 
 COMMENT ON COLUMN public.training_trainingsession.dataset_path IS '데이터셋 경로';
 
