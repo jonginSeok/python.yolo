@@ -185,31 +185,9 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
 
-# 1. Celery 설정 확인 (celery.py)
-
-# 2. Django 설정에 Redis 브로커 추가
+# Django 설정에 Redis 브로커 추가
 # Celery + Redis 를 위한 설정 (https://github.com/microsoftarchive/redis/releases 설치)
 CELERY_BROKER_URL = "redis://localhost:6379/0"
 CELERY_RESULT_BACKEND = "redis://localhost:6379/0" # Celery는 기본적으로 결과를 저장하지 않지만, 설정하면 결과도 확인
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
-
-# 3. Redis 서버 실행 여부 확인
-# redis-server
-# (pytorch_env) C:\Users\ngins\Git\python.yolo>redis-server
-
-# 4. Celery 워커 실행
-# celery -A config worker --loglevel=info
-
-# 5. 작업 함수(task) 정의 확인
-# # app/tasks.py
-
-# 6. 작업 호출 예시
-
-# 추가 디버깅 팁
-# pip show celery
-# pip show billiard
-
-# redis-cli ping 명령어로 Redis 연결 확인: PONG이 나오면 정상입니다.
-# (pytorch_env) C:\Users\ngins\Git\python.yolo>redis-cli ping   
-# PONG 

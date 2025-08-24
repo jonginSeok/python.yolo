@@ -14,10 +14,11 @@ class DataUploadForm(forms.Form):
         required=True,
         label="모델",
         choices=[
-            ("CNN", "CNN"),
-            ("YOLOv11n", "YOLO v11n"),
+            ("cnn", "CNN"),
+            ("yolo11n", "YOLO v11n"),
+            
         ],
-        initial="YOLOv11n",  # 초기값세팅
+        initial="cnn",  # 초기값세팅
         widget=forms.Select(attrs={"class": "form-control"}),
     )
 

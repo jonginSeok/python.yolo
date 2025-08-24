@@ -270,12 +270,12 @@
 <div class="sessions-container">
     <div class="sessions-header">
         <h1><i class="fas fa-list"></i> 훈련 세션 목록</h1>
-        <div>
+        <!-- <div>
             <a href="{% url 'training:upload_dataset' %}" class="btn-primary"> <i class="fas fa-plus"></i> 새 훈련 시작 </a>
-        </div>
+        </div> -->
     </div>
     
-    <form method="post" id="searchForm" class="">
+    <form method="post" id="searchForm">
         {% csrf_token %}
         <div class="upload-container">
             <div class="upload-card">
@@ -313,8 +313,8 @@
                 </div>
             </div>
         </div>
-        
     </form>
+    
     {% if sessions %}
     <div class="sessions-grid margin-top-30">
         {% for session in sessions %}

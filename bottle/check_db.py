@@ -4,10 +4,7 @@ from django.db import connection
 from django.db.utils import OperationalError
 
 # Django 환경 설정
-os.environ.setdefault(
-    "DJANGO_SETTINGS_MODULE", 
-    "config.settings"  # 프로젝트 이름으로 변경
-)
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 django.setup()
 
 
