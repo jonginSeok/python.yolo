@@ -445,7 +445,6 @@ def upload_dataset(request):
             # model_name 에 따른 ClassMetric 모델의 class_names 데이터 생성
             if "cnn" == session.model_name:
                 class_names = request.POST.getlist("class_name")
-                # print(f"✅ CNN 클래스 길이: {len(class_names)} 클래스 명:{class_names}")
 
             elif "yolo11n" == session.model_name:
 
@@ -459,7 +458,7 @@ def upload_dataset(request):
                 # 각 항목을 변수에 담기
                 num_classes = data.get("nc")
                 class_names = data.get("names")
-                # 확인 출력
+
                 print("✅ 클래스들의 숫자:", num_classes)
                 print("✅ 클래스명들:", class_names)
 
@@ -488,9 +487,6 @@ def upload_dataset(request):
             # *************************** 증강 시작 ****************************
             # ******************************************************************
 
-            # ******************************************************************
-            # ************ load rotate_and_split_cnn_dataset 시작 **************
-            # ******************************************************************
             def rotate_and_split_cnn_dataset(
                 source_dir,
                 output_dir,
@@ -499,9 +495,8 @@ def upload_dataset(request):
                 test_percent=10,
                 label_map=None,
             ):
-                print(f"✅ 퍼센트 total:{total_percent} train:{train_percent} valid:{valid_percent} test:{test_percent}")
-
                 total_percent = train_percent + valid_percent + test_percent
+                print(f"✅ 퍼센트 total:{total_percent} train:{train_percent} valid:{valid_percent} test:{test_percent}")
                 assert (total_percent == 100), f"비율 합이 100이 되어야 합니다. 현재: {total_percent}"
 
                 train_ratio = train_percent / 100
@@ -542,14 +537,11 @@ def upload_dataset(request):
                             shutil.copy2(img_path, dest_path)
 
                 print("✅ 데이터셋 분할 및 정리가 완료되었습니다.")
-            # ******************************************************************
-            # ************ load rotate_and_split_cnn_dataset 종료 **************
-            # ******************************************************************
 
             print(f"✅ 회전 및 분할 CNN 데이터 증강 시작 : {session.augmentation}")
             if session.augmentation:
                 print(f"✅ 회전 및 분할 CNN 데이터 증강 모델명: {session.model_name}")
-                
+
                 if "cnn" == session.model_name:
                     print("🔢 회전 및 분할 CNN 데이터셋 Start")
 
@@ -580,7 +572,7 @@ def upload_dataset(request):
                             session.test_percent,
                         ],
                     )
-                    
+
                     # 실행 yaml 파일 지정
                     data_yaml_path = os.path.join(upload_dir, "data.yaml")
                     print(f"✅ 회전 및 분할 YOLO 데이터 data.yaml path:  {data_yaml_path} ")
@@ -630,11 +622,12 @@ def upload_dataset(request):
                         print(f"✅ [data.yaml] rewrite error: {e}")
 
                 # 압축해제 폴더 삭제
-                # shutil.rmtree(os.path.join(extract_dir), ignore_errors=True)
+                shutil.rmtree(os.path.join(extract_dir), ignore_errors=True)
 
             else:
                 upload_dir = extract_dir
                 print("⚠️ 회전 및 분할 CNN 데이터 증강 없음")
+
             print("✅ 데이터 증강 종료")
             # ******************************************************************
             # *************************** 증강 종료 ****************************
@@ -856,9 +849,10 @@ def upload_dataset(request):
 
                 # 모델 저장 (학습 루프 끝난 후)
                 save_path = os.path.join(data_path, "result",)
-                # 폴더가 없으면 생성
-                os.makedirs(save_path, exist_ok=True)
-                torch.save(model.state_dict(), os.path.join(save_path, str(session.id) + "_cnn_with_size_letterbox_.pth"),)
+                os.makedirs(save_path, exist_ok=True) # 폴더가 없으면 생성
+                
+                save_path = os.path.join(save_path, str(session.id) + "_cnn_with_size_letterbox_.pth")
+                torch.save(model.state_dict(), save_path,)
                 print(f"✅ CNN Model saved to {save_path}")
 
                 # 이메일 알림 (성공)
@@ -942,8 +936,6 @@ def upload_dataset(request):
             # *************************** 실행 종료 ***************************
             # ******************************************************************
 
-
-
             # 방법 2: QuerySet.update() 사용
             TrainingSession.objects.filter(id=session.id).update(
                 dataset_path=dataset_path,
@@ -971,9 +963,6 @@ def upload_dataset(request):
             # 장점: SQL UPDATE를 직접 실행하므로 빠름
             # 단점: save() 메서드나 pre_save/post_save 시그널이 호출되지 않음
 
-            # 압축해제 폴더 삭제
-            # shutil.rmtree(os.path.join(extract_dir), ignore_errors=True)
-            
             # messages.success(request, f"데이터셋이 성공적으로 업로드되었습니다. 훈련 세션 ID: {session.id}",)
             # return HttpResponse("훈련이 백그라운드에서 시작되었습니다.")
             return redirect("training:dashboard")
@@ -1033,7 +1022,7 @@ def dashboard(request):
 
     context = {
         "session": latest_session,
-        "latest_metrics": latest_metrics,
+        "metrics": latest_metrics,
         "class_metrics": class_metrics,
         "loss_chart": loss_chart,
         "map_chart": map_chart,
@@ -1052,83 +1041,81 @@ def training_data_api(request, session_id):
     # 차트 데이터 생성
     loss_chart = create_loss_chart(session)
     map_chart = create_map_chart(session)
+    
+    if "cnn" == session.model_name:
+        print("----------------- CNN ---------------")
+        
+    elif "yolo11n" == session.model_name:
+        print("----------------- YOLO ---------------")
 
-    # 성능 개선 계산 (이전 10개 에포크와 비교)
-    metrics_count = session.metrics.count()
+        # 성능 개선 계산 (이전 10개 에포크와 비교)
+        metrics_count = session.metrics.count()
 
-    if metrics_count > 10:
-        recent_avg = session.metrics.order_by("-epoch")[:5].aggregate(Avg("map50"))[
-            "map50__avg"
-        ]
-        old_avg = session.metrics.order_by("-epoch")[5:10].aggregate(Avg("map50"))[
-            "map50__avg"
-        ]
-        map_change = ((recent_avg - old_avg) / old_avg * 100) if old_avg else 0
-    else:
-        map_change = 0
+        if metrics_count > 10:
+            recent_avg = session.metrics.order_by("-epoch")[:5].aggregate(Avg("map50"))["map50__avg"]
+            old_avg = session.metrics.order_by("-epoch")[5:10].aggregate(Avg("map50"))["map50__avg"]
+            map_change = ((recent_avg - old_avg) / old_avg * 100) if old_avg else 0
+        else:
+            map_change = 0
 
-    # 손실 변화 계산
-    if metrics_count > 5:
-        recent_loss = session.metrics.order_by("-epoch")[:3].aggregate(
-            Avg("train_loss")
-        )["train_loss__avg"]
-        old_loss = session.metrics.order_by("-epoch")[3:6].aggregate(Avg("train_loss"))[
-            "train_loss__avg"
-        ]
-        loss_change = ((old_loss - recent_loss) / old_loss * 100) if old_loss else 0
-    else:
-        loss_change = 0
+        # 손실 변화 계산
+        if metrics_count > 5:
+            recent_loss = session.metrics.order_by("-epoch")[:3].aggregate(Avg("train_loss"))["train_loss__avg"]
+            old_loss = session.metrics.order_by("-epoch")[3:6].aggregate(Avg("train_loss"))["train_loss__avg"]
+            loss_change = ((old_loss - recent_loss) / old_loss * 100) if old_loss else 0
+        else:
+            loss_change = 0
 
-    data = {
-        "session": {
-            "id": session.id,
-            "model_name": session.model_name,
-            "version": session.version,
-            "status": session.status,
-            "dataset_name": session.dataset_name,
-            "gpu_info": session.gpu_info,
-            "memory_info": session.memory_info,
-            "total_epochs": session.total_epochs,
-            "current_epoch": session.current_epoch,
-            "learning_rate": session.learning_rate,
-            "image_size": session.image_size,
-            "optimizer": session.optimizer,
-            "augmentation": session.augmentation,
-            "early_stopping": session.early_stopping,
-            "patience": session.patience,
-            "description": session.description,
-            "dataset_path": session.dataset_path,
-            "config": session.config,
-            "start_time": session.start_time,
-            "end_time": session.end_time,
-            "progress": session.progress_percentage,
-            "training_time": session.training_duration,
-        },
-        "metrics": [
-            {
-                "epoch": metric.epoch,
-                "train_loss": metric.train_loss,
-                "val_loss": metric.val_loss,
-                "map50": metric.map50,
-                "map95": metric.map95,
-            }
-            for metric in metrics
-        ],
-        "class_metrics": [
-            {
-                "class_name": cm.class_name,
-                "precision": cm.precision,
-                "recall": cm.recall,
-                "f1_score": cm.f1_score,
-                "instances": cm.instances,
-            }
-            for cm in session.class_metrics.all()
-        ],
-        "loss_chart": loss_chart,
-        "map_chart": map_chart,
-        "map_change": round(map_change, 1),
-        "loss_change": round(loss_change, 1),
-    }
+        data = {
+            "session": {
+                "id": session.id,
+                "model_name": session.model_name,
+                "version": session.version,
+                "status": session.status,
+                "dataset_name": session.dataset_name,
+                "gpu_info": session.gpu_info,
+                "memory_info": session.memory_info,
+                "total_epochs": session.total_epochs,
+                "current_epoch": session.current_epoch,
+                "learning_rate": session.learning_rate,
+                "image_size": session.image_size,
+                "optimizer": session.optimizer,
+                "augmentation": session.augmentation,
+                "early_stopping": session.early_stopping,
+                "patience": session.patience,
+                "description": session.description,
+                "dataset_path": session.dataset_path,
+                "config": session.config,
+                "start_time": session.start_time,
+                "end_time": session.end_time,
+                "progress": session.progress_percentage,
+                "training_time": session.training_duration,
+            },
+            "metrics": [
+                {
+                    "epoch": metric.epoch,
+                    "train_loss": metric.train_loss,
+                    "val_loss": metric.val_loss,
+                    "map50": metric.map50,
+                    "map95": metric.map95,
+                }
+                for metric in metrics
+            ],
+            "class_metrics": [
+                {
+                    "class_name": cm.class_name,
+                    "precision": cm.precision,
+                    "recall": cm.recall,
+                    "f1_score": cm.f1_score,
+                    "instances": cm.instances,
+                }
+                for cm in session.class_metrics.all()
+            ],
+            "loss_chart": loss_chart,
+            "map_chart": map_chart,
+            "map_change": round(map_change, 1),
+            "loss_change": round(loss_change, 1),
+        }
 
     return render(request, "training/dashboard.html", data)
 

@@ -284,8 +284,8 @@ class DataSearchForm(forms.Form):
         label="모델",
         choices=[
             ("", "전체"),
-            ("CNN", "CNN"),
-            ("YOLOv11n", "YOLO v11n"),
+            ("cnn", "CNN"),
+            ("yolo11n", "YOLO v11n"),
         ],
         initial="",  # 초기값세팅
         widget=forms.Select(attrs={"class": "form-control"}),
