@@ -51,60 +51,6 @@ django.setup()
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 
-def training_data_api(request, session_id):
-    """훈련 데이터 API"""
-    session = get_object_or_404(TrainingSession, id=session_id)
-    metrics = session.metrics.all()
-
-    data = {
-        "session": {
-            "id": session.id,
-            "model_name": session.model_name,
-            "version": session.version,
-            "status": session.status,
-            "dataset_name": session.dataset_name,
-            "gpu_info": session.gpu_info,
-            "memory_info": session.memory_info,
-            "total_epochs": session.total_epochs,
-            "current_epoch": session.current_epoch,
-            "learning_rate": session.learning_rate,
-            "image_size": session.image_size,
-            "optimizer": session.optimizer,
-            "augmentation": session.augmentation,
-            "early_stopping": session.early_stopping,
-            "patience": session.patience,
-            "description": session.description,
-            "dataset_path": session.dataset_path,
-            "config": session.config,
-            "start_time": session.start_time,
-            "end_time": session.end_time,
-            "progress": session.progress_percentage,
-            "training_time": session.training_duration,
-        },
-        "metrics": [
-            {
-                "epoch": metric.epoch,
-                "train_loss": metric.train_loss,
-                "val_loss": metric.val_loss,
-                "map50": metric.map50,
-                "map95": metric.map95,
-            }
-            for metric in metrics
-        ],
-        "class_metrics": [
-            {
-                "class_name": cm.class_name,
-                "precision": cm.precision,
-                "recall": cm.recall,
-                "f1_score": cm.f1_score,
-                "instances": cm.instances,
-            }
-            for cm in session.class_metrics.all()
-        ],
-    }
-
-    return JsonResponse(data)
-
 
 def create_loss_chart(session):
     """손실 차트 생성"""
@@ -404,9 +350,9 @@ def upload_dataset(request):
             # 상태 변경 training:훈련
             # TrainingSession update
             # 방법 1: 객체를 가져와서 수정 후 .save() 사용
-            session = TrainingSession.objects.get(id=session.id) # 원하는 객체 가져오기
-            session.status="training"                    # 필드 수정
-            session.save()                               # 변경사항 저장
+            # session = TrainingSession.objects.get(id=session.id) # 원하는 객체 가져오기
+            # session.status="training"                    # 필드 수정
+            # session.save()                               # 변경사항 저장
             # 장점: 모델의 save() 메서드가 호출되므로 커스텀 로직이 실행됨
             # 단점: 객체를 메모리에 로드해야 하므로 성능이 떨어질 수 있음
 
@@ -453,6 +399,7 @@ def upload_dataset(request):
                     # ZIP 파일 압축 해제
                     extract_dir = os.path.join(upload_dir, "extracted")
                     zip_ref.extractall(extract_dir)
+                    print(f" extract_dir:{extract_dir} upload_dir:{upload_dir}")
 
             except zipfile.BadZipFile:
                 messages.error(request, "올바르지 않은 ZIP 파일입니다.")
@@ -461,6 +408,17 @@ def upload_dataset(request):
             # ******************************************************************
             # 파일 저장 및 처리
             # ******************************************************************
+            
+            # 파일 개수 세기
+            target_dir = extract_dir  # 실제 경로로 수정하세요
+            try:
+                file_count = sum(
+                    len(files) for _, _, files in os.walk(target_dir)
+                )
+                # return JsonResponse({'file_count': file_count})
+                print(f"✅ 2.파일 개수:{file_count}")
+            except Exception as e:
+                return JsonResponse({'error': str(e)}, status=500)
 
             # ******************************************************************
             # ClassMetric 담을 리스트 생성(training_classmetric) 시작
@@ -521,6 +479,7 @@ def upload_dataset(request):
                 test_percent=10,
                 label_map=None,
             ):
+                print(f"✅ 소스경로 source_dir:{source_dir} output_dir:{output_dir}")
                 total_percent = train_percent + valid_percent + test_percent
                 print(f"✅ 퍼센트 total:{total_percent} train:{train_percent} valid:{valid_percent} test:{test_percent}")
                 assert (total_percent == 100), f"비율 합이 100이 되어야 합니다. 현재: {total_percent}"
@@ -533,7 +492,10 @@ def upload_dataset(request):
                 class_images = {}
                 for class_name in label_map.keys():
                     print(f"✅ 소스 디렉토리:{source_dir} 클래스명:{class_name}")
-                    class_path = os.path.join(source_dir, class_name)
+                    class_path = os.path.join(source_dir, "train", class_name)
+                    images = glob.glob(os.path.join(class_path, "*.*"))  # 모든 확장자 포함
+                    class_images[class_name] = images
+                    class_path = os.path.join(source_dir, "valid", class_name)
                     images = glob.glob(os.path.join(class_path, "*.*"))  # 모든 확장자 포함
                     class_images[class_name] = images
 
@@ -648,13 +610,25 @@ def upload_dataset(request):
                         print(f"✅ [data.yaml] rewrite error: {e}")
 
                 # 압축해제 폴더 삭제
-                shutil.rmtree(os.path.join(extract_dir), ignore_errors=True)
+                # shutil.rmtree(os.path.join(extract_dir), ignore_errors=True)
 
             else:
                 upload_dir = extract_dir
                 print("⚠️ 회전 및 분할 CNN 데이터 증강 없음")
 
             print("✅ 데이터 증강 종료")
+
+            # 파일 개수 세기
+            target_dir = extract_dir  # 실제 경로로 수정하세요
+            try:
+                file_count = sum(
+                    len(files) for _, _, files in os.walk(target_dir)
+                )
+                # return JsonResponse({'file_count': file_count})
+                print(f"✅ 1.파일 개수:{file_count}")
+            except Exception as e:
+                return JsonResponse({'error': str(e)}, status=500)
+            
             # ******************************************************************
             # *************************** 증강 종료 ****************************
             # ******************************************************************
@@ -1068,9 +1042,79 @@ def training_data_api(request, session_id):
     loss_chart = create_loss_chart(session)
     map_chart = create_map_chart(session)
     
+    data = {}
+    
     if "cnn" == session.model_name:
         print("----------------- CNN ---------------")
         
+        # 성능 개선 계산 (이전 10개 에포크와 비교)
+        metrics_count = session.metrics.count()
+
+        if metrics_count > 10:
+            recent_avg = session.metrics.order_by("-epoch")[:5].aggregate(Avg("map50"))["map50__avg"]
+            old_avg = session.metrics.order_by("-epoch")[5:10].aggregate(Avg("map50"))["map50__avg"]
+            map_change = ((recent_avg - old_avg) / old_avg * 100) if old_avg else 0
+        else:
+            map_change = 0
+
+        # 손실 변화 계산
+        if metrics_count > 5:
+            recent_loss = session.metrics.order_by("-epoch")[:3].aggregate(Avg("train_loss"))["train_loss__avg"]
+            old_loss = session.metrics.order_by("-epoch")[3:6].aggregate(Avg("train_loss"))["train_loss__avg"]
+            loss_change = ((old_loss - recent_loss) / old_loss * 100) if old_loss else 0
+        else:
+            loss_change = 0
+
+        data = {
+            "session": {
+                "id": session.id,
+                "model_name": session.model_name,
+                "version": session.version,
+                "status": session.status,
+                "dataset_name": session.dataset_name,
+                "gpu_info": session.gpu_info,
+                "memory_info": session.memory_info,
+                "total_epochs": session.total_epochs,
+                "current_epoch": session.current_epoch,
+                "learning_rate": session.learning_rate,
+                "image_size": session.image_size,
+                "optimizer": session.optimizer,
+                "augmentation": session.augmentation,
+                "early_stopping": session.early_stopping,
+                "patience": session.patience,
+                "description": session.description,
+                "dataset_path": session.dataset_path,
+                "config": session.config,
+                "start_time": session.start_time,
+                "end_time": session.end_time,
+                "progress": session.progress_percentage,
+                "training_time": session.training_duration,
+            },
+            "metrics": [
+                {
+                    "epoch": metric.epoch,
+                    "train_loss": metric.train_loss,
+                    "val_loss": metric.val_loss,
+                    "map50": metric.map50,
+                    "map95": metric.map95,
+                }
+                for metric in metrics
+            ],
+            "class_metrics": [
+                {
+                    "class_name": cm.class_name,
+                    "precision": cm.precision,
+                    "recall": cm.recall,
+                    "f1_score": cm.f1_score,
+                    "instances": cm.instances,
+                }
+                for cm in session.class_metrics.all()
+            ],
+            "loss_chart": loss_chart,
+            "map_chart": map_chart,
+            "map_change": round(map_change, 1),
+            "loss_change": round(loss_change, 1),
+        }
     elif "yolo11n" == session.model_name:
         print("----------------- YOLO ---------------")
 
@@ -1142,6 +1186,7 @@ def training_data_api(request, session_id):
             "map_change": round(map_change, 1),
             "loss_change": round(loss_change, 1),
         }
+    print(f"훈련 데이터 API data:{data}")
 
     return render(request, "training/dashboard.html", data)
 
