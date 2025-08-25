@@ -19,14 +19,17 @@ from datetime import date, datetime
 from django.contrib import messages
 from django.conf import settings
 from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
 from django.db import connection
 from django.db.models import Avg
 from django.db.utils import OperationalError
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.functional import SimpleLazyObject
 from django.views.decorators.http import require_POST
+from django.urls import reverse
 from pathlib import Path
 from PIL import Image
 from ultralytics import YOLO
@@ -293,13 +296,13 @@ def create_demo_map_chart():
     return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
 
-# 훈련 종료 이메일 알림 함수 (재사용 가능)
-def send_training_finished_email(
-    session_id: int, success: bool = True, extra_msg: str = ""
-):
+
+# 훈련 종료 이메일 알림 함수 (HTML+텍스트, 템플릿 우선, 폴백 제공)
+def send_training_finished_email(session_id: int, success: bool = True, extra_msg: str = ""):
     """
-    훈련 종료 시 사용자에게 이메일 알림을 보낸다.
-    session.notify_email 이 없으면 아무 것도 하지 않음.
+    훈련 종료 시 사용자에게 이메일 알림(HTML + 텍스트)을 보낸다.
+    - templates/emails/training_finished.html / .txt 가 있으면 템플릿 사용
+    - 없으면 inline HTML/text 로 폴백
     """
     try:
         session = TrainingSession.objects.get(id=session_id)
@@ -310,30 +313,53 @@ def send_training_finished_email(
     if not getattr(session, "notify_email", None):
         print(f"[notify] no notify_email for session {session_id}, skip")
         return
-    subject = "[YOLO] 훈련 완료" if success else "[YOLO] 훈련 실패"
-    lines = [
-        f"모델: {session.model_name} (v{session.version})",
-        f"상태: {'성공' if success else '실패'}",
-    ]
-    if session.dataset_name:
-        lines.append(f"데이터셋: {session.dataset_name}")
-    if extra_msg:
-        lines.append(f"메시지: {extra_msg}")
-    # 시간 정보(있을 경우)
-    if getattr(session, "start_time", None):
-        lines.append(f"시작: {session.start_time}")
-    if getattr(session, "end_time", None):
-        lines.append(f"종료: {session.end_time}")
-    message = "\n".join(lines)
+
+    # 시간 포맷 (KST)
+    def _fmt(dt):
+        if not dt:
+            return "-"
+        return timezone.localtime(dt, timezone=ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d %H:%M:%S")
+
+    status_kor = "성공" if success else "실패"
+
+    # 대시보드 URL (가능하면 절대경로)
     try:
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
-            recipient_list=[session.notify_email],
-            fail_silently=False,
-        )
-        print(f"[notify] sent email to {session.notify_email} for session {session_id}")
+        relative = reverse("training:sessions")
+        base = getattr(settings, "SITE_BASE_URL", "")
+        result_url = (base.rstrip("/") + relative) if base else relative
+    except Exception:
+        result_url = getattr(settings, "SITE_DASHBOARD_URL", "")
+
+    ctx = {
+        "success": success,
+        "status_kor": status_kor,
+        "session_id": session.id,
+        "model_name": session.model_name,
+        "version": session.version,
+        "dataset_name": getattr(session, "dataset_name", None),
+        "start_kst": _fmt(getattr(session, "start_time", None)),
+        "end_kst": _fmt(getattr(session, "end_time", None)),
+        "extra_msg": extra_msg,
+        "result_url": result_url,
+    }
+
+    subject = f"[YOLO] 훈련 {status_kor} - {session.model_name} (#{session.id})"
+    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None)
+    to = [session.notify_email]
+
+    # 템플릿 기반 렌더링 (HTML + 텍스트). 템플릿이 없으면 전송하지 않음.
+    try:
+        text_body = render_to_string("training/templates/emails/training_finished.txt", ctx)
+        html_body = render_to_string("training/templates/emails/training_finished.html", ctx)
+    except Exception as e:
+        print(f"[notify] template render error (no send): {e}")
+        return
+
+    msg = EmailMultiAlternatives(subject, text_body, from_email, to)
+    msg.attach_alternative(html_body, "text/html")
+    try:
+        msg.send(fail_silently=False)
+        print(f"[notify] sent HTML email to {session.notify_email} for session {session_id}")
     except Exception as e:
         print(f"[notify] email send error for session {session_id}: {e}")
 
