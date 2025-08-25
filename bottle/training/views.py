@@ -54,8 +54,14 @@ def create_loss_chart(session):
     metrics = session.metrics.all()
 
     epochs = [m.epoch for m in metrics]
-    train_losses = [m.train_loss for m in metrics]
-    val_losses = [m.val_loss for m in metrics]
+    
+    if session.model_name == 'cnn':
+        train_losses = [m.loss_total for m in metrics]
+        val_losses = [m.loss_total for m in metrics]
+    
+    elif session.model_name == 'yolo11n':
+        train_losses = [m.train_acc for m in metrics]
+        val_losses = [m.val_acc for m in metrics]
 
     trace1 = go.Scatter(
         x=epochs,
@@ -90,28 +96,33 @@ def create_map_chart(session):
     metrics = session.metrics.all()
 
     epochs = [m.epoch for m in metrics]
-    map50_values = [m.map50 for m in metrics]
-    map95_values = [m.map95 for m in metrics]
+    
+    if session.model_name == 'cnn':
+        map50_values = [m.map50 for m in metrics]
+        map95_values = [m.map95 for m in metrics]
+    elif session.model_name == 'yolo11n':
+        map50_values = [m.train_acc for m in metrics]
+        map95_values = [m.val_acc for m in metrics]
 
     trace1 = go.Scatter(
         x=epochs,
         y=map50_values,
         mode="lines",
-        name="mAP@0.5",
+        name="mAP@0.5" if session.model_name == 'yolo11n' else "train accuracy",
         line=dict(color="#f59e0b", width=2),
     )
     trace2 = go.Scatter(
         x=epochs,
         y=map95_values,
         mode="lines",
-        name="mAP@0.5:0.95",
+        name="mAP@0.5:0.95" if session.model_name == 'yolo11n' else "valid accuracy",
         line=dict(color="#ef4444", width=2),
     )
 
     layout = go.Layout(
-        title="Mean Average Precision (mAP)",
+        title="Mean Average Precision (mAP)" if session.model_name == 'yolo11n' else "Train/Valid Accuracy",
         xaxis=dict(title="Epoch"),
-        yaxis=dict(title="mAP"),
+        yaxis=dict(title="mAP" if session.model_name == 'yolo11n' else "Accuracy"),
         plot_bgcolor="rgba(0,0,0,0)",
         paper_bgcolor="rgba(0,0,0,0)",
         font=dict(color="white"),
@@ -583,17 +594,19 @@ def upload_dataset(request):
                     except Exception as e:
                         print(f"✅ [data.yaml] rewrite error: {e}")
 
-                # 압축해제 폴더 삭제
-                # shutil.rmtree(os.path.join(extract_dir), ignore_errors=True)
-
             else:
-                upload_dir = extract_dir
+                print(f"✅ 증강 없음 extract_dir={extract_dir}\n   upload_dir={upload_dir}")
+                copy_files_from_paths(extract_dir, upload_dir)
+                # upload_dir = extract_dir
                 print("⚠️ 회전 및 분할 CNN 데이터 증강 없음")
 
             print("✅ 데이터 증강 종료")
 
+            # 압축해제 폴더 삭제
+            shutil.rmtree(os.path.join(extract_dir), ignore_errors=True)
+
             # 파일 개수 세기
-            target_dir = extract_dir  # 실제 경로로 수정하세요
+            target_dir = upload_dir  # 실제 경로로 수정하세요
             try:
                 file_count = sum(
                     len(files) for _, _, files in os.walk(target_dir)
@@ -1379,3 +1392,28 @@ def rotate_and_split_yolo_dataset(root_dir, output_dir, rotation_angle, rate_img
     # 임시 폴더 삭제
     shutil.rmtree(os.path.join(output_dir, "temp"), ignore_errors=True)
     print("🎉 데이터셋 분할 완료: train / valid / test")
+
+
+def copy_files_from_paths(source_path: str, target_path: str) -> dict:
+    """
+    source_path 하위의 모든 파일과 폴더를 target_path로 복사합니다.
+    """
+    if not os.path.exists(source_path):
+        return {'status': 'error', 'message': f'원본 경로가 존재하지 않습니다: {source_path}'}
+
+    try:
+        for root, dirs, files in os.walk(source_path):
+            relative_path = os.path.relpath(root, source_path)
+            target_dir = os.path.join(target_path, relative_path)
+            os.makedirs(target_dir, exist_ok=True)
+
+            for file in files:
+                src_file = os.path.join(root, file)
+                dst_file = os.path.join(target_dir, file)
+                shutil.copy2(src_file, dst_file)
+
+        return {'status': 'success', 'message': '파일 복사가 완료되었습니다.'}
+
+    except Exception as e:
+        return {'status': 'error', 'message': str(e)}
+

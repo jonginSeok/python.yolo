@@ -544,6 +544,7 @@
                             <span class="info-label">{{ metric.instances }} instances</span>
                         </div>
 
+                        {% if session.model_name == 'yolo11n' %}
                         <div class="disp-gap">
                             <div class="" style="min-width: 10em;">
                                 <div class="info-item">
@@ -575,6 +576,7 @@
                                 </div>
                             </div>
                         </div>
+                        {% endif %}
                     </div>
                     {% endfor %}
                 </div>
