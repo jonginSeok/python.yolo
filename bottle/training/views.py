@@ -19,14 +19,19 @@ from datetime import date, datetime
 from django.contrib import messages
 from django.conf import settings
 from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
 from django.db import connection
 from django.db.models import Avg
 from django.db.utils import OperationalError
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
+from django.template.loader import render_to_string
+from django.template import TemplateDoesNotExist
+from django.utils.html import strip_tags
 from django.utils import timezone
 from django.utils.functional import SimpleLazyObject
 from django.views.decorators.http import require_POST
+from django.urls import reverse
 from pathlib import Path
 from PIL import Image
 from ultralytics import YOLO
@@ -48,68 +53,20 @@ django.setup()
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 
-def training_data_api(request, session_id):
-    """훈련 데이터 API"""
-    session = get_object_or_404(TrainingSession, id=session_id)
-    metrics = session.metrics.all()
-
-    data = {
-        "session": {
-            "id": session.id,
-            "model_name": session.model_name,
-            "version": session.version,
-            "status": session.status,
-            "dataset_name": session.dataset_name,
-            "gpu_info": session.gpu_info,
-            "memory_info": session.memory_info,
-            "total_epochs": session.total_epochs,
-            "current_epoch": session.current_epoch,
-            "learning_rate": session.learning_rate,
-            "image_size": session.image_size,
-            "optimizer": session.optimizer,
-            "augmentation": session.augmentation,
-            "early_stopping": session.early_stopping,
-            "patience": session.patience,
-            "description": session.description,
-            "dataset_path": session.dataset_path,
-            "config": session.config,
-            "start_time": session.start_time,
-            "end_time": session.end_time,
-            "progress": session.progress_percentage,
-            "training_time": session.training_duration,
-        },
-        "metrics": [
-            {
-                "epoch": metric.epoch,
-                "train_loss": metric.train_loss,
-                "val_loss": metric.val_loss,
-                "map50": metric.map50,
-                "map95": metric.map95,
-            }
-            for metric in metrics
-        ],
-        "class_metrics": [
-            {
-                "class_name": cm.class_name,
-                "precision": cm.precision,
-                "recall": cm.recall,
-                "f1_score": cm.f1_score,
-                "instances": cm.instances,
-            }
-            for cm in session.class_metrics.all()
-        ],
-    }
-
-    return JsonResponse(data)
-
 
 def create_loss_chart(session):
     """손실 차트 생성"""
     metrics = session.metrics.all()
 
     epochs = [m.epoch for m in metrics]
-    train_losses = [m.train_loss for m in metrics]
-    val_losses = [m.val_loss for m in metrics]
+    
+    if session.model_name == 'cnn':
+        train_losses = [m.loss_total for m in metrics]
+        val_losses = [m.loss_total for m in metrics]
+    
+    elif session.model_name == 'yolo11n':
+        train_losses = [m.train_acc for m in metrics]
+        val_losses = [m.val_acc for m in metrics]
 
     trace1 = go.Scatter(
         x=epochs,
@@ -144,28 +101,33 @@ def create_map_chart(session):
     metrics = session.metrics.all()
 
     epochs = [m.epoch for m in metrics]
-    map50_values = [m.map50 for m in metrics]
-    map95_values = [m.map95 for m in metrics]
+    
+    if session.model_name == 'cnn':
+        map50_values = [m.map50 for m in metrics]
+        map95_values = [m.map95 for m in metrics]
+    elif session.model_name == 'yolo11n':
+        map50_values = [m.train_acc for m in metrics]
+        map95_values = [m.val_acc for m in metrics]
 
     trace1 = go.Scatter(
         x=epochs,
         y=map50_values,
         mode="lines",
-        name="mAP@0.5",
+        name="mAP@0.5" if session.model_name == 'yolo11n' else "train accuracy",
         line=dict(color="#f59e0b", width=2),
     )
     trace2 = go.Scatter(
         x=epochs,
         y=map95_values,
         mode="lines",
-        name="mAP@0.5:0.95",
+        name="mAP@0.5:0.95" if session.model_name == 'yolo11n' else "valid accuracy",
         line=dict(color="#ef4444", width=2),
     )
 
     layout = go.Layout(
-        title="Mean Average Precision (mAP)",
+        title="Mean Average Precision (mAP)" if session.model_name == 'yolo11n' else "Train/Valid Accuracy",
         xaxis=dict(title="Epoch"),
-        yaxis=dict(title="mAP"),
+        yaxis=dict(title="mAP" if session.model_name == 'yolo11n' else "Accuracy"),
         plot_bgcolor="rgba(0,0,0,0)",
         paper_bgcolor="rgba(0,0,0,0)",
         font=dict(color="white"),
@@ -293,13 +255,13 @@ def create_demo_map_chart():
     return json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
 
-# 훈련 종료 이메일 알림 함수 (재사용 가능)
-def send_training_finished_email(
-    session_id: int, success: bool = True, extra_msg: str = ""
-):
+
+# 훈련 종료 이메일 알림 함수 (HTML+텍스트, 템플릿 우선, 폴백 제공)
+def send_training_finished_email(request, session_id: int, success: bool = True, extra_msg: str = ""):
     """
-    훈련 종료 시 사용자에게 이메일 알림을 보낸다.
-    session.notify_email 이 없으면 아무 것도 하지 않음.
+    훈련 종료 시 사용자에게 이메일 알림(HTML + 텍스트)을 보낸다.
+    - templates/emails/training_finished.html / .txt 가 있으면 템플릿 사용
+    - 없으면 inline HTML/text 로 폴백
     """
     try:
         session = TrainingSession.objects.get(id=session_id)
@@ -310,30 +272,76 @@ def send_training_finished_email(
     if not getattr(session, "notify_email", None):
         print(f"[notify] no notify_email for session {session_id}, skip")
         return
-    subject = "[YOLO] 훈련 완료" if success else "[YOLO] 훈련 실패"
-    lines = [
-        f"모델: {session.model_name} (v{session.version})",
-        f"상태: {'성공' if success else '실패'}",
-    ]
-    if session.dataset_name:
-        lines.append(f"데이터셋: {session.dataset_name}")
-    if extra_msg:
-        lines.append(f"메시지: {extra_msg}")
-    # 시간 정보(있을 경우)
-    if getattr(session, "start_time", None):
-        lines.append(f"시작: {session.start_time}")
-    if getattr(session, "end_time", None):
-        lines.append(f"종료: {session.end_time}")
-    message = "\n".join(lines)
+
+    # 시간 포맷 (KST)
+    def _fmt(dt):
+        if not dt:
+            return "-"
+        return timezone.localtime(dt, timezone=ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d %H:%M:%S")
+
+    status_kor = "성공" if success else "실패"
+
+    # 세션별 상세 URL (절대경로 보장)
     try:
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
-            recipient_list=[session.notify_email],
-            fail_silently=False,
-        )
-        print(f"[notify] sent email to {session.notify_email} for session {session_id}")
+        relative = reverse("training:training_data_api", args=[session.id])
+        base = (getattr(settings, "SITE_BASE_URL", "") or "").strip()
+        if base:
+            result_url = (base.rstrip("/") + relative)
+        else:
+            # 요청 객체에서 호스트를 사용해 절대 URL 생성
+            try:
+                result_url = request.build_absolute_uri(relative)
+            except Exception:
+                # 최후의 수단: 상대경로
+                result_url = relative
+    except Exception as e:
+        print(f"[notify] reverse url error: {e}")
+        result_url = ""
+
+    ctx = {
+        "success": success,
+        "status_kor": status_kor,
+        "session_id": session.id,
+        "model_name": session.model_name,
+        "version": session.version,
+        "dataset_name": getattr(session, "dataset_name", None),
+        "start_kst": _fmt(getattr(session, "start_time", None)),
+        "end_kst": _fmt(getattr(session, "end_time", None)),
+        "extra_msg": extra_msg,
+        "result_url": result_url,
+    }
+
+    subject = f"[YOLO] 훈련 {status_kor} - {session.model_name} (#{session.id})"
+    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None)
+    to = [session.notify_email]
+
+    # 템플릿 기반 렌더링 (HTML + 텍스트)
+    # HTML 템플릿은 필수, TXT는 없으면 strip_tags로 대체
+    try:
+        html_body = render_to_string("training/emails/training_finished.html", ctx)
+    except TemplateDoesNotExist as e:
+        print(f"[notify] HTML template missing, no send: {e}")
+        return
+    except Exception as e:
+        print(f"[notify] HTML template render error, no send: {e}")
+        return
+
+    try:
+        text_body = render_to_string("training/emails/training_finished.txt", ctx)
+    except TemplateDoesNotExist:
+        # TXT 템플릿이 없으면 HTML에서 텍스트 추출
+        text_body = strip_tags(html_body)
+        print("[notify] TXT template missing, using strip_tags(html) as fallback.")
+    except Exception as e:
+        # 기타 렌더 에러도 텍스트는 폴백 생성
+        text_body = strip_tags(html_body)
+        print(f"[notify] TXT template render error, using fallback: {e}")
+
+    msg = EmailMultiAlternatives(subject, text_body, from_email, to)
+    msg.attach_alternative(html_body, "text/html")
+    try:
+        msg.send(fail_silently=False)
+        print(f"[notify] sent HTML email to {session.notify_email} for session {session_id}")
     except Exception as e:
         print(f"[notify] email send error for session {session_id}: {e}")
 
@@ -378,9 +386,9 @@ def upload_dataset(request):
             # 상태 변경 training:훈련
             # TrainingSession update
             # 방법 1: 객체를 가져와서 수정 후 .save() 사용
-            session = TrainingSession.objects.get(id=session.id) # 원하는 객체 가져오기
-            session.status="training"                    # 필드 수정
-            session.save()                               # 변경사항 저장
+            # session = TrainingSession.objects.get(id=session.id) # 원하는 객체 가져오기
+            # session.status="training"                    # 필드 수정
+            # session.save()                               # 변경사항 저장
             # 장점: 모델의 save() 메서드가 호출되므로 커스텀 로직이 실행됨
             # 단점: 객체를 메모리에 로드해야 하므로 성능이 떨어질 수 있음
 
@@ -427,6 +435,7 @@ def upload_dataset(request):
                     # ZIP 파일 압축 해제
                     extract_dir = os.path.join(upload_dir, "extracted")
                     zip_ref.extractall(extract_dir)
+                    print(f" extract_dir:{extract_dir} upload_dir:{upload_dir}")
 
             except zipfile.BadZipFile:
                 messages.error(request, "올바르지 않은 ZIP 파일입니다.")
@@ -435,6 +444,17 @@ def upload_dataset(request):
             # ******************************************************************
             # 파일 저장 및 처리
             # ******************************************************************
+            
+            # 파일 개수 세기
+            target_dir = extract_dir  # 실제 경로로 수정하세요
+            try:
+                file_count = sum(
+                    len(files) for _, _, files in os.walk(target_dir)
+                )
+                # return JsonResponse({'file_count': file_count})
+                print(f"✅ 2.파일 개수:{file_count}")
+            except Exception as e:
+                return JsonResponse({'error': str(e)}, status=500)
 
             # ******************************************************************
             # ClassMetric 담을 리스트 생성(training_classmetric) 시작
@@ -495,6 +515,7 @@ def upload_dataset(request):
                 test_percent=10,
                 label_map=None,
             ):
+                print(f"✅ 소스경로 source_dir:{source_dir} output_dir:{output_dir}")
                 total_percent = train_percent + valid_percent + test_percent
                 print(f"✅ 퍼센트 total:{total_percent} train:{train_percent} valid:{valid_percent} test:{test_percent}")
                 assert (total_percent == 100), f"비율 합이 100이 되어야 합니다. 현재: {total_percent}"
@@ -507,7 +528,10 @@ def upload_dataset(request):
                 class_images = {}
                 for class_name in label_map.keys():
                     print(f"✅ 소스 디렉토리:{source_dir} 클래스명:{class_name}")
-                    class_path = os.path.join(source_dir, class_name)
+                    class_path = os.path.join(source_dir, "train", class_name)
+                    images = glob.glob(os.path.join(class_path, "*.*"))  # 모든 확장자 포함
+                    class_images[class_name] = images
+                    class_path = os.path.join(source_dir, "valid", class_name)
                     images = glob.glob(os.path.join(class_path, "*.*"))  # 모든 확장자 포함
                     class_images[class_name] = images
 
@@ -621,14 +645,28 @@ def upload_dataset(request):
                     except Exception as e:
                         print(f"✅ [data.yaml] rewrite error: {e}")
 
-                # 압축해제 폴더 삭제
-                shutil.rmtree(os.path.join(extract_dir), ignore_errors=True)
-
             else:
-                upload_dir = extract_dir
+                print(f"✅ 증강 없음 extract_dir={extract_dir}\n   upload_dir={upload_dir}")
+                copy_files_from_paths(extract_dir, upload_dir)
+                # upload_dir = extract_dir
                 print("⚠️ 회전 및 분할 CNN 데이터 증강 없음")
 
             print("✅ 데이터 증강 종료")
+
+            # 압축해제 폴더 삭제
+            shutil.rmtree(os.path.join(extract_dir), ignore_errors=True)
+
+            # 파일 개수 세기
+            target_dir = upload_dir  # 실제 경로로 수정하세요
+            try:
+                file_count = sum(
+                    len(files) for _, _, files in os.walk(target_dir)
+                )
+                # return JsonResponse({'file_count': file_count})
+                print(f"✅ 1.파일 개수:{file_count}")
+            except Exception as e:
+                return JsonResponse({'error': str(e)}, status=500)
+            
             # ******************************************************************
             # *************************** 증강 종료 ****************************
             # ******************************************************************
@@ -855,8 +893,12 @@ def upload_dataset(request):
                 torch.save(model.state_dict(), save_path,)
                 print(f"✅ CNN Model saved to {save_path}")
 
+                # 이메일 전 end_time을 먼저 저장/반영
+                end_now = timezone.now()
+                TrainingSession.objects.filter(id=session.id).update(end_time=end_now)
+                session.end_time = end_now
                 # 이메일 알림 (성공)
-                send_training_finished_email(session.id, success=True)
+                send_training_finished_email(request, session.id, success=True)
 
             # ******************************************************************
             # *************************** YOLO 실행 ***************************
@@ -930,8 +972,12 @@ def upload_dataset(request):
                 conn.commit()
                 conn.close()
 
+                # 이메일 전 end_time을 먼저 저장/반영
+                end_now = timezone.now()
+                TrainingSession.objects.filter(id=session.id).update(end_time=end_now)
+                session.end_time = end_now
                 # 이메일 알림 (성공)
-                send_training_finished_email(session.id, success=True)
+                send_training_finished_email(request, session.id, success=True)
             # ******************************************************************
             # *************************** 실행 종료 ***************************
             # ******************************************************************
@@ -1042,9 +1088,79 @@ def training_data_api(request, session_id):
     loss_chart = create_loss_chart(session)
     map_chart = create_map_chart(session)
     
+    data = {}
+    
     if "cnn" == session.model_name:
         print("----------------- CNN ---------------")
         
+        # 성능 개선 계산 (이전 10개 에포크와 비교)
+        metrics_count = session.metrics.count()
+
+        if metrics_count > 10:
+            recent_avg = session.metrics.order_by("-epoch")[:5].aggregate(Avg("map50"))["map50__avg"]
+            old_avg = session.metrics.order_by("-epoch")[5:10].aggregate(Avg("map50"))["map50__avg"]
+            map_change = ((recent_avg - old_avg) / old_avg * 100) if old_avg else 0
+        else:
+            map_change = 0
+
+        # 손실 변화 계산
+        if metrics_count > 5:
+            recent_loss = session.metrics.order_by("-epoch")[:3].aggregate(Avg("train_loss"))["train_loss__avg"]
+            old_loss = session.metrics.order_by("-epoch")[3:6].aggregate(Avg("train_loss"))["train_loss__avg"]
+            loss_change = ((old_loss - recent_loss) / old_loss * 100) if old_loss else 0
+        else:
+            loss_change = 0
+
+        data = {
+            "session": {
+                "id": session.id,
+                "model_name": session.model_name,
+                "version": session.version,
+                "status": session.status,
+                "dataset_name": session.dataset_name,
+                "gpu_info": session.gpu_info,
+                "memory_info": session.memory_info,
+                "total_epochs": session.total_epochs,
+                "current_epoch": session.current_epoch,
+                "learning_rate": session.learning_rate,
+                "image_size": session.image_size,
+                "optimizer": session.optimizer,
+                "augmentation": session.augmentation,
+                "early_stopping": session.early_stopping,
+                "patience": session.patience,
+                "description": session.description,
+                "dataset_path": session.dataset_path,
+                "config": session.config,
+                "start_time": session.start_time,
+                "end_time": session.end_time,
+                "progress": session.progress_percentage,
+                "training_time": session.training_duration,
+            },
+            "metrics": [
+                {
+                    "epoch": metric.epoch,
+                    "train_loss": metric.train_loss,
+                    "val_loss": metric.val_loss,
+                    "map50": metric.map50,
+                    "map95": metric.map95,
+                }
+                for metric in metrics
+            ],
+            "class_metrics": [
+                {
+                    "class_name": cm.class_name,
+                    "precision": cm.precision,
+                    "recall": cm.recall,
+                    "f1_score": cm.f1_score,
+                    "instances": cm.instances,
+                }
+                for cm in session.class_metrics.all()
+            ],
+            "loss_chart": loss_chart,
+            "map_chart": map_chart,
+            "map_change": round(map_change, 1),
+            "loss_change": round(loss_change, 1),
+        }
     elif "yolo11n" == session.model_name:
         print("----------------- YOLO ---------------")
 
@@ -1116,6 +1232,7 @@ def training_data_api(request, session_id):
             "map_change": round(map_change, 1),
             "loss_change": round(loss_change, 1),
         }
+    print(f"훈련 데이터 API data:{data}")
 
     return render(request, "training/dashboard.html", data)
 
@@ -1334,3 +1451,28 @@ def rotate_and_split_yolo_dataset(root_dir, output_dir, rotation_angle, rate_img
     # 임시 폴더 삭제
     shutil.rmtree(os.path.join(output_dir, "temp"), ignore_errors=True)
     print("🎉 데이터셋 분할 완료: train / valid / test")
+
+
+def copy_files_from_paths(source_path: str, target_path: str) -> dict:
+    """
+    source_path 하위의 모든 파일과 폴더를 target_path로 복사합니다.
+    """
+    if not os.path.exists(source_path):
+        return {'status': 'error', 'message': f'원본 경로가 존재하지 않습니다: {source_path}'}
+
+    try:
+        for root, dirs, files in os.walk(source_path):
+            relative_path = os.path.relpath(root, source_path)
+            target_dir = os.path.join(target_path, relative_path)
+            os.makedirs(target_dir, exist_ok=True)
+
+            for file in files:
+                src_file = os.path.join(root, file)
+                dst_file = os.path.join(target_dir, file)
+                shutil.copy2(src_file, dst_file)
+
+        return {'status': 'success', 'message': '파일 복사가 완료되었습니다.'}
+
+    except Exception as e:
+        return {'status': 'error', 'message': str(e)}
+
