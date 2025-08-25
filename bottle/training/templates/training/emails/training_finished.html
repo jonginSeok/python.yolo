@@ -4,15 +4,16 @@
   <meta charset="utf-8">
   <title>[YOLO] 훈련 {{ status_kor }}</title>
   <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:0;padding:24px;background:#0b1020;color:#e6e6f0;}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:0;padding:24px;background:#0b1020;color:#f5f5f5;}
     .card{max-width:640px;margin:0 auto;background:#111832;border:1px solid #1b254b;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.35)}
     .header{padding:20px 24px;border-bottom:1px solid #1b254b;display:flex;align-items:center;gap:10px}
-    .badge{font-size:12px;padding:4px 10px;border-radius:999px;background:{{ 'linear-gradient(90deg,#16a34a,#22c55e)' if success else 'linear-gradient(90deg,#b91c1c,#ef4444)' }};color:#fff}
-    .title{font-weight:700;font-size:16px;margin-left:auto;opacity:.9}
+    .badge{font-size:12px;padding:4px 10px;border-radius:999px;color:#fff}
+    .title{font-weight:700;font-size:16px;margin-left:auto;opacity:1; color:#f5f5f5;}
     .content{padding:24px}
     .kv{width:100%;border-collapse:collapse;margin-top:8px}
     .kv th,.kv td{padding:10px 12px;border-bottom:1px solid #1b254b;text-align:left;font-size:14px}
-    .kv th{width:140px;color:#aab3cf;font-weight:600}
+    .kv th{width:140px;color:#d1d5db;font-weight:600}
+    .kv td{color:#f5f5f5;}
     .cta{margin-top:18px}
     .btn{display:inline-block;padding:10px 14px;border-radius:10px;background:#3b82f6;color:#fff;text-decoration:none}
     .foot{padding:16px 24px;border-top:1px solid #1b254b;font-size:12px;color:#94a3b8}
@@ -22,7 +23,9 @@
 <body>
   <div class="card">
     <div class="header">
-      <span class="badge">{{ '완료' if success else '실패' }}</span>
+      <span class="badge" style="background:{% if success %}linear-gradient(90deg,#16a34a,#22c55e){% else %}linear-gradient(90deg,#b91c1c,#ef4444){% endif %};">
+        {% if success %}완료{% else %}실패{% endif %}
+      </span>
       <div class="title">세션 #{{ session_id }}</div>
     </div>
     <div class="content">

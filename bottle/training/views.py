@@ -26,6 +26,8 @@ from django.db.utils import OperationalError
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
+from django.template import TemplateDoesNotExist
+from django.utils.html import strip_tags
 from django.utils import timezone
 from django.utils.functional import SimpleLazyObject
 from django.views.decorators.http import require_POST
@@ -244,7 +246,7 @@ def create_demo_map_chart():
 
 
 # 훈련 종료 이메일 알림 함수 (HTML+텍스트, 템플릿 우선, 폴백 제공)
-def send_training_finished_email(session_id: int, success: bool = True, extra_msg: str = ""):
+def send_training_finished_email(request, session_id: int, success: bool = True, extra_msg: str = ""):
     """
     훈련 종료 시 사용자에게 이메일 알림(HTML + 텍스트)을 보낸다.
     - templates/emails/training_finished.html / .txt 가 있으면 템플릿 사용
@@ -268,13 +270,22 @@ def send_training_finished_email(session_id: int, success: bool = True, extra_ms
 
     status_kor = "성공" if success else "실패"
 
-    # 대시보드 URL (가능하면 절대경로)
+    # 세션별 상세 URL (절대경로 보장)
     try:
-        relative = reverse("training:sessions")
-        base = getattr(settings, "SITE_BASE_URL", "")
-        result_url = (base.rstrip("/") + relative) if base else relative
-    except Exception:
-        result_url = getattr(settings, "SITE_DASHBOARD_URL", "")
+        relative = reverse("training:training_data_api", args=[session.id])
+        base = (getattr(settings, "SITE_BASE_URL", "") or "").strip()
+        if base:
+            result_url = (base.rstrip("/") + relative)
+        else:
+            # 요청 객체에서 호스트를 사용해 절대 URL 생성
+            try:
+                result_url = request.build_absolute_uri(relative)
+            except Exception:
+                # 최후의 수단: 상대경로
+                result_url = relative
+    except Exception as e:
+        print(f"[notify] reverse url error: {e}")
+        result_url = ""
 
     ctx = {
         "success": success,
@@ -293,13 +304,27 @@ def send_training_finished_email(session_id: int, success: bool = True, extra_ms
     from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None)
     to = [session.notify_email]
 
-    # 템플릿 기반 렌더링 (HTML + 텍스트). 템플릿이 없으면 전송하지 않음.
+    # 템플릿 기반 렌더링 (HTML + 텍스트)
+    # HTML 템플릿은 필수, TXT는 없으면 strip_tags로 대체
     try:
-        text_body = render_to_string("training/templates/emails/training_finished.txt", ctx)
-        html_body = render_to_string("training/templates/emails/training_finished.html", ctx)
-    except Exception as e:
-        print(f"[notify] template render error (no send): {e}")
+        html_body = render_to_string("training/emails/training_finished.html", ctx)
+    except TemplateDoesNotExist as e:
+        print(f"[notify] HTML template missing, no send: {e}")
         return
+    except Exception as e:
+        print(f"[notify] HTML template render error, no send: {e}")
+        return
+
+    try:
+        text_body = render_to_string("training/emails/training_finished.txt", ctx)
+    except TemplateDoesNotExist:
+        # TXT 템플릿이 없으면 HTML에서 텍스트 추출
+        text_body = strip_tags(html_body)
+        print("[notify] TXT template missing, using strip_tags(html) as fallback.")
+    except Exception as e:
+        # 기타 렌더 에러도 텍스트는 폴백 생성
+        text_body = strip_tags(html_body)
+        print(f"[notify] TXT template render error, using fallback: {e}")
 
     msg = EmailMultiAlternatives(subject, text_body, from_email, to)
     msg.attach_alternative(html_body, "text/html")
@@ -855,8 +880,12 @@ def upload_dataset(request):
                 torch.save(model.state_dict(), save_path,)
                 print(f"✅ CNN Model saved to {save_path}")
 
+                # 이메일 전 end_time을 먼저 저장/반영
+                end_now = timezone.now()
+                TrainingSession.objects.filter(id=session.id).update(end_time=end_now)
+                session.end_time = end_now
                 # 이메일 알림 (성공)
-                send_training_finished_email(session.id, success=True)
+                send_training_finished_email(request, session.id, success=True)
 
             # ******************************************************************
             # *************************** YOLO 실행 ***************************
@@ -930,8 +959,12 @@ def upload_dataset(request):
                 conn.commit()
                 conn.close()
 
+                # 이메일 전 end_time을 먼저 저장/반영
+                end_now = timezone.now()
+                TrainingSession.objects.filter(id=session.id).update(end_time=end_now)
+                session.end_time = end_now
                 # 이메일 알림 (성공)
-                send_training_finished_email(session.id, success=True)
+                send_training_finished_email(request, session.id, success=True)
             # ******************************************************************
             # *************************** 실행 종료 ***************************
             # ******************************************************************
