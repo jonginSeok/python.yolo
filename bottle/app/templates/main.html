@@ -802,6 +802,123 @@
                 }
             });
 
+            // 폼 제출 가로채기: 세션 검색 폼(learning list)은 SPA 방식으로 처리 (세션 템플릿 수정 불필요)
+            mainContent.addEventListener('submit', async (e) => {
+                const form = e.target;
+                if (!(form instanceof HTMLFormElement)) return;
+
+                // 세션 검색 폼 식별: id="searchForm" 이거나, action이 "/training/sessions" 계열, 혹은 data-role="sessions-search"
+                const actionAttr = (form.getAttribute('action') || '').trim();
+                const isSessionsSearch = form.id === 'searchForm'
+                    || form.dataset.role === 'sessions-search'
+                    || actionAttr.startsWith('/training/sessions');
+                if (!isSessionsSearch) return;
+
+                e.preventDefault();
+                console.debug('[sessions search] submit intercepted');
+
+                // 버튼 로딩 상태
+                const submitBtn = form.querySelector('button[type="submit"], .btn-upload');
+                const originalBtnHTML = submitBtn ? submitBtn.innerHTML : null;
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 검색 중...';
+                }
+
+                try {
+                    const method = (form.getAttribute('method') || 'GET').toUpperCase();
+                    const attr = (form.getAttribute('action') || '').trim();
+                    let actionURL;
+                    try {
+                        actionURL = new URL(attr && attr.length ? attr : location.pathname, location.origin);
+                    } catch (_) {
+                        actionURL = new URL(location.pathname + location.search, location.origin);
+                    }
+                    // 보정: 학습 목록에서 action이 비었거나 루트로 해석되면 세션 목록 엔드포인트로 고정
+                    if ((actionURL.pathname === '/' || actionURL.pathname === '') && (activePage === 'learningList' || actionAttr.startsWith('/training'))) {
+                        actionURL = new URL('/training/sessions/', location.origin);
+                    }
+                    console.debug('[sessions search] resolved action:', actionURL.pathname + actionURL.search, 'method:', method);
+
+                    if (method === 'GET') {
+                        // GET 폼이면 쿼리스트링만 구성해서 세션 목록 URL에 적용 후 SPA 로딩
+                        const sp = new URLSearchParams(new FormData(form));
+                        // actionURL가 / 이거나 비어있어도 위에서 /training/sessions/ 로 보정됨
+                        const targetPath = actionURL.pathname + (sp.toString() ? '?' + sp.toString() : '');
+                        const titleKey = spaRoutes.learningList?.titleKey || 'learningList';
+                        await loadPage(targetPath, t(titleKey), 'learningList');
+                        return;
+                    }
+
+                    // POST 폼이면 fetch로 서버에 제출하고, 응답을 파싱해서 mainContent만 갱신
+                    const fd = new FormData(form);
+                    const resp = await fetch(actionURL.pathname + actionURL.search, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': getCSRFToken(form),
+                        },
+                        body: fd,
+                        credentials: 'same-origin',
+                    });
+
+                    console.debug('[sessions search] status:', resp.status, 'redirected:', resp.redirected, 'url:', resp.url);
+
+                    if (resp.redirected) {
+                        // 리다이렉트면 해당 주소를 SPA로 다시 로드
+                        const u = new URL(resp.url, location.origin);
+                        const titleKey = spaRoutes.learningList?.titleKey || 'learningList';
+                        await loadPage(u.pathname + u.search, t(titleKey), 'learningList');
+                        return;
+                    }
+
+                    const ctype = resp.headers.get('content-type') || '';
+                    if (ctype.includes('application/json')) {
+                        const data = await resp.json();
+                        if (data.redirect_url) {
+                            const titleKey = spaRoutes.learningList?.titleKey || 'learningList';
+                            await loadPage(data.redirect_url, t(titleKey), 'learningList');
+                            return;
+                        }
+                        if (data.html) {
+                            // 서버가 fragment를 내려준 경우 바로 교체
+                            mainContent.innerHTML = data.html;
+                            return;
+                        }
+                    }
+
+                    // 기본: HTML을 받아서 통째로 교체(내부 스크립트 재실행 포함)
+                    const html = await resp.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    mainContent.innerHTML = doc.body.innerHTML;
+                    // 본문 내 스크립트 재실행
+                    const scripts = Array.from(mainContent.querySelectorAll('script'));
+                    for (const s of scripts) {
+                        const ns = document.createElement('script');
+                        if (s.src) {
+                            ['src', 'type', 'crossorigin', 'referrerpolicy', 'integrity', 'nonce'].forEach(attr => {
+                                if (s.hasAttribute(attr)) ns.setAttribute(attr, s.getAttribute(attr));
+                            });
+                        } else {
+                            ns.textContent = s.textContent;
+                            if (s.hasAttribute('type')) ns.setAttribute('type', s.getAttribute('type'));
+                            if (s.hasAttribute('nonce')) ns.setAttribute('nonce', s.getAttribute('nonce'));
+                        }
+                        ns.setAttribute('data-spa-exec', '1');
+                        s.replaceWith(ns);
+                    }
+                } catch (err) {
+                    console.error('[sessions search] error:', err);
+                    alert('검색 중 오류가 발생했습니다. 콘솔 로그를 확인해주세요.');
+                } finally {
+                    if (submitBtn && originalBtnHTML) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnHTML;
+                    }
+                }
+            });
+
             const loadPage = async (url, title, pageId = null, opts = { push: true }) => {
                 try {
                     mainContent.innerHTML = `
