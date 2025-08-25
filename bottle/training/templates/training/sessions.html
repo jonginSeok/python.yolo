@@ -275,7 +275,7 @@
         </div>
     </div>
     
-    <form method="post" id="searchForm" class="">
+    <form method="post" id="searchForm">
         {% csrf_token %}
         <div class="upload-container">
             <div class="upload-card">
@@ -313,8 +313,8 @@
                 </div>
             </div>
         </div>
-        
     </form>
+    
     {% if sessions %}
     <div class="sessions-grid margin-top-30">
         {% for session in sessions %}

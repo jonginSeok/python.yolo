@@ -168,7 +168,7 @@ python.YOLO.zip/
                     </pre>
                 </div>
                 <div id="drawCNNFolderStructure" class="disp-none">
-                    <h2 class="h2-title">📁 YOLO 데이터셋 구조</h2>
+                    <h2 class="h2-title">📁 CNN 데이터셋 구조</h2>
                     <pre>
 python.CNN.zip/
     ├── train/
@@ -287,10 +287,6 @@ python.CNN.zip/
                 </div>
 
                 <div class="form-section disp-none" id="div_patience"><!-- style="display: none;" -->
-                    <div class="section-title">
-                        <i class="fas fa-comment-alt"></i>
-                        데이터 증강 요소 (선택사항)
-                    </div>
                     <div class="form-row">
                         <div>
                             <label class="form-label">{{ form.patience.label_tag }}</label>
@@ -308,14 +304,9 @@ python.CNN.zip/
                     </div>
                     
                 </div>
-
                 
                 <!-- 데이터 증강 사용:옵션 -->
                 <div class="form-section disp-none" id="div_augmentation"><!-- style="display: none;" -->
-                    <div class="section-title">
-                        <i class="fas fa-comment-alt"></i>
-                        데이터 증강 요소 (선택사항)
-                    </div>
                     <div class="form-row">
                         <div>
                             <label class="form-label">{{ form.rotation_angle.label_tag }}</label>
@@ -478,7 +469,7 @@ $(function () {
     /** 🛠 CNN / YOLO 전환 처리 */
     function toggleModelUI() {
         const selected = $modelName.val();
-        if (selected === 'CNN') {
+        if ('cnn' === selected) {
             $classContainer.html(`
                 <div class="section-title">
                     <i class="fas fa-cogs"></i>
