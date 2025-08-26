@@ -12,9 +12,11 @@ import torch.nn as nn
 import torch.optim as optim
 import plotly.utils
 import plotly.graph_objs as go
+import numpy as np
 import pandas as pd
-import psycopg2
+# import psycopg2
 
+from collections import defaultdict
 from datetime import date, datetime
 from django.contrib import messages
 from django.conf import settings
@@ -32,6 +34,7 @@ from PIL import Image
 from ultralytics import YOLO
 from torchvision import transforms
 from torch.utils.data import DataLoader, Dataset
+from sklearn.metrics import precision_score, recall_score, f1_score
 from zoneinfo import ZoneInfo
 
 from .models import TrainingSession, ClassMetric, TrainingMetric
@@ -600,21 +603,23 @@ def upload_dataset(request):
                 # 비동기 실행 : Celery + Redis: 가장 강력하고 안정적인 방식
                 # start_training_async.delay(session.id, upload_dir, data_yaml_path)
 
-                print(f"📝 1 upload_dir:{upload_dir}")
                 data_path = str(Path(upload_dir).resolve().as_posix())
                 print(f"📝 data_path:{data_path}")
+                
+                result_path=Path(os.path.join(data_path, "result")).resolve().as_posix() 
+                print(f"📝 result_path:{result_path}")
 
                 # 기존 모델 불러오기 (COCO 학습됨)
                 model = YOLO(session.model_name + ".pt")
                 model.train(
-                    data=data_path,
+                    data=os.path.join(data_path, "data.yaml"),
                     epochs=session.current_epoch,
                     batch=session.batch_size,
                     imgsz=session.image_size,
                     optimizer=session.optimizer,
                     lr0=float(session.learning_rate),
                     # weight_decay=0.01,
-                    project=os.path.join(upload_dir, "result"),  # 저장 경로
+                    project=result_path,  # 저장 경로
                     name=session.model_name,
                     save_json=True,
                     verbose=True,  # 학습 과정 출력
@@ -622,21 +627,45 @@ def upload_dataset(request):
                     patience=(session.patience if session.early_stopping else 0),
                 )
 
-                print(f"📝 2 upload_dir:{upload_dir}")
+                model_path = Path(os.path.join(result_path, session.model_name)).resolve().as_posix()
+                print(f"📝 model_path:{model_path}")
+                
                 # results.csv 결과파일 읽어들이기
-                df = pd.read_csv(os.path.join(upload_dir, "result", session.model_name, "results.csv",))
+                df = pd.read_csv(os.path.join(model_path, "results.csv",))
 
                 # ground_truth.json 생성
-                yolo_to_coco(upload_dir, 'dataset/images') # 'dataset/images' 의미없음.
+                yolo_to_coco(data_path, session.model_name) # 'dataset/images' 의미없음.
 
-                f_predictions = os.path.join(upload_dir, "result", session.model_name, "predictions.json")
+                f_predictions = os.path.join(model_path, "predictions.json")
 
-                f_ground_truth = os.path.join(upload_dir, "result", session.model_name, "ground_truth.json")
+                f_ground_truth = os.path.join(model_path, "ground_truth.json")
 
-                metrics = evaluate(f_predictions, f_ground_truth, iou_thresh=0.5)
+                metric_data = evaluate(f_predictions, f_ground_truth, iou_thresh=0.5)
                 # random
-                for cls_id, stats in metrics.items():
-                    print(f"Class {cls_id}: {stats}")
+                # for cls_id, stats in metric_data.items():
+                #     print(f"Class {cls_id}: {stats}")
+                    
+                # ClassMetric 저장(update)                
+                # 해당 session과 index에 해당하는 객체 조회
+                target_objects = ClassMetric.objects.filter(session_id=session.id, index__in=metric_data.keys())
+                # index 기준으로 매핑
+                target_map = {obj.index: obj for obj in target_objects}
+                # 필드 업데이트
+                for cls_id, metrics in metric_data.items():
+                    obj = target_map.get(cls_id)
+                    if obj:
+                        obj.precision = metrics['Precision']
+                        obj.recall = metrics['Recall']
+                        obj.f1_score = metrics['F1-Score']
+                        obj.instances = metrics['Instances']
+                        obj.updated_at = timezone.now()
+                        obj.updated_id = request.user
+
+                # bulk_update 실행
+                ClassMetric.objects.bulk_update(
+                    target_objects,
+                    ['precision', 'recall', 'f1_score', 'instances', 'updated_at', 'updated_id']
+                )
 
                 # 모든 데이터를 저장 (예: 변수로)
                 all_data = df.to_dict(orient="list")  # 열 기준으로 리스트로 저장
@@ -730,7 +759,6 @@ def dashboard(request):
         # 최신 훈련 세션 가져오기
         latest_session = TrainingSession.objects.latest("created_at")
         latest_metrics = latest_session.metrics.last()
-
         class_metrics = latest_session.class_metrics.all()
 
         # 차트 데이터 생성
@@ -741,24 +769,16 @@ def dashboard(request):
         metrics_count = latest_session.metrics.count()
 
         if metrics_count > 10:
-            recent_avg = latest_session.metrics.order_by("-epoch")[:5].aggregate(
-                Avg("map50")
-            )["map50__avg"]
-            old_avg = latest_session.metrics.order_by("-epoch")[5:10].aggregate(
-                Avg("map50")
-            )["map50__avg"]
+            recent_avg = latest_session.metrics.order_by("-epoch")[:5].aggregate(Avg("map50"))["map50__avg"]
+            old_avg = latest_session.metrics.order_by("-epoch")[5:10].aggregate(Avg("map50"))["map50__avg"]
             map_change = ((recent_avg - old_avg) / old_avg * 100) if old_avg else 0
         else:
             map_change = 0
 
         # 손실 변화 계산
         if metrics_count > 5:
-            recent_loss = latest_session.metrics.order_by("-epoch")[:3].aggregate(
-                Avg("train_loss")
-            )["train_loss__avg"]
-            old_loss = latest_session.metrics.order_by("-epoch")[3:6].aggregate(
-                Avg("train_loss")
-            )["train_loss__avg"]
+            recent_loss = latest_session.metrics.order_by("-epoch")[:3].aggregate(Avg("train_loss"))["train_loss__avg"]
+            old_loss = latest_session.metrics.order_by("-epoch")[3:6].aggregate(Avg("train_loss"))["train_loss__avg"]
             loss_change = ((old_loss - recent_loss) / old_loss * 100) if old_loss else 0
         else:
             loss_change = 0
@@ -788,18 +808,20 @@ def dashboard(request):
 # 학습데이터 개별 조회 
 def training_data_api(request, session_id):
     """훈련 데이터 API"""
+    # latest_session = TrainingSession.objects.latest("created_at")
+    # latest_metrics = latest_session.metrics.last()
+    # class_metrics = latest_session.class_metrics.all()
     session = get_object_or_404(TrainingSession, id=session_id)
-    metrics = session.metrics.all()
+    metrics = session.metrics.last() # get_object_or_404(TrainingMetric, id=session_id) #session.metrics.all()
+    class_metrics = session.class_metrics.all()
 
     # 차트 데이터 생성
     loss_chart = create_loss_chart(session)
     map_chart = create_map_chart(session)
     
-    data = {}
+    print(f"    session.model_name :{session.model_name}")
     
     if "cnn" == session.model_name:
-        print("----------------- CNN ---------------")
-        
         # 성능 개선 계산 (이전 10개 에포크와 비교)
         metrics_count = session.metrics.count()
 
@@ -818,59 +840,7 @@ def training_data_api(request, session_id):
         else:
             loss_change = 0
 
-        data = {
-            "session": {
-                "id": session.id,
-                "model_name": session.model_name,
-                "version": session.version,
-                "status": session.status,
-                "dataset_name": session.dataset_name,
-                "gpu_info": session.gpu_info,
-                "memory_info": session.memory_info,
-                "total_epochs": session.total_epochs,
-                "current_epoch": session.current_epoch,
-                "learning_rate": session.learning_rate,
-                "image_size": session.image_size,
-                "optimizer": session.optimizer,
-                "augmentation": session.augmentation,
-                "early_stopping": session.early_stopping,
-                "patience": session.patience,
-                "description": session.description,
-                "dataset_path": session.dataset_path,
-                "config": session.config,
-                "start_time": session.start_time,
-                "end_time": session.end_time,
-                "progress": session.progress_percentage,
-                "training_time": session.training_duration,
-            },
-            "metrics": [
-                {
-                    "epoch": metric.epoch,
-                    "train_loss": metric.train_loss,
-                    "val_loss": metric.val_loss,
-                    "map50": metric.map50,
-                    "map95": metric.map95,
-                }
-                for metric in metrics
-            ],
-            "class_metrics": [
-                {
-                    "class_name": cm.class_name,
-                    "precision": cm.precision,
-                    "recall": cm.recall,
-                    "f1_score": cm.f1_score,
-                    "instances": cm.instances,
-                }
-                for cm in session.class_metrics.all()
-            ],
-            "loss_chart": loss_chart,
-            "map_chart": map_chart,
-            "map_change": round(map_change, 1),
-            "loss_change": round(loss_change, 1),
-        }
     elif "yolo11n" == session.model_name:
-        print("----------------- YOLO ---------------")
-
         # 성능 개선 계산 (이전 10개 에포크와 비교)
         metrics_count = session.metrics.count()
 
@@ -889,59 +859,18 @@ def training_data_api(request, session_id):
         else:
             loss_change = 0
 
-        data = {
-            "session": {
-                "id": session.id,
-                "model_name": session.model_name,
-                "version": session.version,
-                "status": session.status,
-                "dataset_name": session.dataset_name,
-                "gpu_info": session.gpu_info,
-                "memory_info": session.memory_info,
-                "total_epochs": session.total_epochs,
-                "current_epoch": session.current_epoch,
-                "learning_rate": session.learning_rate,
-                "image_size": session.image_size,
-                "optimizer": session.optimizer,
-                "augmentation": session.augmentation,
-                "early_stopping": session.early_stopping,
-                "patience": session.patience,
-                "description": session.description,
-                "dataset_path": session.dataset_path,
-                "config": session.config,
-                "start_time": session.start_time,
-                "end_time": session.end_time,
-                "progress": session.progress_percentage,
-                "training_time": session.training_duration,
-            },
-            "metrics": [
-                {
-                    "epoch": metric.epoch,
-                    "train_loss": metric.train_loss,
-                    "val_loss": metric.val_loss,
-                    "map50": metric.map50,
-                    "map95": metric.map95,
-                }
-                for metric in metrics
-            ],
-            "class_metrics": [
-                {
-                    "class_name": cm.class_name,
-                    "precision": cm.precision,
-                    "recall": cm.recall,
-                    "f1_score": cm.f1_score,
-                    "instances": cm.instances,
-                }
-                for cm in session.class_metrics.all()
-            ],
-            "loss_chart": loss_chart,
-            "map_chart": map_chart,
-            "map_change": round(map_change, 1),
-            "loss_change": round(loss_change, 1),
-        }
-    print(f"훈련 데이터 API data:{data}")
+    context = {
+        "session": session,
+        "metrics": metrics,
+        "class_metrics": class_metrics,
+        "loss_chart": loss_chart,
+        "map_chart": map_chart,
+        "map_change": round(map_change, 1),
+        "loss_change": round(loss_change, 1),
+    }
+    print(f"훈련 데이터 API context:{context}")
 
-    return render(request, "training/dashboard.html", data)
+    return render(request, "training/dashboard.html", context)
 
 # 학습데이터 목록 조회 
 def training_sessions_list(request):
@@ -1034,14 +963,19 @@ def create_loss_chart(session):
 
     epochs = [m.epoch for m in metrics]
     
+    print(f"[create_loss_chart] model_name: {session.model_name}")
+    
     if session.model_name == 'cnn':
         train_losses = [m.loss_total for m in metrics]
         val_losses = [m.loss_total for m in metrics]
     
     elif session.model_name == 'yolo11n':
-        train_losses = [m.train_acc for m in metrics]
-        val_losses = [m.val_acc for m in metrics]
+        train_losses = [m.train_loss for m in metrics]
+        val_losses = [m.val_loss for m in metrics]
 
+    print(f"[create_loss_chart] train_losses: {train_losses}")
+    print(f"[create_loss_chart] val_losses: {val_losses}")
+    
     trace1 = go.Scatter(
         x=epochs,
         y=train_losses,
@@ -1076,12 +1010,17 @@ def create_map_chart(session):
 
     epochs = [m.epoch for m in metrics]
     
+    print(f"[create_loss_chart] model_name: {session.model_name}")
+    
     if session.model_name == 'cnn':
-        map50_values = [m.map50 for m in metrics]
-        map95_values = [m.map95 for m in metrics]
-    elif session.model_name == 'yolo11n':
         map50_values = [m.train_acc for m in metrics]
         map95_values = [m.val_acc for m in metrics]
+    elif session.model_name == 'yolo11n':
+        map50_values = [m.map50 for m in metrics]
+        map95_values = [m.map95 for m in metrics]
+
+    print(f"[create_map_chart] map50_values: {map50_values}")
+    print(f"[create_map_chart] map95_values: {map95_values}")
 
     trace1 = go.Scatter(
         x=epochs,
@@ -1420,43 +1359,53 @@ def copy_files_from_paths(source_path: str, target_path: str) -> dict:
 
 
 # ground_truth.json 정의
-def yolo_to_coco(labels_dir, image_dir):
+import os
+import json
+
+def yolo_to_coco(labels_dir, model_name):
     annotations = []
     image_id = 0
     ann_id = 0
+    
+    print(f" yolo_to_coco labels_dir:{labels_dir} model_name:{model_name}")
 
-    for filename in os.listdir(labels_dir):
-        if not filename.endswith('.txt'):
-            continue
-        image_id += 1
-        txt_path = os.path.join(labels_dir, filename)
-        with open(txt_path, 'r') as f:
-            lines = f.readlines()
+    for root, _, files in os.walk(labels_dir):
+        for filename in files:
+            if not filename.endswith('.txt'):
+                continue
 
-        for line in lines:
-            cls, x, y, w, h = map(float, line.strip().split())
-            # 정규화된 좌표를 COCO bbox로 변환
-            x_min = x - w / 2
-            y_min = y - h / 2
-            bbox = [x_min, y_min, w, h]
+            txt_path = os.path.join(root, filename)
+            image_id += 1
 
-            annotations.append({
-                "image_id": filename.replace('.txt', ''),
-                "category_id": int(cls),
-                "bbox": bbox,
-                "id": ann_id
-            })
-            ann_id += 1
+            with open(txt_path, 'r') as f:
+                lines = f.readlines()
 
-    with open('ground_truth.json', 'w') as f:
+            for line in lines:
+                cls, x, y, w, h = map(float, line.strip().split())
+                x_min = x - w / 2
+                y_min = y - h / 2
+                bbox = [x_min, y_min, w, h]
+
+                annotations.append({
+                    "image_id": filename.replace('.txt', ''),
+                    "category_id": int(cls),
+                    "bbox": bbox,
+                    "id": ann_id
+                })
+                ann_id += 1
+
+    # ground_truth.json을 labels_dir 하위에 저장
+    output_path = Path(os.path.join(labels_dir, "result", model_name, 'ground_truth.json')).resolve().as_posix()
+    print(f" yolo_to_coco output_path:{output_path}")
+    with open(output_path, 'w') as f:
         json.dump(annotations, f, indent=2)
+
 
 
 # 사용 예시
 # metrics = evaluate("predictions.json", "ground_truth.json", iou_thresh=0.5)
 # for cls_id, stats in metrics.items():
 #     print(f"Class {cls_id}: {stats}")
-
 # 결과
 # Class 1: {'Precision': 0, 'Recall': 0.0, 'F1-Score': 0, 'Instances': 198}
 # Class 3: {'Precision': 0, 'Recall': 0.0, 'F1-Score': 0, 'Instances': 209}

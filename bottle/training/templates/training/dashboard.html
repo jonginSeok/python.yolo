@@ -198,6 +198,8 @@
         margin-bottom: 1px;
     }
 
+    .session-card-chart {border: 1px solid #2f3031; border-radius: 10px;}
+
     .info-item {
         display: flex;
         justify-content: space-between;
@@ -327,7 +329,8 @@
                 {% endif %}
             </div>
             <div class="session-info">
-                <span class="session-title">{% if metrics %}{{ metrics.map50|floatformat:1|mul:100 }}{% else %}00.0{% endif %}</span>
+                <!-- <span class="session-title">{% if metrics %}{{ metrics.map50|floatformat:1|mul:100 }}{% else %} 00.0 {% endif %}</span> -->
+                 <span class="session-title">{% if metrics %} {{ metrics.map50}} {% else %} False {% endif %}</span>
                 <span class="info-value">%</span>
             </div>
             <p class="session-info">Mean Average Precision at IoU 0.5</p>
@@ -588,20 +591,21 @@
     <div class="sessions-grid2">
         <!-- Loss Chart -->
         <div class="session-card2">
-            <div class="session-header">
+            <!-- <div class="session-header">
                 <h2 class="session-title">Training & Validation Loss</h2>
-            </div>
-            <div class="" style="border: 1px solid #2f3031; border-radius: 10px">
+            </div> -->
+            <div class="session-card-chart">
                 <div id="loss-chart" style="height: 350px"></div>
             </div>
         </div>
+        
 
         <!-- mAP Chart -->
         <div class="session-card2">
-            <div class="session-header">
+            <!-- <div class="session-header">
                 <h2 class="session-title">Mean Average Precision (mAP)</h2>
-            </div>
-            <div class="" style="border: 1px solid #2f3031; border-radius: 10px">
+            </div> -->
+            <div class="session-card-chart">
                 <div id="map-chart" style="height: 350px"></div>
             </div>
         </div>
