@@ -638,12 +638,27 @@ def upload_dataset(request):
                 # results.csv 결과파일 읽어들이기
                 df = pd.read_csv(os.path.join(model_path, "results.csv",))
 
-                # ground_truth.json 생성
-                yolo_to_coco(data_path, session.model_name) # 'dataset/images' 의미없음.
+                # ground_truth.json 생성 (라벨 폴더 자동 탐색)
+                labels_root = os.path.join(data_path, "valid", "labels")
+                if not os.path.isdir(labels_root):
+                    labels_root = os.path.join(data_path, "train", "labels")
+                if not os.path.isdir(labels_root):
+                    # 최후: data_path 하위 모든 labels 디렉토리 중 첫 번째 사용
+                    candidates = []
+                    for r, d, f in os.walk(data_path):
+                        if os.path.basename(r) == "labels":
+                            candidates.append(r)
+                    if candidates:
+                        labels_root = sorted(candidates)[0]
+                    else:
+                        raise FileNotFoundError(f"labels 디렉토리를 찾을 수 없음: {data_path}")
 
                 f_predictions = os.path.join(model_path, "predictions.json")
-
                 f_ground_truth = os.path.join(model_path, "ground_truth.json")
+                os.makedirs(os.path.dirname(f_ground_truth), exist_ok=True)
+
+                # 안전한 변환 (인코딩 폴백 포함)
+                yolo_to_coco(labels_root, f_ground_truth)
 
                 metric_data = evaluate(f_predictions, f_ground_truth, iou_thresh=0.5)
                 # random
@@ -1367,43 +1382,67 @@ def copy_files_from_paths(source_path: str, target_path: str) -> dict:
 import os
 import json
 
-def yolo_to_coco(labels_dir, model_name):
+def yolo_to_coco(labels_root, output_json_path):
+    """YOLO 라벨(.txt) → COCO annotation 리스트로 변환하여 지정 경로에 저장.
+    - 인코딩: UTF-8 실패 시 CP949 → Latin-1 순으로 폴백, 최종적으로 errors='ignore' 적용
+    - 형식: 각 라인은 "cls x y w h"(5개 토큰). 아니면 스킵.
+    - 대상: 경로명에 'labels'가 포함된 디렉토리들만 탐색
+    """
     annotations = []
-    image_id = 0
     ann_id = 0
-    
-    print(f" yolo_to_coco labels_dir:{labels_dir} model_name:{model_name}")
 
-    for root, _, files in os.walk(labels_dir):
+    print(f"[yolo_to_coco] labels_root: {labels_root}")
+
+    def read_lines_safe(path):
+        for enc in ("utf-8", "cp949", "latin-1"):
+            try:
+                with open(path, "r", encoding=enc) as f:
+                    return f.readlines()
+            except UnicodeDecodeError:
+                continue
+        # 최후 폴백: 읽기 가능한 문자만
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+            return f.readlines()
+
+    for root, _, files in os.walk(labels_root):
+        if os.path.basename(root) != "labels" and "labels" not in root:
+            # labels 폴더가 아닌 곳은 건너뜀 (README.txt 등 오염 방지)
+            continue
         for filename in files:
-            if not filename.endswith('.txt'):
+            if not filename.lower().endswith(".txt"):
+                continue
+            txt_path = os.path.join(root, filename)
+            try:
+                lines = read_lines_safe(txt_path)
+            except Exception as e:
+                print(f"[yolo_to_coco] read error: {txt_path} → {e}")
                 continue
 
-            txt_path = os.path.join(root, filename)
-            image_id += 1
-
-            with open(txt_path, 'r') as f:
-                lines = f.readlines()
-
-            for line in lines:
-                cls, x, y, w, h = map(float, line.strip().split())
+            image_id = os.path.splitext(filename)[0]
+            for raw in lines:
+                parts = raw.strip().split()
+                if len(parts) != 5:
+                    # 잘못된 라벨 라인은 스킵
+                    continue
+                try:
+                    cls, x, y, w, h = map(float, parts)
+                except ValueError:
+                    continue
                 x_min = x - w / 2
                 y_min = y - h / 2
                 bbox = [x_min, y_min, w, h]
-
                 annotations.append({
-                    "image_id": filename.replace('.txt', ''),
+                    "image_id": image_id,
                     "category_id": int(cls),
                     "bbox": bbox,
-                    "id": ann_id
+                    "id": ann_id,
                 })
                 ann_id += 1
 
-    # ground_truth.json을 labels_dir 하위에 저장
-    output_path = Path(os.path.join(labels_dir, "result", model_name, 'ground_truth.json')).resolve().as_posix()
-    print(f" yolo_to_coco output_path:{output_path}")
-    with open(output_path, 'w') as f:
-        json.dump(annotations, f, indent=2)
+    os.makedirs(os.path.dirname(output_json_path), exist_ok=True)
+    with open(output_json_path, "w", encoding="utf-8") as f:
+        json.dump(annotations, f, indent=2, ensure_ascii=False)
+    print(f"[yolo_to_coco] wrote: {output_json_path} (annots={len(annotations)})")
 
 
 

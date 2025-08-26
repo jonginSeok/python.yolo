@@ -14,3 +14,4 @@ torchaudio
 PyYAML
 psycopg2-binary==2.9.9
 ultralytics==8.3.34
+scikit-learn
