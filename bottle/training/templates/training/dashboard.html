@@ -329,8 +329,7 @@
                 {% endif %}
             </div>
             <div class="session-info">
-                <!-- <span class="session-title">{% if metrics %}{{ metrics.map50|floatformat:1|mul:100 }}{% else %} 00.0 {% endif %}</span> -->
-                 <span class="session-title">{% if metrics %} {{ metrics.map50}} {% else %} False {% endif %}</span>
+                <span class="session-title">{% if metrics %}{{ metrics.map50|floatformat:1|mul:100 }}{% else %} 00.0 {% endif %}</span>
                 <span class="info-value">%</span>
             </div>
             <p class="session-info">Mean Average Precision at IoU 0.5</p>
