@@ -1,0 +1,43 @@
+"""
+URL configuration for config project.
+
+The `urlpatterns` list routes URLs to views. For more information please see:
+    https://docs.djangoproject.com/en/5.2/topics/http/urls/
+Examples:
+Function views
+    1. Add an import:  from my_app import views
+    2. Add a URL to urlpatterns:  path('', views.home, name='home')
+Class-based views
+    1. Add an import:  from other_app.views import Home
+    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
+Including another URLconf
+    1. Import the include() function: from django.urls import include, path
+    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+"""
+
+from django.contrib import admin
+from django.urls import path, include
+
+# from django.contrib.auth.views import LogoutView
+from django.conf import settings  # 2025.08.06 ngins7512 추가/대시보드 관련
+from django.conf.urls.static import static  # 2025.08.06 ngins7512 추가/대시보드 관련
+
+from django.http import HttpResponse
+
+
+def empty_favicon(request):
+    return HttpResponse(status=204)
+
+
+urlpatterns = [
+    path('favicon.ico', empty_favicon), # GET http://127.0.0.1:8000/favicon.ico 404 (Not Found) 이런 오류 제거
+
+    path("", include("app.urls")),  # 앱 URL을 포함시킴
+    path("admin/", admin.site.urls),
+    path("accounts/", include("accounts.urls")),
+    path("accounts/", include("django.contrib.auth.urls")),  # 로그인/로그아웃 뷰
+    path("training/", include("training.urls")),  # 2025.08.06 ngins7512 추가/대시보드 관련
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+if settings.DEBUG:    # 2025.08.06 ngins7512 추가/대시보드 관련 + static 부터
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
