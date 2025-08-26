@@ -33,13 +33,13 @@ class DataUploadForm(forms.Form):
         required=True,
         label="상태",
         choices=[
-            # ('begin', '훈련 시작'),
+            ('begin', '훈련 시작'),
             ("training", "훈련 중"),
-            ("completed", "완료"),
-            ("failed", "실패"),
+            ("completed", "훈련 완료"),
+            ("failed", "훈련 실패"),
             ("paused", "일시정지"),
         ],
-        initial="training",  # 초기값세팅
+        initial="begin",  # 초기값세팅
         widget=forms.Select(attrs={"class": "form-control"}),
     )
 
