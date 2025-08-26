@@ -22,6 +22,7 @@ from django.contrib import messages
 from django.conf import settings
 from django.core.mail import send_mail
 from django.core.mail import EmailMultiAlternatives
+from django.core.mail import EmailMessage
 from django.db import connection
 from django.db.models import Avg
 from django.db.utils import OperationalError
@@ -731,10 +732,8 @@ def upload_dataset(request):
             # *************************** 실행 종료 ***************************
             # ******************************************************************
             
-            # 이메일 알림 (성공)
-            send_training_finished_email(session.id, success=True)
-
-            # 방법 2: QuerySet.update() 사용
+            # 먼저 종료시각과 상태를 저장한 뒤 이메일 발송
+            _now_kst = datetime.now(ZoneInfo("Asia/Seoul"))
             TrainingSession.objects.filter(id=session.id).update(
                 dataset_path=dataset_path,
                 status="completed",
@@ -752,14 +751,18 @@ def upload_dataset(request):
                     "patience": session.patience,
                     "image_count": len(image_files),
                     "label_count": len(label_files),
-                    "end_time": datetime.now(ZoneInfo("Asia/Seoul")),
+                    "end_time": _now_kst,
                 },
-                end_time=datetime.now(ZoneInfo("Asia/Seoul")),
-                updated_at=datetime.now(ZoneInfo("Asia/Seoul")),
+                end_time=_now_kst,
+                updated_at=_now_kst,
                 updated_id=str(request.user),
             )
-            # 장점: SQL UPDATE를 직접 실행하므로 빠름
-            # 단점: save() 메서드나 pre_save/post_save 시그널이 호출되지 않음
+
+            # 최신값을 다시 읽어 템플릿에 정확히 반영되도록 한다
+            session.refresh_from_db()
+
+            # 이메일 알림 (성공)
+            send_training_finished_email(session.id, success=True)
 
             # messages.success(request, f"데이터셋이 성공적으로 업로드되었습니다. 훈련 세션 ID: {session.id}",)
             # return HttpResponse("훈련이 백그라운드에서 시작되었습니다.")
@@ -1194,41 +1197,51 @@ def send_training_finished_email(
 ):
     """
     훈련 종료 시 사용자에게 이메일 알림을 보낸다.
-    session.notify_email 이 없으면 아무 것도 하지 않음.
+    HTML 템플릿(`training/emails/training_finished.html`)만 사용한다.
+    텍스트 파트는 제거하고 단일 HTML 본문으로 전송한다.
     """
     try:
         session = TrainingSession.objects.get(id=session_id)
     except TrainingSession.DoesNotExist:
         print(f"[notify] session not found: {session_id}")
         return
-    # 이메일 주소가 없으면 스킵
+
+    # 수신자 없으면 종료
     if not getattr(session, "notify_email", None):
         print(f"[notify] no notify_email for session {session_id}, skip")
         return
+
     subject = "[YOLO] 훈련 완료" if success else "[YOLO] 훈련 실패"
-    lines = [
-        f"모델: {session.model_name} (v{session.version})",
-        f"상태: {'성공' if success else '실패'}",
-    ]
-    if session.dataset_name:
-        lines.append(f"데이터셋: {session.dataset_name}")
-    if extra_msg:
-        lines.append(f"메시지: {extra_msg}")
-    # 시간 정보(있을 경우)
-    if getattr(session, "start_time", None):
-        lines.append(f"시작: {session.start_time}")
-    if getattr(session, "end_time", None):
-        lines.append(f"종료: {session.end_time}")
-    message = "\n".join(lines)
+
+    # 상세 대시보드 URL 구성 (SITE_BASE_URL 설정 시 절대경로로)
+    context = {
+        "session_id": session.id,
+        "model_name": session.model_name,
+        "version": session.version,
+        "status_kor": ("성공" if success else "실패"),
+        "dataset_name": getattr(session, "dataset_name", None),
+        "start_kst": getattr(session, "start_time", None),
+        "end_kst": getattr(session, "end_time", None),
+        "extra_msg": extra_msg,
+        "success": success,
+    }
+
+    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None)
+    to = [session.notify_email]
+
+    # HTML 본문만 렌더링
     try:
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
-            recipient_list=[session.notify_email],
-            fail_silently=False,
-        )
-        print(f"[notify] sent email to {session.notify_email} for session {session_id}")
+        html_body = render_to_string("training/emails/training_finished.html", context)
+    except TemplateDoesNotExist:
+        print("[notify] HTML template not found: training/emails/training_finished.html")
+        return
+
+    # HTML-only 메일 발송
+    try:
+        email = EmailMessage(subject=subject, body=html_body, from_email=from_email, to=to)
+        email.content_subtype = "html"  # text/html로 전송
+        email.send(fail_silently=False)
+        print(f"[notify] sent HTML email to {session.notify_email} for session {session_id}")
     except Exception as e:
         print(f"[notify] email send error for session {session_id}: {e}")
 
