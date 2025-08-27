@@ -64,7 +64,7 @@
     </script>
     <!-- Plotly.js -->
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
-    <script src="{% static 'js/jquery/jquery-3.7.1.min.js' %}"></script>
+    <script src="{% static 'js/jquery-3.7.1.min.js' %}"></script>
 </head>
 <body class="bg-gray-900 text-gray-200 dark">
 
@@ -92,7 +92,7 @@
                     <button id="sidebar-open-btn" class="md:hidden mr-4 p-2 rounded-md hover:bg-gray-700">
                         <i data-lucide="menu"></i>
                     </button>
-                    <h1 id="page-title" class="text-xl font-semibold text-white">대시보드</h1>
+                    <h1 id="page-title" class="text-xl font-semibold text-white">실시간 DB 대시보드</h1>
                 </div>
                 <div class="flex items-center gap-6">
                     <form id="logout-form" method="post" action="/accounts/logout/">
@@ -114,11 +114,11 @@
         document.addEventListener('DOMContentLoaded', () => {
             let isSidebarOpen = window.innerWidth >= 768;
             let currentLanguage = 'ko';
-            let activePage = 'dashboard';
+            let activePage = 'realtimeDashboard'; // 기본 페이지를 실시간 DB 대시보드로 변경
             const spaRoutes = {
                 learningList: { titleKey: 'learningList', src: '/training/sessions/' },
                 startLearning: { titleKey: 'startLearning', src: '/training/upload/' },
-                dashboard: { titleKey: 'dashboard', src: '/' },
+                realtimeDashboard: { titleKey: 'realtimeDashboard', src: '/' },
                 sessionDashboard: { titleKey: 'sessionDashboard', src: '/training/session-dashboard/' },
             };
             let charts = {};
@@ -175,7 +175,7 @@
                 en: {
                     learningList: "Learning List",
                     startLearning: "Start Learning",
-                    dashboard: "Dashboard",
+                    realtimeDashboard: "Real-time DB Dashboard",
                     sessionDashboard: "Session Dashboard",
                     collapseMenu: "Collapse",
                     expandMenu: "Expand",
@@ -199,11 +199,18 @@
                     class: "Class",
                     confidence: "Accuracy",
                     underConstruction: "This page is under construction.",
+                    // 실시간 DB 대시보드 관련
+                    modelPerformance: "YOLO Model Performance (Real Data)",
+                    top3Sessions: "Top 3 Training Sessions",
+                    recentTraining: "Recent Training Metrics",
+                    sessionID: "Session ID",
+                    searchBySession: "Search by Session ID...",
+                    epoch: "Epoch",
                 },
                 ko: {
                     learningList: "학습 목록",
                     startLearning: "학습 하기",
-                    dashboard: "대시보드",
+                    realtimeDashboard: "실시간 DB 대시보드",
                     sessionDashboard: "세션 대시보드",
                     collapseMenu: "메뉴 접기",
                     expandMenu: "메뉴 펼치기",
@@ -227,18 +234,25 @@
                     class: "클래스",
                     confidence: "정확도",
                     underConstruction: "이 페이지는 준비 중입니다.",
+                    // 실시간 DB 대시보드 관련
+                    modelPerformance: "YOLO 모델 성능 (실제 데이터)",
+                    top3Sessions: "상위 3개 학습 세션",
+                    recentTraining: "최근 학습 메트릭",
+                    sessionID: "세션 ID",
+                    searchBySession: "세션 ID로 검색...",
+                    epoch: "에포크",
                 }
             };
 
             const t = (key) => translations[currentLanguage][key] || key;
 
+            // 메뉴 순서 변경: 실시간 DB 대시보드를 최상단으로, 불필요한 메뉴 제거
             const menuItems = [
-                { id: 'dashboard', label: 'dashboard', icon: 'bar-chart-2' },
+                { id: 'realtimeDashboard', label: 'realtimeDashboard', icon: 'database' },
                 { type: 'divider' },
                 { id: 'learningList', label: 'learningList', icon: 'list' },
                 { id: 'startLearning', label: 'startLearning', icon: 'play-circle' },
             ];
-            // 참고: sessionDashboard는 내부 링크(/training/...detail, ...dashboard) 클릭 시에만 노출되는 가상 페이지입니다.
             
             const destroyCharts = () => {
                 Object.values(charts).forEach(chart => {
@@ -282,8 +296,19 @@
                                 loadPage(r.src, t(r.titleKey), 'startLearning');
                                 return;
                             }
+                            if (item.id === 'realtimeDashboard') {
+                                activePage = 'realtimeDashboard';
+                                pageTitle.textContent = t('realtimeDashboard');
+                                renderSidebar();
+                                renderRealtimeDashboard();
+                                if (window.innerWidth < 768) {
+                                    sidebar.classList.add('-translate-x-full');
+                                    const overlay = document.getElementById('sidebar-overlay');
+                                    if (overlay) overlay.remove();
+                                }
+                                return;
+                            }
                             activePage = item.id;
-                            if (item.id === 'dashboard') resetToHome();
                             renderContent();
                             renderSidebar();
                             if (window.innerWidth < 768) {
@@ -344,211 +369,6 @@
                 });
             };
 
-            const renderDashboard = async () => {
-                destroyCharts();
-                
-                // API에서 실제 데이터 가져오기
-                const apiData = await fetchDashboardData();
-                
-                // API 데이터를 기반으로 통계 계산
-                let classStats = {};
-                let detectionsByTime = { morning: 0, afternoon: 0, night: 0 };
-                
-                if (apiData.model_performance) {
-                    apiData.model_performance.forEach(item => {
-                        classStats[item.model] = {
-                            count: item.count,
-                            confidenceSum: item.accuracy * item.count / 100
-                        };
-                    });
-                }
-                
-                if (apiData.time_breakdown) {
-                    detectionsByTime = {
-                        morning: apiData.time_breakdown['오전'] || 0,
-                        afternoon: apiData.time_breakdown['오후'] || 0,
-                        night: apiData.time_breakdown['밤'] || 0
-                    };
-                }
-                
-                // 탐지 데이터 생성
-                const modelNames = Object.keys(classStats);
-                if (modelNames.length > 0) {
-                    dashboardData.detections = Array.from({ length: 100 }, (_, i) => {
-                        const model = modelNames[i % modelNames.length];
-                        return {
-                            detection_id: `D${1001 + i}`,
-                            image_id: `IMG${Math.floor(i / 5) + 1}`,
-                            class: model,
-                            confidence: Math.random() * (0.98 - 0.65) + 0.65,
-                            timestamp: new Date(Date.now() - i * 60000).toISOString(),
-                        };
-                    });
-                } else {
-                    dashboardData.detections = Array.from({ length: 100 }, (_, i) => {
-                        const classes = ['bad-broken-large', 'bad-broken-small', 'bad-contamination', 'bottle-good'];
-                        return {
-                            detection_id: `D${1001 + i}`,
-                            image_id: `IMG${Math.floor(i / 5) + 1}`,
-                            class: classes[i % classes.length],
-                            confidence: Math.random() * (0.98 - 0.65) + 0.65,
-                            timestamp: new Date(Date.now() - i * 60000).toISOString(),
-                        };
-                    });
-                }
-                
-                // 메트릭 계산
-                const precision = apiData.model_performance && apiData.model_performance.length > 0 ? 
-                    (apiData.model_performance.reduce((sum, item) => sum + item.accuracy, 0) / apiData.model_performance.length / 100).toFixed(3) :
-                    (Math.random() * (0.95 - 0.85) + 0.85).toFixed(3);
-                
-                const recall = (parseFloat(precision) * 0.92).toFixed(3);
-                const map50 = (parseFloat(precision) * 0.94).toFixed(3);
-                const map95 = (parseFloat(precision) * 0.70).toFixed(3);
-
-                // 차트 데이터 준비
-                const sortedClasses = Object.keys(classStats);
-                const classLabels = sortedClasses.length > 0 ? sortedClasses : ['bad-broken-large', 'bad-broken-small', 'bad-contamination', 'bottle-good'];
-                const detectionCounts = classLabels.map(cls => classStats[cls]?.count || Math.floor(Math.random() * 100) + 500);
-                const avgConfidencePerClass = classLabels.map(cls => 
-                    classStats[cls] ? (classStats[cls].confidenceSum / classStats[cls].count) * 100 : 75 + Math.random() * 20
-                );
-
-                mainContent.innerHTML = `
-                    <div class="space-y-6">
-                        <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 px-2">${t('keyMetrics')}</h3>
-                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                <div class="text-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">${t('precision')}</p>
-                                    <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">${precision}</p>
-                                </div>
-                                <div class="text-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">${t('recall')}</p>
-                                    <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">${recall}</p>
-                                </div>
-                                <div class="text-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">${t('map50')}</p>
-                                    <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">${map50}</p>
-                                </div>
-                                <div class="text-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-                                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">${t('map95')}</p>
-                                    <p class="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-1">${map95}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <div class="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">${t('detectionsAndConfidence')}</h3>
-                                <div class="h-96"><canvas id="comboChart"></canvas></div>
-                            </div>
-                            <div class="space-y-6">
-                                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">${t('top3Classes')}</h3>
-                                    <div class="h-40"><canvas id="doughnutChart1"></canvas></div>
-                                </div>
-                                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">${t('detectionsByTime')}</h3>
-                                    <div class="h-40"><canvas id="doughnutChart2"></canvas></div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                             <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${t('recentDetections')}</h3>
-                                <div class="relative">
-                                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4"></i>
-                                    <input type="text" id="detection-search" placeholder="${t('searchByImageID')}" class="pl-10 pr-4 py-2 w-full sm:w-64 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm">
-                                </div>
-                            </div>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-sm text-left">
-                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                                        <tr>
-                                            <th scope="col" class="px-6 py-3">${t('imageID')}</th>
-                                            <th scope="col" class="px-6 py-3">${t('class')}</th>
-                                            <th scope="col" class="px-6 py-3">${t('confidence')}</th>
-                                            <th scope="col" class="px-6 py-3">${t('precision')}</th>
-                                            <th scope="col" class="px-6 py-3">${t('recall')}</th>
-                                            <th scope="col" class="px-6 py-3">${t('map50')}</th>
-                                            <th scope="col" class="px-6 py-3">${t('map95')}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="detections-table-body">
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                renderDetectionsTable();
-
-                const searchInput = document.getElementById('detection-search');
-                searchInput.addEventListener('input', (e) => {
-                    renderDetectionsTable(e.target.value);
-                });
-
-                const textColor = '#e5e7eb'; 
-                const gridColor = 'rgba(255, 255, 255, 0.1)'; 
-                const formattedClassLabels = classLabels.map(label => label.split('_'));
-
-                charts.combo = new Chart(document.getElementById('comboChart'), {
-                    type: 'bar',
-                    data: {
-                        labels: formattedClassLabels,
-                        datasets: [
-                            {
-                                label: t('detectionCount'),
-                                data: detectionCounts,
-                                backgroundColor: 'rgba(30, 136, 229, 0.6)',
-                                borderColor: 'rgba(30, 136, 229, 1)',
-                                order: 1,
-                                yAxisID: 'y'
-                            },
-                            {
-                                label: t('avgConfidence'),
-                                data: avgConfidencePerClass,
-                                type: 'line',
-                                borderColor: '#16a34a',
-                                backgroundColor: '#16a34a',
-                                tension: 0.3,
-                                order: 0,
-                                yAxisID: 'y1'
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true, maintainAspectRatio: false,
-                        plugins: { legend: { labels: { color: textColor } } },
-                        scales: {
-                            x: { ticks: { color: textColor, maxRotation: 0, minRotation: 0 }, grid: { color: gridColor } },
-                            y: { type: 'linear', position: 'left', title: { display: true, text: t('detectionCount'), color: textColor }, ticks: { color: textColor }, grid: { color: gridColor } },
-                            y1: { type: 'linear', position: 'right', title: { display: true, text: t('avgConfidence') + ' (%)', color: textColor }, min: 60, max: 100, ticks: { color: textColor }, grid: { drawOnChartArea: false } }
-                        }
-                    }
-                });
-
-                const doughnutOptions = { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'right', labels: { color: textColor, boxWidth: 12, padding: 15 } } } };
-                
-                charts.doughnut1 = new Chart(document.getElementById('doughnutChart1'), {
-                    type: 'doughnut',
-                    data: { labels: classLabels.slice(0, 3), datasets: [{ data: detectionCounts.slice(0, 3), backgroundColor: ['#1e88e5', '#42a5f5', '#90caf9'], borderWidth: 0 }] },
-                    options: doughnutOptions
-                });
-
-                charts.doughnut2 = new Chart(document.getElementById('doughnutChart2'), {
-                    type: 'doughnut',
-                    data: { labels: [t('morning'), t('afternoon'), t('night')], datasets: [{ data: Object.values(detectionsByTime), backgroundColor: ['#f59e0b', '#ea580c', '#1e3a8a'], borderWidth: 0 }] },
-                    options: doughnutOptions
-                });
-
-                lucide.createIcons();
-                console.log('대시보드 렌더링 완료');
-            };
-
             const renderGenericPage = () => {
                 destroyCharts();
                 mainContent.innerHTML = `
@@ -569,13 +389,13 @@
             const renderContent = () => {
                 const pageData = menuItems.find(p => p.id === activePage);
                 if (!pageData) {
-                    activePage = 'dashboard';
+                    activePage = 'realtimeDashboard'; // 기본값을 실시간 DB 대시보드로 변경
                     pageData = menuItems.find(p => p.id === activePage);
                 }
                 pageTitle.textContent = t(pageData.label);
                 
-                if (activePage === 'dashboard') {
-                    renderDashboard();
+                if (activePage === 'realtimeDashboard') {
+                    renderRealtimeDashboard();
                 } else {
                     renderGenericPage();
                 }
@@ -634,16 +454,6 @@
                 currentLanguage = e.target.value;
                 updateHeaderText();
                 renderSidebar();
-
-                // Avoid re-rendering when we're on SPA subpages that may have their own scripts/state (e.g., upload/session pages)
-                const spaSubpages = ['learningList', 'startLearning', 'sessionDashboard'];
-                if (spaSubpages.includes(activePage)) {
-                    // Optional: if you want to refresh labels without nuking page state, you could dispatch a custom event here.
-                    // window.dispatchEvent(new CustomEvent('lang:changed', { detail: { lang: currentLanguage } }));
-                    return;
-                }
-
-                // Default behavior for dashboard shell pages
                 renderContent();
             });
 
@@ -1044,7 +854,7 @@
                         const titleKey = spaRoutes[page]?.titleKey || page;
                         loadPage(src, t(titleKey), page, { push: false });
                     } else {
-                        activePage = 'dashboard';
+                        activePage = 'realtimeDashboard'; // 기본값을 실시간 DB 대시보드로 변경
                         renderSidebar();
                         renderContent();
                     }
@@ -1085,29 +895,326 @@
                 }
                 return false;
             };
-            const resetToHome = () => {
-                const cleanUrl = location.pathname;
-                window.history.pushState({ url: '/', title: t('dashboard'), pageId: 'dashboard' }, t('dashboard'), cleanUrl);
+
+            // 실시간 DB 대시보드 렌더링 함수
+            const renderRealtimeDashboard = async () => {
+                destroyCharts();
+                
+                try {
+                    // 실제 데이터 로딩 표시
+                    mainContent.innerHTML = `
+                        <div class="flex items-center justify-center h-96">
+                            <div class="text-center">
+                                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                                <p class="text-gray-600 dark:text-gray-400">PostgreSQL에서 실제 데이터 로딩 중...</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">training_trainingmetric 테이블 조회</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // 실제 API 데이터 가져오기
+                    const response = await fetch('/api/realtime-dashboard-data/');
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const realData = await response.json();
+                    
+                    console.log('실제 DB에서 받은 데이터:', realData);
+                    
+                    // 실제 API 데이터 구조 사용
+                    const modelPerformance = realData.model_performance || [];
+                    const timeBreakdown = realData.time_breakdown || {};
+                    const recentDetections = realData.recent_detections || [];
+                    const summaryMetrics = realData.summary_metrics || {};
+                    
+                    // 실제 데이터를 대시보드 데이터로 설정
+                    dashboardData.detections = recentDetections;
+                    
+                    // 실제 메트릭 값들 사용
+                    const precision = summaryMetrics.avg_precision || 0;
+                    const recall = summaryMetrics.avg_recall || 0;
+                    const map50 = summaryMetrics.avg_map50 || 0;
+                    const map95 = summaryMetrics.avg_map95 || 0;
+                    
+                    // 실제 차트 데이터 준비
+                    const classLabels = modelPerformance.map(item => item.model);
+                    const detectionCounts = modelPerformance.map(item => item.count);
+                    const avgConfidencePerClass = modelPerformance.map(item => item.accuracy);
+
+                    // 대시보드 HTML 렌더링
+                    mainContent.innerHTML = `
+                        <div class="space-y-6">
+                            <!-- 실제 DB 연결 상태 표시 -->
+                            <div class="bg-green-100 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-lg p-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div class="w-3 h-3 bg-green-500 rounded-full mr-3 animate-pulse"></div>
+                                        <span class="text-green-800 dark:text-green-200">
+                                            실시간 PostgreSQL 연결됨 (총 ${realData.total_detections || 0}건)
+                                        </span>
+                                    </div>
+                                    <div class="text-sm text-green-600 dark:text-green-400">
+                                        데이터 소스: ${realData.data_source} | 업데이트: ${new Date(realData.timestamp).toLocaleTimeString()}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 실제 메트릭 표시 -->
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md">
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 px-2">${t('keyMetrics')}</h3>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                    <div class="text-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 border border-blue-200 dark:border-blue-800">
+                                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">${t('precision')}</p>
+                                        <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">${precision.toFixed(3)}</p>
+                                        <p class="text-xs text-gray-400">최신 성능 평균</p>
+                                    </div>
+                                    <div class="text-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 border border-green-200 dark:border-green-800">
+                                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">${t('recall')}</p>
+                                        <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">${recall.toFixed(3)}</p>
+                                        <p class="text-xs text-gray-400">최신 성능 평균</p>
+                                    </div>
+                                    <div class="text-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 border border-purple-200 dark:border-purple-800">
+                                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">${t('map50')}</p>
+                                        <p class="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">${map50.toFixed(3)}</p>
+                                        <p class="text-xs text-gray-400">최신 성능 평균</p>
+                                    </div>
+                                    <div class="text-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 border border-orange-200 dark:border-orange-800">
+                                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">${t('map95')}</p>
+                                        <p class="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-1">${map95.toFixed(3)}</p>
+                                        <p class="text-xs text-gray-400">최신 성능 평균</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                <div class="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">${t('modelPerformance')}</h3>
+                                    <div class="h-96"><canvas id="comboChart"></canvas></div>
+                                </div>
+                                <div class="space-y-6">
+                                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">${t('top3Sessions')}</h3>
+                                        <div class="h-40"><canvas id="doughnutChart1"></canvas></div>
+                                    </div>
+                                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">${t('detectionsByTime')}</h3>
+                                        <div class="h-40"><canvas id="doughnutChart2"></canvas></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                                 <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${t('recentTraining')}</h3>
+                                    <div class="relative">
+                                        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4"></i>
+                                        <input type="text" id="training-search" placeholder="${t('searchBySession')}" class="pl-10 pr-4 py-2 w-full sm:w-64 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm">
+                                    </div>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-sm text-left">
+                                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                                            <tr>
+                                                <th scope="col" class="px-6 py-3">ID</th>
+                                                <th scope="col" class="px-6 py-3">${t('sessionID')}</th>
+                                                <th scope="col" class="px-6 py-3">${t('epoch')}</th>
+                                                <th scope="col" class="px-6 py-3">${t('confidence')}</th>
+                                                <th scope="col" class="px-6 py-3">${t('precision')}</th>
+                                                <th scope="col" class="px-6 py-3">${t('recall')}</th>
+                                                <th scope="col" class="px-6 py-3">${t('map50')}</th>
+                                                <th scope="col" class="px-6 py-3">${t('map95')}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="training-table-body">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    renderTrainingTable();
+
+                    const searchInput = document.getElementById('training-search');
+                    if (searchInput) {
+                        searchInput.addEventListener('input', (e) => {
+                            renderTrainingTable(e.target.value);
+                        });
+                    }
+
+                    // 실제 데이터로 차트 생성
+                    if (classLabels.length > 0) {
+                        const textColor = '#e5e7eb'; 
+                        const gridColor = 'rgba(255, 255, 255, 0.1)'; 
+
+                        charts.combo = new Chart(document.getElementById('comboChart'), {
+                            type: 'bar',
+                            data: {
+                                labels: classLabels,
+                                datasets: [
+                                    {
+                                        label: t('detectionCount'),
+                                        data: detectionCounts,
+                                        backgroundColor: 'rgba(30, 136, 229, 0.6)',
+                                        borderColor: 'rgba(30, 136, 229, 1)',
+                                        order: 1,
+                                        yAxisID: 'y'
+                                    },
+                                    {
+                                        label: '정확도 (%)',
+                                        data: avgConfidencePerClass,
+                                        type: 'line',
+                                        borderColor: '#16a34a',
+                                        backgroundColor: '#16a34a',
+                                        tension: 0.3,
+                                        order: 0,
+                                        yAxisID: 'y1'
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true, maintainAspectRatio: false,
+                                plugins: { 
+                                    legend: { labels: { color: textColor } }
+                                },
+                                scales: {
+                                    x: { ticks: { color: textColor, maxRotation: 45 }, grid: { color: gridColor } },
+                                    y: { type: 'linear', position: 'left', title: { display: true, text: t('detectionCount'), color: textColor }, ticks: { color: textColor }, grid: { color: gridColor } },
+                                    y1: { type: 'linear', position: 'right', title: { display: true, text: '정확도 (%)', color: textColor }, min: 0, max: 100, ticks: { color: textColor }, grid: { drawOnChartArea: false } }
+                                }
+                            }
+                        });
+
+                        const doughnutOptions = { 
+                            responsive: true, 
+                            maintainAspectRatio: false, 
+                            cutout: '60%', 
+                            plugins: { 
+                                legend: { position: 'right', labels: { color: textColor, boxWidth: 12, padding: 15 } }
+                            } 
+                        };
+                        
+                        charts.doughnut1 = new Chart(document.getElementById('doughnutChart1'), {
+                            type: 'doughnut',
+                            data: { 
+                                labels: classLabels.slice(0, 3), 
+                                datasets: [{ 
+                                    data: detectionCounts.slice(0, 3), 
+                                    backgroundColor: ['#1e88e5', '#42a5f5', '#90caf9'], 
+                                    borderWidth: 0 
+                                }] 
+                            },
+                            options: doughnutOptions
+                        });
+
+                        charts.doughnut2 = new Chart(document.getElementById('doughnutChart2'), {
+                            type: 'doughnut',
+                            data: { 
+                                labels: [t('morning'), t('afternoon'), t('night')], 
+                                datasets: [{ 
+                                    data: [
+                                        timeBreakdown['오전'] || 0,
+                                        timeBreakdown['오후'] || 0,
+                                        timeBreakdown['밤'] || 0
+                                    ], 
+                                    backgroundColor: ['#f59e0b', '#ea580c', '#1e3a8a'], 
+                                    borderWidth: 0 
+                                }] 
+                            },
+                            options: doughnutOptions
+                        });
+                    }
+
+                    lucide.createIcons();
+                    console.log('실제 DB 데이터로 대시보드 렌더링 완료');
+                    
+                } catch (error) {
+                    console.error('실제 DB 대시보드 렌더링 실패:', error);
+                    
+                    // 실제 오류 상태만 표시
+                    mainContent.innerHTML = `
+                        <div class="bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg p-6">
+                            <div class="flex items-center mb-4">
+                                <div class="w-6 h-6 bg-red-500 rounded-full mr-3 flex items-center justify-center">
+                                    <span class="text-white text-sm">!</span>
+                                </div>
+                                <h3 class="text-red-800 dark:text-red-200 font-semibold">실제 PostgreSQL DB 연결 실패</h3>
+                            </div>
+                            <p class="text-red-700 dark:text-red-300 mb-4 font-mono text-sm">${error.message}</p>
+                            <div class="flex flex-wrap gap-3">
+                                <button onclick="location.reload()" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                                    새로고침
+                                </button>
+                                <a href="/api/realtime-dashboard-data/" target="_blank" class="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                                    API 직접 확인
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                }
+            };
+
+            // 훈련 테이블 렌더링 함수
+            const renderTrainingTable = (searchTerm = '') => {
+                const tableBody = document.getElementById('training-table-body');
+                if (!tableBody) return;
+                tableBody.innerHTML = '';
+
+                const filteredData = dashboardData.detections.filter(d => 
+                    d.image_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    d.detection_id.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+
+                const dataToShow = filteredData.slice(0, 10);
+                
+                if (dataToShow.length === 0) {
+                    const row = document.createElement('tr');
+                    const cell = document.createElement('td');
+                    cell.colSpan = 8;
+                    cell.className = 'text-center py-4 text-gray-500';
+                    cell.textContent = '검색 결과가 없습니다.';
+                    row.appendChild(cell);
+                    tableBody.appendChild(row);
+                    return;
+                }
+
+                dataToShow.forEach(d => {
+                    const row = document.createElement('tr');
+                    row.className = 'border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600';
+                    const confidenceFormatted = (d.confidence * 100).toFixed(1) + '%';
+                    
+                    row.innerHTML = `
+                        <td class="px-6 py-4 font-mono text-sm">${d.detection_id}</td>
+                        <td class="px-6 py-4">${d.image_id}</td>
+                        <td class="px-6 py-4 text-sm">${d.class}</td>
+                        <td class="px-6 py-4 font-medium ${d.confidence > 0.8 ? 'text-green-500' : d.confidence > 0.6 ? 'text-yellow-500' : 'text-red-500'}">${confidenceFormatted}</td>
+                        <td class="px-6 py-4">${d.precision}</td>
+                        <td class="px-6 py-4">${d.recall}</td>
+                        <td class="px-6 py-4">${d.map50}</td>
+                        <td class="px-6 py-4">${d.map95}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
             };
 
             // 자동 새로고침
             const refreshDashboardData = async () => {
-                if (activePage === 'dashboard') {
-                    console.log('대시보드 데이터 새로고침 중...');
-                    await renderDashboard();
-                    console.log('대시보드 데이터가 새로고침되었습니다.');
+                if (activePage === 'realtimeDashboard') {
+                    console.log('실시간 DB 대시보드 데이터 새로고침 중...');
+                    await renderRealtimeDashboard();
+                    console.log('실시간 DB 대시보드 데이터가 새로고침되었습니다.');
                 }
             };
 
             setInterval(refreshDashboardData, 30000);
 
-            // 초기화
+            // 초기화 - 실시간 DB 대시보드가 기본 페이지가 되도록 변경
             const init = async () => {
                 const handled = await handleInitialRoute();
                 updateHeaderText();
                 if (!handled) {
-                    // Default landing is dashboard only when no subpage requested
-                    activePage = 'dashboard';
+                    // Default landing is realtimeDashboard
+                    activePage = 'realtimeDashboard';
                     renderSidebar();
                     renderContent();
                 }
