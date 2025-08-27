@@ -7,6 +7,7 @@ from . import views
 urlpatterns = [
     path("", views.dashboard_view, name="dashboard"),
     path("api/dashboard-data/", views.dashboard_data, name="dashboard_data"),
+    path("api/realtime-dashboard-data/", views.realtime_dashboard_data, name="realtime_dashboard_data"),
     
     # path("login/", views.login_view, name="login"),
     # path("logout/", LogoutView.as_view(), name="logout"),
