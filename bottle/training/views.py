@@ -142,7 +142,7 @@ def upload_dataset(request):
                     # ZIP 파일 압축 해제
                     extract_dir = os.path.join(upload_dir, "extracted")
                     zip_ref.extractall(extract_dir)
-                    print(f" extract_dir:{extract_dir} upload_dir:{upload_dir}")
+                    print(f"✅  extract_dir:{extract_dir} \n    upload_dir:{upload_dir}")
 
             except zipfile.BadZipFile:
                 messages.error(request, "올바르지 않은 ZIP 파일입니다.")
@@ -996,9 +996,6 @@ def create_loss_chart(session):
         train_losses = [m.train_loss for m in metrics]
         val_losses = [m.val_loss for m in metrics]
 
-    print(f"[create_loss_chart] train_losses: {train_losses}")
-    print(f"[create_loss_chart] val_losses: {val_losses}")
-    
     trace1 = go.Scatter(
         x=epochs,
         y=train_losses,
@@ -1403,8 +1400,6 @@ def yolo_to_coco(labels_root, output_json_path):
     """
     annotations = []
     ann_id = 0
-
-    print(f"[yolo_to_coco] labels_root: {labels_root}")
 
     def read_lines_safe(path):
         for enc in ("utf-8", "cp949", "latin-1"):
