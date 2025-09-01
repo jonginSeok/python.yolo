@@ -41,7 +41,7 @@ DROP TABLE IF EXISTS training_trainingsession;
 
 CREATE TABLE
     training_trainingsession (
-        id SERIAL PRIMARY KEY,
+        id BIGINT SERIAL PRIMARY KEY,
         model_name VARCHAR(100) NOT NULL,
         version VARCHAR(20) NOT NULL,
         status VARCHAR(20) NOT NULL DEFAULT 'training',
@@ -96,8 +96,8 @@ DROP TABLE IF EXISTS training_trainingmetric;
 
 CREATE TABLE
     training_trainingmetric (
-        id SERIAL PRIMARY KEY,
-        session_id INTEGER NOT NULL REFERENCES training_trainingsession (id) ON DELETE CASCADE,
+        id BIGINT SERIAL PRIMARY KEY,
+        session_id BIGINT NOT NULL REFERENCES training_trainingsession (id) ON DELETE CASCADE,
         epoch INTEGER NOT NULL,
         loss_total FLOAT  NULL, 
         train_acc FLOAT  NULL, 
@@ -127,8 +127,8 @@ DROP TABLE IF EXISTS training_classmetric;
 
 CREATE TABLE
     training_classmetric (
-        id SERIAL PRIMARY KEY,
-        session_id INTEGER NOT NULL REFERENCES training_trainingsession (id) ON DELETE CASCADE,
+        id BIGINT SERIAL PRIMARY KEY,
+        session_id BIGINT NOT NULL REFERENCES training_trainingsession (id) ON DELETE CASCADE,
         index INTEGER NOT NULL,
         class_name VARCHAR(50) NOT NULL,
         precision FLOAT NULL,
