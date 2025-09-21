@@ -1,8 +1,14 @@
+import os
+import django
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.db import connection
 import psycopg2
 from datetime import datetime
+
+# Django 환경 설정
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+django.setup()
 
 def dashboard_view(request):
     return render(request, 'main.html')
@@ -171,13 +177,14 @@ def realtime_dashboard_data(request):
         # 실제 PostgreSQL DB 연결 시도
         print("실제 PostgreSQL DB 연결 시도 중...")
         
-        conn = psycopg2.connect(
-            dbname="postgres",
-            user="postgres",
-            password="yolo11ai",
-            host="postgres.cxg2cwseemwh.ap-northeast-2.rds.amazonaws.com",
-            port="5432",
-        )
+        # conn = psycopg2.connect(
+        #     dbname="postgres",
+        #     user="postgres",
+        #     password="yolo11ai",
+        #     host="postgres.cxg2cwseemwh.ap-northeast-2.rds.amazonaws.com",
+        #     port="5432",
+        # )
+        conn = connection
         cursor = conn.cursor()
         
         print("PostgreSQL DB 연결 성공!")

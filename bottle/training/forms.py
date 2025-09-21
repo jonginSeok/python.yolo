@@ -17,7 +17,7 @@ class DataUploadForm(forms.Form):
             ("cnn", "CNN"),
             ("yolo11n", "YOLO v11n"),
         ],
-        initial="cnn",  # 초기값세팅
+        initial="yolo11n",  # 초기값세팅
         widget=forms.Select(attrs={"class": "form-control"}),
     )
 

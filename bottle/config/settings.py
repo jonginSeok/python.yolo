@@ -97,7 +97,7 @@ DATABASES = {
         "NAME": "postgres",  # DB 이름
         "USER": "postgres",  # 사용자 이름
         "PASSWORD": "yolo11ai",  # 비밀번호
-        "HOST": "postgres.cxg2cwseemwh.ap-northeast-2.rds.amazonaws.com",  # 또는 실제 DB 서버 주소
+        "HOST": "localhost",  # 또는 실제 DB 서버 주소
         "PORT": "5432",  # PostgreSQL 기본 포트
     }
 }
