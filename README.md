@@ -60,7 +60,7 @@ tool : VS Code, SQLGate for PostgreSQL , EditPlus, UltraEdit, OneNote(sticky not
 site : copilot, lovable.dev, supabase.com 
 
 브라우저에서 `http://127.0.0.1:8000`으로 접속하면 대시보드를 확인할 수 있습니다.
-
+```
 ## 📊 주요 기능
 
 ### 🎯 대시보드 메트릭
@@ -85,8 +85,7 @@ site : copilot, lovable.dev, supabase.com
 - 인스턴스 수 표시
 
 ## 🗂️ 프로젝트 구조
-
-```
+```bash
 bottle/
 ├── config/                 # Django 프로젝트 설정
 │   ├── settings.py
